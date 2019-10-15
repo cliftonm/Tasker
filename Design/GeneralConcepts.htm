@@ -1,0 +1,467 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>General Concepts</title>
+</head>
+
+<body>
+
+<p>Day 1:</p>
+<p>General Concepts</p>
+<p>It becomes clear looking at the layout that it is really more of a template 
+for my own requirements and that the actual &quot;task item bar&quot; on the left as well 
+as the specific fields for each task item should be completely user definable in 
+terms of label, content, and control.&nbsp; </p>
+<p>This pretty much means that we're looking at a NoSQL database structure with 
+loose linkages between tasks and task items.&nbsp; The &quot;root&quot; of everything 
+still remains the task, but the task items and their fields is really quite 
+arbitrary.</p>
+<p>So we need to be able to define the structure and its field content as one 
+&quot;database&quot; of how the user wants to organize the information.</p>
+<p>Certain fields end up being arrays (like URL links) that are represented 
+discretely, while other fields (like notes) may be shows discretely as a 
+scrollable collection of distinct textarea entries or more as a &quot;document&quot; where 
+the user simply scrolls through a single textarea.</p>
+<p>Searching - the user should be able to search on any field or a specific 
+area, such as &quot;notes.&quot;&nbsp; </p>
+<p>Any field can be either a singleton (like a date/time on a communication) or 
+a collection, like a list of contacts for that communication.</p>
+<p>So what we end up doing first is defining an arbitrary schema with enough 
+metadata to describe the layout and controls of the fields in the schema as well 
+as actions on schema elements, for example the task item bar can be represented 
+as schema elements but they are buttons, not user input controls.</p>
+<p>We don't want to go overboard with this!&nbsp; The complexity with this 
+approach is that the page is not static -- the entire layout has to be generated 
+from the metadata, so the question is, server-side generation or client-side?</p>
+<p>Personally I prefer client-side.&nbsp; The server should be minimally 
+involved with layout -- the server should serve content, as in data, not layout.&nbsp; 
+This approach also facilitates development of the UI without needing a server 
+and keeps all the UI code on the client rather than spreading it across both 
+JavaScript and C# on the back-end.&nbsp; And no, I'm not interested in using 
+node.js on the back-end.</p>
+<p>Day 2:</p>
+<p>We should be able to have a fairly simple structures.&nbsp; Let's define a 
+few, all of which are of course customizable but we'll define some useful 
+defaults.</p>
+<p>Status</p>
+<p>I like to have a fairly specific status and get frustrated when I can't put 
+that information in a simple dropdown that lets me see at a glance what's going 
+on with the task.&nbsp; So, I like things like:</p>
+<ul>
+	<li>Todo</li>
+	<li>Working on</li>
+	<li>Testing</li>
+	<li>QA</li>
+	<li>Production (Completed)</li>
+	<li>Waiting for 3rd Party</li>
+	<li>Waiting for Coworker</li>
+	<li>Waiting on Management</li>
+	<li>Stuck</li>
+</ul>
+<p>Notice that I don't have a priority next to the task.&nbsp; I really don't 
+give a sh*t about priorities -- there's usually a lot of things going on and I 
+work on what I'm in the mood for and what I can work on.&nbsp; Of course, if you 
+like priorities, you can add them to the UI.</p>
+<p>Notice that I also don't categorize tasks into, for example, sprints, 
+platforms, customers, etc.&nbsp; Again, if you want those things, you can add 
+them.</p>
+<p>What I do want is:</p>
+<ol>
+	<li>What is the task?</li>
+	<li>What is its state?</li>
+	<li>One line description of why it's in that state.</li>
+</ol>
+<p>So this is what I want to see (of course, what you want to see is going to be 
+different):</p>
+<p><img border="0" src="atask.png" width="442" height="62"></p>
+<p>How would we define this layout in JSON so that you can create whatever needs 
+your needs?&nbsp; Pretty much this means figuring out how to meet my needs 
+first!</p>
+<p>This might be the definition of the high level task list:</p>
+<pre>[
+  {
+    Item:
+    {
+      Field: &quot;Task&quot;,
+      Line: 0,
+      Width: &quot;80%&quot;
+    }
+  },
+  {
+    Item:
+    {
+      Field: &quot;Status&quot;,
+      SelectFrom: &quot;StatusList&quot;,
+      OrderBy: &quot;StatusOrder&quot;,
+      Line: 0,
+      Width: &quot;20%&quot;
+    }
+  },
+  {
+    Item:
+    {
+      Field: &quot;Why&quot;,
+      Line: 1,
+      Width: &quot;100%&quot;
+    }
+  }
+]</pre>
+<p>These fields are all inline editable but we also want to support drilling 
+into a field to view it's sub-records.&nbsp; Not all fields have sub-records 
+(like Status), but this is determined by the metadata structure, so Status could 
+have sub-records.&nbsp; Any time the user focuses on a control with 
+sub-structures, the button bar will update and the &quot;show on select&quot; 
+sub-structures will display the sub-records. </p>
+<p>So we can define sub-structures, or allowable child records, like this using 
+the Task entity as an example:</p>
+<pre>[
+  {Entity:&quot;Contact&quot;, Label:&quot;Contacts&quot;},
+  {Entity:&quot;Link&quot;, Label:&quot;Links&quot;, &quot;ShowOnParentSelect&quot;: true},
+  {Entity:&quot;KeyPoint&quot;, Label: &quot;Key Points&quot;},
+  {Entity:&quot;Note&quot; Label: &quot;Notes&quot;, &quot;ShowOnParentSelect&quot;: true},
+  {Entity:&quot;Communication&quot;, Label: &quot;Communications&quot;}
+]</pre>
+<p>Note that all sub-structures are defined in their singular form and we have 
+complete flexibility as to the label used to represent the link.&nbsp; These 
+&quot;show on parent select&quot; will always be visible unless the user collapses that 
+section, and they are rendered in the order they appear in the list above.&nbsp; 
+Where they render is determined by other layout information.</p>
+<p>Other things to think about:</p>
+<ul>
+	<li>Sub-tasks (easy to do)</li>
+	<li>Task dependencies</li>
+</ul>
+<p>Day 3:</p>
+<p>So, the more I think about this, the more I realize that this is really a 
+very generalized entity creator/editor with not quite dynamic relationships, 
+much as I've written about in my
+<a href="https://www.codeproject.com/Articles/298818/Relationship-Oriented-Programming">
+Relationship Oriented Programming</a> articles.&nbsp; So it seems natural that 
+allowable relationships should be definable as well.&nbsp; But what I'd prefer 
+to do at this point is some prototyping to get a sense of how some of these 
+ideas can come to fruition.&nbsp; So let's start with the JSON above and write a 
+function that turns it into an HTML template that can then be repeatedly applied 
+as necessary.&nbsp; And at the same time, I'll be learning the nuances of 
+TypeScript!</p>
+<p>With some coding, I get this:</p>
+<p><img border="0" src="prototype1.png" width="306" height="58"></p>
+<p>Defined by the template array:</p>
+<pre>let template = [ // Task Template
+  {
+    field: &quot;Task&quot;,
+    line: 0,
+    width: &quot;80%&quot;,
+    control: &quot;textbox&quot;,
+  },
+  { 
+    field: &quot;Status&quot;,
+    selectFrom: &quot;StatusList&quot;,
+    orderBy: &quot;StatusOrder&quot;,
+    line: 0,
+    width: &quot;20%&quot;,
+    control: &quot;combobox&quot;,
+  },
+  {
+    field: &quot;Why&quot;,
+    line: 1,
+    width: &quot;100%&quot;,
+    control: &quot;textbox&quot;,
+  }
+];</pre>
+<p>and the support of interfaces to define the template object model and a 
+Builder class to put together the HTML:</p>
+<pre>interface Item {
+  field: string;
+  line: number;
+  width: string;
+  control: string;
+  selectedFrom?: string;
+  orderBy?: string;
+}
+
+interface Items extends Array&lt;Item&gt; { }
+
+class Builder {
+  html: string;
+
+  constructor() {
+    this.html = &quot;&quot;;
+  }
+
+  public DivBegin(item: Item): Builder {
+    this.html += &quot;&lt;div style='float:left; width:&quot; + item.width + &quot;'&gt;&quot;;
+
+    return this;
+  }
+
+  public DivEnd(): Builder {
+    this.html += &quot;&lt;/div&gt;&quot;;
+
+    return this;
+  }
+
+  public DivClear(): Builder {
+    this.html += &quot;&lt;div style='clear:both'&gt;&lt;/div&gt;&quot;;
+
+    return this;
+  }
+
+  public TextInput(item: Item): Builder {
+    let placeholder = item.field;
+    this.html += &quot;&lt;input type='text' placeholder='&quot; + placeholder + &quot;' style='width:100%'&gt;&quot;;
+
+    return this;
+  }
+
+  public Combobox(item: Item): Builder {
+    this.SelectBegin().Option(&quot;A&quot;).Option(&quot;B&quot;).Option(&quot;C&quot;).SelectEnd();
+
+    return this;
+  }
+
+  public SelectBegin(): Builder {
+    this.html += &quot;&lt;select style='width:100%; height:21px'&gt;&quot;;
+
+    return this;
+  }
+
+  public SelectEnd(): Builder {
+    this.html += &quot;&lt;/select&gt;&quot;;
+
+    return this;
+  }
+
+  public Option(text: string, value?: string): Builder {
+    this.html += &quot;&lt;option value='&quot; + value + &quot;'&gt;&quot; + text + &quot;&lt;/option&gt;&quot;;
+
+    return this;
+  }
+}</pre>
+<p>This leaves only the logic for constructing the template:</p>
+<pre>private CreateHtmlTemplate(template: Items) : string {
+  let builder = new Builder();
+  let line = -1;
+  let firstLine = true;
+
+  template.forEach(item =&gt; {
+    if (item.line != line) {
+      line = item.line;
+
+      if (!firstLine) {
+        builder.DivClear();
+      }
+
+      firstLine = false;
+    }
+
+    builder.DivBegin(item);
+
+    switch (item.control) {
+      case &quot;textbox&quot;:
+        builder.TextInput(item);
+        break;
+
+      case &quot;combobox&quot;:
+        builder.Combobox(item);
+        break;
+      }
+
+    builder.DivEnd();
+  });
+
+  builder.DivClear();
+
+  return builder.html;
+}</pre>
+<p>So the top-level code just does this:</p>
+<pre>let html = this.CreateHtmlTemplate(template);
+jQuery(&quot;#template&quot;).html(html);</pre>
+<p>If I chain the template:</p>
+<pre>jQuery(&quot;#template&quot;).html(html + html + html);</pre>
+<p>I get:</p>
+<p><img border="0" src="prototype2.png" width="307" height="141"></p>
+<p>Cool.&nbsp; May not be the prettiest thing, but the basics are what I'm 
+looking for.</p>
+<p>Now personally what bugs me to no end is that the template object reminds me 
+of ExtJs: basically a collection of arbitrary keys to define the layout of the 
+UI.&nbsp; Maybe it's unavoidable, and I certainly am not going down the route 
+that ExtJs uses which is to create custom ID's that change every time the page 
+is refreshed.&nbsp; Talk about killing the ability to do test automation at the 
+UI level.&nbsp; It is ironic though, in writing something like this, I begin to 
+actually have a better understanding of the design decisions that ExtJs made.</p>
+<p>Which brings us to how the comboboxes are actually populated.&nbsp; So yeah, 
+there's a concept of a &quot;store&quot; in ExtJs, and manipulating the store 
+automatically (or that's the theory) updates the UI.&nbsp; That's too much for 
+me right now, but I do want the ability to use an existing object or fetch (and 
+potentially cache) the object from a REST call.&nbsp; So let's put something 
+simple together.&nbsp; Here's my states:</p>
+<pre>let taskStates = [
+  { text: 'TODO'},
+  { text: 'Working On' },
+  { text: 'Testing' },
+  { text: 'QA' },
+  { text: 'Done' },
+  { text: 'On Production' },
+  { text: 'Waiting on 3rd Party' },
+  { text: 'Waiting on Coworker' },
+  { text: 'Waiting on Management' },
+  { text: 'Stuck' },
+];</pre>
+<p>With a little refactoring:</p>
+<pre>export interface Item {
+  field: string;
+  line: number;
+  width: string;
+  control: string;
+  storeName?: string;  // &lt;== this got changed to &quot;storeName&quot;
+  orderBy?: string;
+}</pre>
+<p>and the prototype concept of a store:</p>
+<pre>interface KeyStoreMap {
+  [key: string] : any;  // Eventually &quot;any&quot; will be replaced with a more formal structure.
+}
+
+export class Store {
+  stores: KeyStoreMap = {};
+
+  public AddLocalStore(key: string, store: any) {
+  this.stores[key] = store;
+  }
+
+  // Eventually will support local stores, REST calls, caching, computational stores, and using other 
+  // existing objects as stores.
+  public GetStore(key: string) {
+    return this.stores[key];
+  }
+}</pre>
+<p>I now do this:</p>
+<pre>let store = new Store();
+store.AddLocalStore(&quot;StatusList&quot;, taskStates);
+let html = this.CreateHtmlTemplate(template, store);</pre>
+<p>and the template builder does this:</p>
+<pre>public Combobox(item: Item, store: Store) : TemplateBuilder {
+  this.SelectBegin();
+
+  store.GetStore(item.storeName).forEach(kv =&gt; {
+    this.Option(kv.text);
+  });
+
+  this.SelectEnd();
+
+  return this;
+}</pre>
+<p>Resulting in:</p>
+<p><img border="0" src="stores1.png" width="445" height="284"></p>
+<p>That was easy enough.</p>
+<p>So what's involved with persisting the actual task data and restoring it?&nbsp; 
+Seems like the store concept can be extended to save state, and one of the 
+states I want to support is <code>localStorage</code>.&nbsp; This also seems 
+complicated as I'm already dealing with an array of objects!&nbsp; And again, I 
+realize why in ExtJS stores are always arrays of things, even if the store 
+represents a singleton -- because it's easier!&nbsp; So let's refactor the <code>Store</code> 
+class.&nbsp; First, we want something that defines the store types, like 
+this:</p>
+<pre>export enum StoreType {
+  Undefined,
+  InMemory,
+  LocalStorage,
+  RestCall,
+}
+</pre>
+<p>And then we want something that manages the configuration of the store:</p>
+<pre>import { StoreType } from &quot;../enums/StoreType&quot;
+
+export class StoreConfiguration {
+  storeType: StoreType;
+  cached: boolean;
+  data: any;
+
+  constructor() {
+    this.storeType = StoreType.Undefined;
+    this.data = [];
+  }
+}</pre>
+<p>And finally, we'll refactor the Store class so it looks like this:</p>
+<pre>import { StoreConfiguration } from &quot;./StoreConfiguration&quot;
+import { StoreType } from &quot;../enums/StoreType&quot;
+import { KeyStoreMap } from &quot;../interfaces/KeyStoreMap&quot;
+
+export class Store {
+  stores: KeyStoreMap = {};
+
+  public CreateStore(key: string, type: StoreType) {
+    this.stores[key] = new StoreConfiguration();
+  }
+
+  public AddInMemoryStore(key: string, data: object[]) {
+    let store = new StoreConfiguration();
+    store.storeType = StoreType.InMemory;
+    store.data = data;
+    this.stores[key] = store;
+  }
+
+  // Eventually will support local stores, REST calls, caching, computational stores, and using other 
+  // existing objects as stores.
+  public GetStoreData(key: string) {
+    return this.stores[key].data;
+  }
+}</pre>
+<p>which is used like this:</p>
+<pre>let store = new Store();
+store.AddInMemoryStore(&quot;StatusList&quot;, taskStates);
+store.CreateStore(&quot;Tasks&quot;, StoreType.LocalStorage);</pre>
+<p>Next, the template that we created earlier:</p>
+<pre>let html = this.CreateHtmlTemplate(template, store);</pre>
+<p>Needs to know what store to use for the template items, so we do this 
+instead:</p>
+<pre>let html = this.CreateHtmlTemplate(template, store, &quot;Tasks&quot;);</pre>
+<p>Frankly, I have no idea whether this is a good idea or not, but let's go for 
+it for now and see how it holds up.</p>
+<p>Next we need to refactor this code <code>jQuery("#template").html(html + html + html); </code>so that we're not blindly copying the HTML 
+template but instead we have a way of building the template so that it knows 
+what object index in the store's data to update when the field changes.&nbsp; 
+Dealing with decoupling sorting from the store's representation of the data will 
+be an interesting thing to figure out.&nbsp; Later.&nbsp; More to the point, 
+that particular line of code will probably be tossed completely when we 
+implement loading the tasks from <code>localStorage</code>.&nbsp; For the 
+moment, in the template builder, let's add a custom attribute <code>storeIdx</code> 
+to our two controls:</p>
+<pre>this.html += &quot;&lt;input type='text' placeholder='&quot; + placeholder + &quot;' style='width:100%' storeIdx='{idx}'&gt;&quot;;</pre>
+<p>and:</p>
+<pre>this.html += &quot;&lt;select style='width:100%; height:21px' storeIdx='{idx}'&gt;&quot;;</pre>
+<p>And now we do this:</p>
+<pre>let html = this.CreateHtmlTemplate(template, store, &quot;Tasks&quot;);
+let task1 = this.SetStoreIndex(html, 0);
+let task2 = this.SetStoreIndex(html, 1);
+let task3 = this.SetStoreIndex(html, 2);
+jQuery(&quot;#template&quot;).html(task1 + task2 + task3);</pre>
+<p>with a little help from:</p>
+<pre>private SetStoreIndex(html: string, idx: number) : string {
+  // a &quot;replace all&quot; function.
+  let newHtml = html.split(&quot;{idx}&quot;).join(idx.toString());
+
+  return newHtml;
+}</pre>
+<p>and lo-and-behold, we have indices now to the store, for example:</p>
+<p><img border="0" src="stores2.png" width="503" height="51"></p>
+<p>Sigh.&nbsp; Note that the resulting HTML has the <code>storeIdx</code> attribute as all 
+lowercase.&nbsp; This seems to be a jQuery thing that I'll investigate later.&nbsp; 
+Next, we need to create <code>onchange</code> handlers for updating the store 
+when the value changes.&nbsp; This must be done with &quot;late binding&quot; because the 
+HTML is created dynamically from a template.&nbsp; Again I see why ExtJS ends up 
+assigning arbitrary ID's to elements -- how do we identify the element to which 
+to bind the <code>onchange</code> handler?&nbsp; Personally I prefer using a 
+separate attribute to uniquely identify the binding point, and probably a GUID 
+for the attribute value.&nbsp; Who knows what that will do to performance if 
+there's hundreds of elements that must be bound, but honestly, I'm not going to 
+worry about that!</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</body>
+
+</html>

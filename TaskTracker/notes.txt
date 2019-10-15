@@ -1,0 +1,15 @@
+﻿Figured this out from: https://stackoverflow.com/a/48436147/2276361
+
+Use Module System: AMD
+
+Read this: https://www.freecodecamp.org/news/anatomy-of-js-module-systems-and-building-libraries-fadcd8dbd0e/
+
+RequireJS: https://requirejs.org/
+
+DefinitelyTyped: https://github.com/DefinitelyTyped/DefinitelyTyped
+
+Getting jQuery to work: https://stackoverflow.com/a/41265114/2276361
+
+Nuget Package Manager Console: Install-Package jquery.TypeScript.DefinitelyTyped
+
+jQuery nightmare solved by reading through this: https://stackoverflow.com/questions/3931529/is-not-a-function-jquery-error
