@@ -1,8 +1,9 @@
-define(["require", "exports"], function (require, exports) {
+define(["require", "exports", "./Guid", "./TemplateElement"], function (require, exports, Guid_1, TemplateElement_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class TemplateBuilder {
         constructor() {
+            this.elements = [];
             this.html = "";
         }
         DivBegin(item) {
@@ -19,19 +20,25 @@ define(["require", "exports"], function (require, exports) {
         }
         TextInput(item, entityStore) {
             let placeholder = item.field;
-            this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}'>";
+            let guid = Guid_1.Guid.NewGuid();
+            this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+            let el = new TemplateElement_1.TemplateElement(item, guid);
+            this.elements.push(el);
             return this;
         }
         Combobox(item, store, entityStore) {
-            this.SelectBegin();
+            this.SelectBegin(item);
             store.GetStoreData(item.storeName).forEach(kv => {
                 this.Option(kv.text);
             });
             this.SelectEnd();
             return this;
         }
-        SelectBegin() {
-            this.html += "<select style='width:100%; height:21px' storeIdx='{idx}'>";
+        SelectBegin(item) {
+            let guid = Guid_1.Guid.NewGuid();
+            this.html += "<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+            let el = new TemplateElement_1.TemplateElement(item, guid);
+            this.elements.push(el);
             return this;
         }
         SelectEnd() {
@@ -39,7 +46,7 @@ define(["require", "exports"], function (require, exports) {
             return this;
         }
         Option(text, value) {
-            this.html += "<option value='" + value + "'>" + text + "</option>";
+            this.html += "<option value='" + (value || text) + "'>" + text + "</option>";
             return this;
         }
     }

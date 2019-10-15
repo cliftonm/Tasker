@@ -14,7 +14,7 @@ import { StoreConfiguration } from "./classes/StoreConfiguration"
 import { Items } from "./interfaces/Items"
 
 export class AppMain {
-    private CreateHtmlTemplate(template: Items, store: Store, entityStore: StoreConfiguration) : string {
+    private CreateHtmlTemplate(template: Items, store: Store, entityStore: StoreConfiguration) : TemplateBuilder {
         let builder = new TemplateBuilder();
         let line = -1;
         let firstLine = true;
@@ -47,7 +47,7 @@ export class AppMain {
 
         builder.DivClear();
 
-        return builder.html;
+        return builder;
     }
 
     private SetStoreIndex(html: string, idx: number): string {
@@ -96,13 +96,30 @@ export class AppMain {
 
         let store = new Store();
         store.AddInMemoryStore("StatusList", taskStates);
-        let entityStore = store.CreateStore("Tasks", StoreType.LocalStorage);
+        let taskStore = store.CreateStore("Tasks", StoreType.LocalStorage);
 
-        let html = this.CreateHtmlTemplate(template, store, entityStore);
+        let builder = this.CreateHtmlTemplate(template, store, taskStore);
+        let html = builder.html;
         let task1 = this.SetStoreIndex(html, 0);
         let task2 = this.SetStoreIndex(html, 1);
         let task3 = this.SetStoreIndex(html, 2);
         jQuery("#template").html(task1 + task2 + task3);
+
+        jQuery(document).ready(() => {
+            // Bind the onchange events.
+            builder.elements.forEach(el => {
+                let jels = jQuery("[bindGuid = '" + el.guid.ToString() + "']");
+
+                jels.each((idx, elx) => {
+                    let jel = jQuery(elx);
+
+                    jel.on('change', () => {
+                        console.log("change for " + el.guid.ToString() + " at index " + jel.attr("storeIdx") + " value of " + jel.val());
+                        taskStore.SetProperty(Number(jel.attr("storeIdx")), el.item.field, jel.val());
+                    });
+                });
+            });
+        });
 
         /*
         let greeter = new Greeter();

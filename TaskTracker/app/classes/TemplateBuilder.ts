@@ -1,10 +1,13 @@
-﻿import { Store } from "./Store"
+﻿import { Guid } from "./Guid"
+import { Store } from "./Store"
 import { StoreConfiguration } from "./StoreConfiguration"
+import { TemplateElement } from "./TemplateElement"
 import { Item } from "../interfaces/Item"
 
 export class TemplateBuilder
 {
     html: string;
+    elements: TemplateElement[] = [];
 
     constructor()
     {
@@ -31,13 +34,16 @@ export class TemplateBuilder
 
     public TextInput(item: Item, entityStore: StoreConfiguration) : TemplateBuilder {
         let placeholder = item.field;
-        this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}'>";
+        let guid = Guid.NewGuid();
+        this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+        let el = new TemplateElement(item, guid);
+        this.elements.push(el);
 
         return this;
     }
 
     public Combobox(item: Item, store: Store, entityStore: StoreConfiguration) : TemplateBuilder {
-        this.SelectBegin();
+        this.SelectBegin(item);
 
         store.GetStoreData(item.storeName).forEach(kv => {
             this.Option(kv.text);
@@ -48,8 +54,11 @@ export class TemplateBuilder
         return this;
     }
 
-    public SelectBegin() : TemplateBuilder {
-        this.html += "<select style='width:100%; height:21px' storeIdx='{idx}'>";
+    public SelectBegin(item: Item) : TemplateBuilder {
+        let guid = Guid.NewGuid();
+        this.html += "<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+        let el = new TemplateElement(item, guid);
+        this.elements.push(el);
 
         return this;
     }
@@ -61,7 +70,7 @@ export class TemplateBuilder
     }
 
     public Option(text: string, value?: string) : TemplateBuilder {
-        this.html += "<option value='" + value + "'>" + text + "</option>";
+        this.html += "<option value='" + (value || text) + "'>" + text + "</option>";
 
         return this;
     }

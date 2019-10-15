@@ -28,7 +28,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./classes/Store", ".
                 builder.DivEnd();
             });
             builder.DivClear();
-            return builder.html;
+            return builder;
         }
         SetStoreIndex(html, idx) {
             // a "replace all" function.
@@ -72,12 +72,26 @@ define(["require", "exports", "./classes/TemplateBuilder", "./classes/Store", ".
             ];
             let store = new Store_1.Store();
             store.AddInMemoryStore("StatusList", taskStates);
-            let entityStore = store.CreateStore("Tasks", StoreType_1.StoreType.LocalStorage);
-            let html = this.CreateHtmlTemplate(template, store, entityStore);
+            let taskStore = store.CreateStore("Tasks", StoreType_1.StoreType.LocalStorage);
+            let builder = this.CreateHtmlTemplate(template, store, taskStore);
+            let html = builder.html;
             let task1 = this.SetStoreIndex(html, 0);
             let task2 = this.SetStoreIndex(html, 1);
             let task3 = this.SetStoreIndex(html, 2);
             jQuery("#template").html(task1 + task2 + task3);
+            jQuery(document).ready(() => {
+                // Bind the onchange events.
+                builder.elements.forEach(el => {
+                    let jels = jQuery("[bindGuid = '" + el.guid.ToString() + "']");
+                    jels.each((idx, elx) => {
+                        let jel = jQuery(elx);
+                        jel.on('change', () => {
+                            console.log("change for " + el.guid.ToString() + " at index " + jel.attr("storeIdx") + " value of " + jel.val());
+                            taskStore.SetProperty(Number(jel.attr("storeIdx")), el.item.field, jel.val());
+                        });
+                    });
+                });
+            });
             /*
             let greeter = new Greeter();
             greeter.greet();

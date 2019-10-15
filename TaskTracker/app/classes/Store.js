@@ -5,17 +5,18 @@ define(["require", "exports", "./StoreConfiguration", "../enums/StoreType"], fun
         constructor() {
             this.stores = {};
         }
-        CreateStore(key, type) {
+        CreateStore(key, storeType) {
             let storeCfg = new StoreConfiguration_1.StoreConfiguration();
+            storeCfg.storeType = storeType;
             this.stores[key] = storeCfg;
             return storeCfg;
         }
         AddInMemoryStore(key, data) {
-            let store = new StoreConfiguration_1.StoreConfiguration();
-            store.storeType = StoreType_1.StoreType.InMemory;
-            store.data = data;
-            this.stores[key] = store;
-            return store;
+            let storeCfg = new StoreConfiguration_1.StoreConfiguration();
+            storeCfg.storeType = StoreType_1.StoreType.InMemory;
+            storeCfg.data = data;
+            this.stores[key] = storeCfg;
+            return storeCfg;
         }
         GetStore(key) {
             return this.stores[key];

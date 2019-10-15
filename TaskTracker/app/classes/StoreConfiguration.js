@@ -12,7 +12,23 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                 this.data.push({});
             }
             this.data[idx][property] = value;
+            this.UpdatePhysicalStorage(this.data[idx], property, value);
             return this;
+        }
+        UpdatePhysicalStorage(record, property, value) {
+            switch (this.storeType) {
+                case StoreType_1.StoreType.InMemory:
+                    // Do nothing.
+                    break;
+                case StoreType_1.StoreType.RestCall:
+                    // Eventually send an update but we probably ought to have a PK with which to associate the change.
+                    break;
+                case StoreType_1.StoreType.LocalStorage:
+                    // Here we just update the whole structure.
+                    let json = JSON.stringify(this.data);
+                    window.localStorage.setItem("Tasks", json);
+                    break;
+            }
         }
     }
     exports.StoreConfiguration = StoreConfiguration;
