@@ -18,7 +18,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             this.html += "<div style='clear:both'></div>";
             return this;
         }
-        TextInput(item, entityStore) {
+        TextInput(item) {
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
             this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
@@ -26,7 +26,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             this.elements.push(el);
             return this;
         }
-        Combobox(item, store, entityStore) {
+        Combobox(item, store) {
             this.SelectBegin(item);
             store.GetStoreData(item.storeName).forEach(kv => {
                 this.Option(kv.text);

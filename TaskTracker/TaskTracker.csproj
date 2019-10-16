@@ -94,7 +94,7 @@
     <TypeScriptCompile Include="app\AppMain.ts" />
     <TypeScriptCompile Include="app\classes\Greeter.ts" />
     <TypeScriptCompile Include="app\classes\Guid.ts" />
-    <TypeScriptCompile Include="app\classes\Store.ts" />
+    <TypeScriptCompile Include="app\classes\StoreManager.ts" />
     <TypeScriptCompile Include="app\classes\TemplateElement.ts" />
     <TypeScriptCompile Include="app\enums\StoreType.ts" />
     <TypeScriptCompile Include="app\interfaces\Item.ts" />
@@ -113,7 +113,7 @@
     <TypeScriptCompile Include="app\classes\TemplateBuilder.ts" />
   </ItemGroup>
   <ItemGroup>
-    <TypeScriptCompile Include="app\classes\StoreConfiguration.ts" />
+    <TypeScriptCompile Include="app\classes\Store.ts" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

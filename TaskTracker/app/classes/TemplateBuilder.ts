@@ -1,6 +1,6 @@
 ﻿import { Guid } from "./Guid"
 import { Store } from "./Store"
-import { StoreConfiguration } from "./StoreConfiguration"
+import { StoreManager } from "./StoreManager"
 import { TemplateElement } from "./TemplateElement"
 import { Item } from "../interfaces/Item"
 
@@ -32,7 +32,7 @@ export class TemplateBuilder
         return this;
     }
 
-    public TextInput(item: Item, entityStore: StoreConfiguration) : TemplateBuilder {
+    public TextInput(item: Item) : TemplateBuilder {
         let placeholder = item.field;
         let guid = Guid.NewGuid();
         this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
@@ -42,7 +42,7 @@ export class TemplateBuilder
         return this;
     }
 
-    public Combobox(item: Item, store: Store, entityStore: StoreConfiguration) : TemplateBuilder {
+    public Combobox(item: Item, store: StoreManager) : TemplateBuilder {
         this.SelectBegin(item);
 
         store.GetStoreData(item.storeName).forEach(kv => {

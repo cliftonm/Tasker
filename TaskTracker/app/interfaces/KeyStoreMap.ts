@@ -1,6 +1,6 @@
-﻿import { StoreConfiguration } from "../classes/StoreConfiguration"
+﻿import { Store } from "../classes/Store"
 
 export interface KeyStoreMap {
-    [key: string]: StoreConfiguration;
+    [key: string]: Store;
 }
 

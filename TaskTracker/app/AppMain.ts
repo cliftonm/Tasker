@@ -10,11 +10,11 @@
 import { TemplateBuilder } from "./classes/TemplateBuilder"
 import { Store } from "./classes/Store"
 import { StoreType } from "./enums/StoreType"
-import { StoreConfiguration } from "./classes/StoreConfiguration"
+import { StoreManager } from "./classes/StoreManager"
 import { Items } from "./interfaces/Items"
 
 export class AppMain {
-    private CreateHtmlTemplate(template: Items, store: Store, entityStore: StoreConfiguration) : TemplateBuilder {
+    private CreateHtmlTemplate(template: Items, store: StoreManager) : TemplateBuilder {
         let builder = new TemplateBuilder();
         let line = -1;
         let firstLine = true;
@@ -34,11 +34,11 @@ export class AppMain {
 
             switch (item.control) {
                 case "textbox":
-                    builder.TextInput(item, entityStore);
+                    builder.TextInput(item);
                     break;
 
                 case "combobox":
-                    builder.Combobox(item, store, entityStore);
+                    builder.Combobox(item, store);
                     break;
             }
 
@@ -94,11 +94,11 @@ export class AppMain {
             { text: 'Stuck' },
         ];
 
-        let store = new Store();
-        store.AddInMemoryStore("StatusList", taskStates);
-        let taskStore = store.CreateStore("Tasks", StoreType.LocalStorage);
+        let storeManager = new StoreManager();
+        storeManager.AddInMemoryStore("StatusList", taskStates);
+        let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
 
-        let builder = this.CreateHtmlTemplate(template, store, taskStore);
+        let builder = this.CreateHtmlTemplate(template, storeManager);
         let html = builder.html;
         let task1 = this.SetStoreIndex(html, 0);
         let task2 = this.SetStoreIndex(html, 1);
@@ -108,18 +108,39 @@ export class AppMain {
         jQuery(document).ready(() => {
             // Bind the onchange events.
             builder.elements.forEach(el => {
-                let jels = jQuery("[bindGuid = '" + el.guid.ToString() + "']");
+                let guid = el.guid.ToString();
+                let jels = jQuery("[bindGuid = '" + guid + "']");
 
-                jels.each((idx, elx) => {
+                jels.each((_, elx) => {
                     let jel = jQuery(elx);
 
                     jel.on('change', () => {
-                        console.log("change for " + el.guid.ToString() + " at index " + jel.attr("storeIdx") + " value of " + jel.val());
-                        taskStore.SetProperty(Number(jel.attr("storeIdx")), el.item.field, jel.val());
+                        let recIdx = Number(jel.attr("storeIdx"));
+                        let field = el.item.field;
+                        let val = jel.val();
+
+                        console.log("change for " + el.guid.ToString() + " at index " + recIdx + " value of " + jel.val());
+                        taskStore.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
                     });
                 });
             });
         });
+
+        taskStore.Load()
+            .SetDefault(0, "Status", taskStates[0].text)
+            .SetDefault(1, "Status", taskStates[0].text)
+            .SetDefault(2, "Status", taskStates[0].text)
+            .Save();
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < builder.elements.length; j++) {
+                let tel = builder.elements[j];
+                let guid = tel.guid.ToString();
+                // let jel = jQuery("[bindGuid = '" + guid + "'][storeIdx = '" + i + "']");
+                let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${i}']`);
+                jel.val(taskStore.GetProperty(i, tel.item.field));
+            }
+        }
 
         /*
         let greeter = new Greeter();

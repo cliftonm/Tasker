@@ -2,18 +2,10 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class StoreConfiguration {
-        constructor() {
+        constructor(store) {
             this.storeType = StoreType_1.StoreType.Undefined;
             this.data = [];
-        }
-        SetProperty(idx, property, value) {
-            // Create additional records as necessary:
-            while (this.data.length - 1 < idx) {
-                this.data.push({});
-            }
-            this.data[idx][property] = value;
-            this.UpdatePhysicalStorage(this.data[idx], property, value);
-            return this;
+            this.store = store;
         }
         UpdatePhysicalStorage(record, property, value) {
             switch (this.storeType) {

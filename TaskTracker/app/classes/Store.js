@@ -1,30 +1,86 @@
-define(["require", "exports", "./StoreConfiguration", "../enums/StoreType"], function (require, exports, StoreConfiguration_1, StoreType_1) {
+define(["require", "exports", "../enums/StoreType"], function (require, exports, StoreType_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class Store {
         constructor() {
-            this.stores = {};
+            this.storeType = StoreType_1.StoreType.Undefined;
+            this.data = [];
         }
-        CreateStore(key, storeType) {
-            let storeCfg = new StoreConfiguration_1.StoreConfiguration();
-            storeCfg.storeType = storeType;
-            this.stores[key] = storeCfg;
-            return storeCfg;
+        SetProperty(idx, property, value) {
+            this.CreateNecessaryRecords(idx);
+            this.data[idx][property] = value;
+            return this;
         }
-        AddInMemoryStore(key, data) {
-            let storeCfg = new StoreConfiguration_1.StoreConfiguration();
-            storeCfg.storeType = StoreType_1.StoreType.InMemory;
-            storeCfg.data = data;
-            this.stores[key] = storeCfg;
-            return storeCfg;
+        GetProperty(idx, property) {
+            this.CreateNecessaryRecords(idx);
+            let value = this.data[idx][property];
+            return value;
         }
-        GetStore(key) {
-            return this.stores[key];
+        Load() {
+            switch (this.storeType) {
+                case StoreType_1.StoreType.InMemory:
+                    // TODO: Probably should throw an exception -- how do you load a store that already is in memory???
+                    break;
+                case StoreType_1.StoreType.RestCall:
+                    // TODO: Implement
+                    break;
+                case StoreType_1.StoreType.LocalStorage:
+                    let json = window.localStorage.getItem(this.storeName);
+                    if (json) {
+                        this.data = JSON.parse(json);
+                    }
+                    break;
+            }
+            return this;
         }
-        // Eventually will support local stores, REST calls, caching, computational stores, and using other 
-        // existing objects as stores.
-        GetStoreData(key) {
-            return this.stores[key].data;
+        Save() {
+            switch (this.storeType) {
+                case StoreType_1.StoreType.InMemory:
+                    // TODO: throw exception?
+                    break;
+                case StoreType_1.StoreType.RestCall:
+                    // Eventually send an update but we probably ought to have a PK with which to associate the change.
+                    break;
+                case StoreType_1.StoreType.LocalStorage:
+                    // Here we just update the whole structure.
+                    this.SaveToLocalStorage();
+                    break;
+            }
+            return this;
+        }
+        SetDefault(idx, property, value) {
+            this.CreateNecessaryRecords(idx);
+            if (!this.data[idx][property]) {
+                this.data[idx][property] = value;
+            }
+            return this;
+        }
+        UpdatePhysicalStorage(idx, property, value) {
+            // Parameters and record to be used by other functions.
+            let record = this.data[idx];
+            switch (this.storeType) {
+                case StoreType_1.StoreType.InMemory:
+                    // TODO: throw exception?
+                    break;
+                case StoreType_1.StoreType.RestCall:
+                    // Eventually send an update but we probably ought to have a PK with which to associate the change.
+                    break;
+                case StoreType_1.StoreType.LocalStorage:
+                    // Here we just update the whole structure.
+                    this.SaveToLocalStorage();
+                    break;
+            }
+            return this;
+        }
+        CreateNecessaryRecords(idx) {
+            // Create additional records as necessary:
+            while (this.data.length - 1 < idx) {
+                this.data.push({});
+            }
+        }
+        SaveToLocalStorage() {
+            let json = JSON.stringify(this.data);
+            window.localStorage.setItem(this.storeName, json);
         }
     }
     exports.Store = Store;

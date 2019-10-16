@@ -459,7 +459,206 @@ there's hundreds of elements that must be bound, but honestly, I'm not going to
 worry about that!</p>
 <p>It's 10:30 PM, I'm calling it a night!</p>
 <h3>Day 4</h3>
-<p>&nbsp;</p>
+<p>So here we are with the task of implementing late binding.&nbsp; First, a 
+couple refactorings to the template builder to set up the <code>bindGuid</code> attribute 
+with a unique identifier which we'll use to determine the binding, again using 
+the <code>input</code> and <code>select</code> elements as examples:</p>
+<pre>public TextInput(item: Item, entityStore: StoreConfiguration) : TemplateBuilder {
+  let placeholder = item.field;
+  let guid = Guid.NewGuid();
+  this.html += &quot;&lt;input type='text' placeholder='&quot; + placeholder + &quot;' style='width:100%' storeIdx='{idx}' bindGuid='&quot; + guid.ToString() + &quot;'&gt;&quot;;
+  let el = new TemplateElement(item, guid);
+  this.elements.push(el);
+
+ return this;
+}
+
+public SelectBegin(item: Item) : TemplateBuilder {
+  let guid = Guid.NewGuid();
+  this.html += &quot;&lt;select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='&quot; + guid.ToString() + &quot;'&gt;&quot;;
+  let el = new TemplateElement(item, guid);
+  this.elements.push(el);
+
+  return this;
+}</pre>
+<p>These all get put into an array:</p>
+<pre>elements: TemplateElement[] = [];</pre>
+<p>which the binding process on the document being ready wires up:</p>
+<pre>jQuery(document).ready(() =&gt; {
+  // Bind the onchange events.
+  builder.elements.forEach(el =&gt; {
+    let jels = jQuery(&quot;[bindGuid = '&quot; + el.guid.ToString() + &quot;']&quot;);
+
+    jels.each((_, elx) =&gt; {
+      let jel = jQuery(elx);
+
+      jel.on('change', () =&gt; {
+        let recIdx = jel.attr(&quot;storeIdx&quot;);
+        console.log(&quot;change for &quot; + el.guid.ToString() + &quot; at index &quot; + recIdx + &quot; value of &quot; + jel.val());
+        taskStore.SetProperty(Number(recIdx), el.item.field, jel.val());
+      });
+    });
+  });
+});</pre>
+<p>Notice here we also use the record index to qualify the record.&nbsp; We do 
+this because with this code <code>jQuery("#template").html(task1 + task2 + task3);</code> there 
+are multiple elements with the same GUID because we've cloned the HTML template 
+three times.&nbsp; Probably not ideal but I'll live with that for now.&nbsp; In 
+the meantime, the store I've created for the tasks:</p>
+<pre>let taskStore = store.CreateStore("Tasks", StoreType.LocalStorage);</pre>
+<p>manages setting the property value for the record at the specified index, and 
+creating empty records as necessary:</p>
+<pre>public SetProperty(idx: number, property: string, value: any): StoreConfiguration {
+  // Create additional records as necessary:
+  while (this.data.length - 1 &lt; idx) {
+    this.data.push({});
+  }
+
+  this.data[idx][property] = value;
+  this.UpdatePhysicalStorage(this.data[idx], property, value);
+
+  return this;
+}
+
+private UpdatePhysicalStorage(record: any, property: string, value: string) : Store {
+  switch (this.storeType) {
+    case StoreType.InMemory:
+      // Do nothing.
+      break;
+
+    case StoreType.RestCall:
+      // Eventually send an update but we probably ought to have a PK with which to associate the change.
+      break;
+
+    case StoreType.LocalStorage:
+      // Here we just update the whole structure.
+      let json = JSON.stringify(this.data);
+      window.localStorage.setItem(this.name, json);
+      break;	
+  }
+
+  return this;
+}</pre>
+<p>At the moment this is implemented in the <code>StoreConfiguration</code> class.&nbsp; 
+Seems awkward yet it's the <code>StoreConfiguration</code> class that maintains the data, 
+whereas the <code>Store</code> class is really a &quot;store manager&quot;, so probably <code>Store</code> should be 
+called <code>StoreManager</code> and <code>StoreConfiguration</code> should be called <code>Store</code>!&nbsp; 
+Gotta love refactoring to make the names of things clearer.&nbsp; So from 
+hereon, that's what they'll be called.&nbsp; Rather a PITA to do without the 
+&quot;rename&quot; feature when working with C# code!</p>
+<p>After entering some values:</p>
+<p><img border="0" src="localstore2.png" width="554" height="138"></p>
+<p>we can see that these have been serialized to the local storage (inspecting 
+local storage in Chrome):</p>
+<p><img border="0" src="localstore1.png" width="795" height="260"></p>
+<p>Cool, however notice that record 0 does not have a status, as I didn't change 
+it from the default.&nbsp; What to do about that?&nbsp; This isn't an easy 
+problem because we have a disconnect between the number of template instances 
+we've created and the store data.&nbsp; So we need a mechanism to deal with that 
+and set defaults.&nbsp; The simplest answer is to brute force that right now.&nbsp; 
+At least it's explicit:</p>
+<pre>taskStore.SetProperty(0, &quot;Status&quot;, taskStates[0].text);
+taskStore.SetProperty(1, &quot;Status&quot;, taskStates[0].text);
+taskStore.SetProperty(2, &quot;Status&quot;, taskStates[0].text);</pre>
+<p>So now the task store is initialized with defaults:</p>
+<p><img border="0" src="localstore3.png" width="377" height="72"></p>
+<p>Ultimately this only pushed the problem into the &quot;ignored&quot; bucket, as it's 
+also dependent on the order of the status array.&nbsp; But no matter, let's push 
+on and now that we have something in the store, let's load the UI with the store 
+data!&nbsp; We also have the question of whether the store should be updated per keypress 
+or only when the <code>onchange</code> event fires, which occurs when the element loses 
+focus.&nbsp; Another &quot;ignore for now&quot; issue.&nbsp; Furthermore, we 
+have an excellent demonstration of &quot;don't implement code with side-effects!&quot; in 
+this function:</p>
+<pre>public SetProperty(idx: number, property: string, value: any): Store {
+  // Create additional records as necessary:
+  while (this.data.length - 1 &lt; idx) {
+    this.data.push({});
+  }
+
+  this.data[idx][property] = value;
+  this.UpdatePhysicalStorage(this.data[idx], property, value);
+
+  return this;
+}</pre>
+<p>As updating the physical storage in the case of the local storage obliterates 
+anything we've saved!&nbsp; I've created a bit of a conundrum -- if the records 
+don't exist in the local storage, I want to set the defaults, but if they do 
+exist, I don't want to set the defaults!&nbsp; So first, let's get rid of the 
+side-effect and move the updating of the physical storage to the onchange 
+handler:</p>
+<pre>jel.on('change', () =&gt; {
+  let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+  let field = el.item.field;
+  let val = jel.val();
+
+  console.log(&quot;change for &quot; + el.guid.ToString() + &quot; at index &quot; + recIdx + &quot; value of &quot; + jel.val());
+  taskStore.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+});</pre>
+<p>Next, this gets removed:</p>
+<pre>taskStore.SetProperty(0, &quot;Status&quot;, taskStates[0].text);
+taskStore.SetProperty(1, &quot;Status&quot;, taskStates[0].text);
+taskStore.SetProperty(2, &quot;Status&quot;, taskStates[0].text);</pre>
+<p>and instead is replaced with the ability to set a default value if it doesn't 
+exist, <i>after</i> the store has been loaded:</p>
+<pre>taskStore.Load()
+  .SetDefault(0, &quot;Status&quot;, taskStates[0].text)
+  .SetDefault(1, &quot;Status&quot;, taskStates[0].text)
+  .SetDefault(2, &quot;Status&quot;, taskStates[0].text)
+  .Save();</pre>
+<p>which is implemented as:</p>
+<pre>public SetDefault(idx: number, property: string, value: any): Store {
+  this.CreateNecessaryRecords(idx);
+
+  if (!this.data[idx][property]) {
+    this.data[idx][property] = value;
+  }
+
+  return this;
+}</pre>
+<p>And the <code>Save</code> function:</p>
+<pre>public Save(): Store {
+  switch (this.storeType) {
+    case StoreType.InMemory:
+      // TODO: throw exception?
+      break;
+
+    case StoreType.RestCall:
+      // Eventually send an update but we probably ought to have a PK with which to associate the change.
+      break;
+
+    case StoreType.LocalStorage:
+      // Here we just update the whole structure.
+      this.SaveToLocalStorage();
+      break;
+  }
+
+  return this;
+}</pre>
+<p>However, this has the annoying effect of potentially making REST calls to 
+save each record, even if nothing changed.&nbsp; Another &quot;ignore this for now&quot; 
+issue, but we'll definitely need to implement a &quot;field dirty&quot; flag!&nbsp; For 
+local storage, we have no choice, the entire structure must be saved, so for now 
+we're good to go.&nbsp; When there's no local storage, we get the desired 
+defaults:</p>
+<p><img border="0" src="localstore4.png" width="376" height="69"></p>
+<p>And when there is data, it's not obliterated by refreshing the page:</p>
+<p><img border="0" src="localstore5.png" width="435" height="72"></p>
+<p>Of course the UI doesn't update because we need the binding to work the other 
+way as well!&nbsp; A brute force implementation looks like this:</p>
+<pre>for (let i = 0; i &lt; 3; i++) {
+  for (let j = 0; j &lt; builder.elements.length; j++) {
+    let tel = builder.elements[j];
+    let guid = tel.guid.ToString();
+    let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${i}']`);
+    jel.val(taskStore.GetProperty(i, tel.item.field));
+  }
+}</pre>
+<p>Oooh, notice the 
+<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals">template literal</a>: <code>let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${i}']`);</code> -- I'll have to refactor the code and use that more often!</p>
+<p>This yields on page load:</p>
+<p><img border="0" src="localstore6.png" width="554" height="136"></p>
+<p>Cool, I can now create and save three tasks!</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
