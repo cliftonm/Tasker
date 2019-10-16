@@ -14,8 +14,23 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             this.html += "</div>";
             return this;
         }
+        TemplateDivBegin() {
+            this.html += `<div templateIdx='{idx}'>`;
+            return this;
+        }
+        TemplateDivEnd() {
+            this.html += "</div>";
+            return this;
+        }
         DivClear() {
             this.html += "<div style='clear:both'></div>";
+            return this;
+        }
+        Button(item) {
+            let guid = Guid_1.Guid.NewGuid();
+            this.html += `<button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
+            let el = new TemplateElement_1.TemplateElement(item, guid);
+            this.elements.push(el);
             return this;
         }
         TextInput(item) {
@@ -26,9 +41,9 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             this.elements.push(el);
             return this;
         }
-        Combobox(item, store) {
+        Combobox(item, storeManager) {
             this.SelectBegin(item);
-            store.GetStoreData(item.storeName).forEach(kv => {
+            storeManager.GetStoreData(item.storeName).forEach(kv => {
                 this.Option(kv.text);
             });
             this.SelectEnd();

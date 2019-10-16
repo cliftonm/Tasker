@@ -500,6 +500,9 @@ public SelectBegin(item: Item) : TemplateBuilder {
     });
   });
 });</pre>
+<p>There's a &quot;not good&quot; piece of code in the above snippet: 
+<code>taskStore.SetProperty</code>.&nbsp; The hard-wiring to the <code>taskStore</code> is refactored out 
+later so the binding is not specific to just the Task store!</p>
 <p>Notice here we also use the record index to qualify the record.&nbsp; We do 
 this because with this code <code>jQuery("#template").html(task1 + task2 + task3);</code> there 
 are multiple elements with the same GUID because we've cloned the HTML template 
@@ -741,7 +744,8 @@ index, it's now a dictionary key and is therefore used in the same way.&nbsp;
 Here we assume that on an initial load, the record index (from 0 to n-1) 
 corresponds 1:1 with the indices created by the template builder.&nbsp; One 
 other important change is that to save to local storage, we don't want to save 
-the key:value model, just the values:</p>
+the key:value model, just the values, as the keys (the row index lookup) is 
+completely arbitrary:</p>
 <pre>public GetRawData(): {}[] {
   return jQuery.map(this.data, value =&gt; value);
 }
@@ -750,9 +754,77 @@ private SaveToLocalStorage() {
   let json = JSON.stringify(this.GetRawData());
   window.localStorage.setItem(this.storeName, json);
 }</pre>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<h3>Deleting a Task</h3>
+<p>More refactoring!&nbsp; To make this work, each template that we're cloning 
+needs to be wrapped in its own div so we can remove it.&nbsp; Currently the HTML 
+looks like this:</p>
+<p><img border="0" src="delete1.png" width="399" height="326"></p>
+<p>Where the red box is one template instance.&nbsp; Instead, we want this (the 
+code change to make this work was trivial so I'm not going to show it):</p>
+<p><img border="0" src="delete2.png" width="403" height="211"></p>
+<p>Now let's reduce the width of the &quot;Why&quot; textbox and add a &quot;Delete&quot; button to 
+the template definition:</p>
+<pre>{
+  field: &quot;Why&quot;,
+  line: 1,
+  width: &quot;80%&quot;,			// &lt;== Changed
+  control: &quot;textbox&quot;,
+},
+{
+  text: &quot;Delete&quot;,		// &lt;== Added all this
+  line: 1,
+  width: &quot;20%&quot;,
+  control: &quot;button&quot;,
+}</pre>
+<p>And adding a Button method to the TemplateBuilder:</p>
+<pre>public Button(item: Item): TemplateBuilder {
+  let guid = Guid.NewGuid();
+  this.html += `&lt;button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}&gt;${item.text}&lt;/button&gt;`;
+  let el = new TemplateElement(item, guid);
+  this.elements.push(el);
+
+  return this;
+}</pre>
+<p>We get this:</p>
+<p><img border="0" src="delete3.png" width="583" height="136"></p>
+<p>Snazzy.&nbsp; Now we have to wire up the event!&nbsp; Uh, ok, how will this 
+work?&nbsp; Well first, we need to wire up the click event:</p>
+<pre>switch (el.item.control) {
+  case &quot;button&quot;:
+    jel.on('click', () =&gt; {
+      let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+      console.log(`click for ${el.guid.ToString()} at index ${recIdx}`);
+    });
+    break;
+
+  case &quot;textbox&quot;:
+  case &quot;combobox&quot;:
+    jel.on('change', () =&gt; {
+      let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+      let field = el.item.field;
+      let val = jel.val();
+
+      console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
+      storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+    });
+    break;
+}</pre>
+<p>And we can verify that it works by looking at the console log:</p>
+<p><img border="0" src="delete4.png" width="507" height="79"></p>
+<h3>Event Router</h3>
+<p>Given that this is all constructed by metadata, we need an event router which 
+can route events to arbitrary but predefined functions in the code.&nbsp; This 
+should be quite flexible but only if the code supports the behaviors we need.</p>
+<p>So let's add a route property to the template:</p>
+<pre>{
+  text: &quot;Delete&quot;,
+  line: 1,
+  width: &quot;20%&quot;,
+  control: &quot;button&quot;,
+  route: &quot;deleteRecord&quot;,
+}</pre>
+<p>Note that I don't call the route &quot;deleteTask&quot;, because deleting a record 
+should be handled in a very general purpose manner.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

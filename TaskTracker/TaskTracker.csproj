@@ -92,6 +92,7 @@
   <ItemGroup>
     <TypeScriptCompile Include="app\AppConfig.ts" />
     <TypeScriptCompile Include="app\AppMain.ts" />
+    <TypeScriptCompile Include="app\classes\EventRouter.ts" />
     <TypeScriptCompile Include="app\classes\Guid.ts" />
     <TypeScriptCompile Include="app\classes\StoreManager.ts" />
     <TypeScriptCompile Include="app\classes\TemplateElement.ts" />
@@ -114,6 +115,9 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app\classes\Store.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="app\interfaces\RouteHandlerMap.ts" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

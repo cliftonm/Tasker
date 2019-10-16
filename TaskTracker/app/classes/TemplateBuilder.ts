@@ -26,8 +26,29 @@ export class TemplateBuilder
         return this;
     }
 
+    public TemplateDivBegin(): TemplateBuilder {
+        this.html += `<div templateIdx='{idx}'>`;
+
+        return this;
+    }
+
+    public TemplateDivEnd(): TemplateBuilder {
+        this.html += "</div>";
+
+        return this;
+    }
+
     public DivClear() : TemplateBuilder {
         this.html += "<div style='clear:both'></div>";
+
+        return this;
+    }
+
+    public Button(item: Item): TemplateBuilder {
+        let guid = Guid.NewGuid();
+        this.html += `<button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
+        let el = new TemplateElement(item, guid);
+        this.elements.push(el);
 
         return this;
     }
@@ -42,10 +63,10 @@ export class TemplateBuilder
         return this;
     }
 
-    public Combobox(item: Item, store: StoreManager) : TemplateBuilder {
+    public Combobox(item: Item, storeManager: StoreManager) : TemplateBuilder {
         this.SelectBegin(item);
 
-        store.GetStoreData(item.storeName).forEach(kv => {
+        storeManager.GetStoreData(item.storeName).forEach(kv => {
             this.Option(kv.text);
         });
 

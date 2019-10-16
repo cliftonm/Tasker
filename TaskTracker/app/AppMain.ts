@@ -14,12 +14,18 @@ import { StoreManager } from "./classes/StoreManager"
 import { Items } from "./interfaces/Items"
 
 export class AppMain {
-    private CreateHtmlTemplate(template: Items, store: StoreManager) : TemplateBuilder {
+    private CreateHtmlTemplate(template: Items, storeManager: StoreManager, storeName: string) : TemplateBuilder {
         let builder = new TemplateBuilder();
         let line = -1;
         let firstLine = true;
 
+        builder.TemplateDivBegin();
+
         template.forEach(item => {
+            // Set the store to which the item is associated so we can update the property value for the correct
+            // store record when the UI changes or a button is clicked.
+            item.associatedStoreName = storeName;
+
             if (item.line != line) {
                 line = item.line;
 
@@ -38,7 +44,11 @@ export class AppMain {
                     break;
 
                 case "combobox":
-                    builder.Combobox(item, store);
+                    builder.Combobox(item, storeManager);
+                    break;
+
+                case "button":
+                    builder.Button(item);
                     break;
             }
 
@@ -46,6 +56,7 @@ export class AppMain {
         });
 
         builder.DivClear();
+        builder.TemplateDivEnd();
 
         return builder;
     }
@@ -76,8 +87,15 @@ export class AppMain {
             {
                 field: "Why",
                 line: 1,
-                width: "100%",
+                width: "80%",
                 control: "textbox",
+            },
+            {
+                text: "Delete",
+                line: 1,
+                width: "20%",
+                control: "button",
+                route: "deleteRecord",
             }
         ];
 
@@ -98,7 +116,7 @@ export class AppMain {
         storeManager.AddInMemoryStore("StatusList", taskStates);
         let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
 
-        let builder = this.CreateHtmlTemplate(template, storeManager);
+        let builder = this.CreateHtmlTemplate(template, storeManager, taskStore.storeName);
         let html = builder.html;
         let task1 = this.SetStoreIndex(html, 0);
         let task2 = this.SetStoreIndex(html, 1);
@@ -117,14 +135,26 @@ export class AppMain {
                 jels.each((_, elx) => {
                     let jel = jQuery(elx);
 
-                    jel.on('change', () => {
-                        let recIdx = Number(jel.attr("storeIdx"));
-                        let field = el.item.field;
-                        let val = jel.val();
+                    switch (el.item.control) {
+                        case "button":
+                            jel.on('click', () => {
+                                let recIdx = Number(jel.attr("storeIdx"));
+                                console.log(`click for ${el.guid.ToString()} at index ${recIdx}`);
+                            });
+                            break;
 
-                        console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
-                        taskStore.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
-                    });
+                        case "textbox":
+                        case "combobox":
+                            jel.on('change', () => {
+                                let recIdx = Number(jel.attr("storeIdx"));
+                                let field = el.item.field;
+                                let val = jel.val();
+
+                                console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
+                                storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+                            });
+                            break;
+                    }
                 });
             });
         });
@@ -136,17 +166,6 @@ export class AppMain {
             .Save();
 
         taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
-
-        /*
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < builder.elements.length; j++) {
-                let tel = builder.elements[j];
-                let guid = tel.guid.ToString();
-                let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${i}']`);
-                jel.val(taskStore.GetProperty(i, tel.item.field));
-            }
-        }
-        */
     }
 
     private UpdateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}): void {
