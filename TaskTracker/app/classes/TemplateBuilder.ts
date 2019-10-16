@@ -15,7 +15,7 @@ export class TemplateBuilder
     }
 
     public DivBegin(item: Item) : TemplateBuilder {
-        this.html += "<div style='float:left; width:" + item.width + "'>";
+        this.html += `<div style='float:left; width:${item.width}'>`;
 
         return this;
     }
@@ -35,7 +35,7 @@ export class TemplateBuilder
     public TextInput(item: Item) : TemplateBuilder {
         let placeholder = item.field;
         let guid = Guid.NewGuid();
-        this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+        this.html += `<input type='text' placeholder='${placeholder}' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 
@@ -56,7 +56,7 @@ export class TemplateBuilder
 
     public SelectBegin(item: Item) : TemplateBuilder {
         let guid = Guid.NewGuid();
-        this.html += "<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+        this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 
@@ -70,7 +70,7 @@ export class TemplateBuilder
     }
 
     public Option(text: string, value?: string) : TemplateBuilder {
-        this.html += "<option value='" + (value || text) + "'>" + text + "</option>";
+        this.html += `<option value='${(value || text)}'>${text}</option>`;
 
         return this;
     }

@@ -79,18 +79,20 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             let task2 = this.SetStoreIndex(html, 1);
             let task3 = this.SetStoreIndex(html, 2);
             jQuery("#template").html(task1 + task2 + task3);
+            taskStore.recordChangedCallback = (idx, record, store) => this.UpdateRecordView(builder, store, idx, record);
+            taskStore.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
             jQuery(document).ready(() => {
                 // Bind the onchange events.
                 builder.elements.forEach(el => {
                     let guid = el.guid.ToString();
-                    let jels = jQuery("[bindGuid = '" + guid + "']");
+                    let jels = jQuery(`[bindGuid = '${guid}']`);
                     jels.each((_, elx) => {
                         let jel = jQuery(elx);
                         jel.on('change', () => {
                             let recIdx = Number(jel.attr("storeIdx"));
                             let field = el.item.field;
                             let val = jel.val();
-                            console.log("change for " + el.guid.ToString() + " at index " + recIdx + " value of " + jel.val());
+                            console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
                             taskStore.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
                         });
                     });
@@ -101,6 +103,8 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 .SetDefault(1, "Status", taskStates[0].text)
                 .SetDefault(2, "Status", taskStates[0].text)
                 .Save();
+            taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
+            /*
             for (let i = 0; i < 3; i++) {
                 for (let j = 0; j < builder.elements.length; j++) {
                     let tel = builder.elements[j];
@@ -109,26 +113,42 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     jel.val(taskStore.GetProperty(i, tel.item.field));
                 }
             }
-            /*
-            let greeter = new Greeter();
-            greeter.greet();
-    
-            // This works:
-            // jQuery(document).ready(($) => {
-            $(document).ready(() => {
-                $('#inputbox').val('Fizbin');
-            });
             */
-            // This doesn't:
-            // $(document).ready(() => {
-            // unless we do:
-            // const $ = jQuery;
-            // and we have:
-            // <script type="text/javascript" src="lib/jquery.js"></script>
-            // in index.html
+        }
+        UpdateRecordView(builder, store, idx, record) {
+            for (let j = 0; j < builder.elements.length; j++) {
+                let tel = builder.elements[j];
+                let guid = tel.guid.ToString();
+                let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+                let val = record[tel.item.field];
+                jel.val(val);
+            }
+        }
+        UpdatePropertyView(builder, store, idx, field, value) {
+            let tel = builder.elements.find(e => e.item.field == field);
+            let guid = tel.guid.ToString();
+            let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+            jel.val(value);
         }
     }
     exports.AppMain = AppMain;
     ;
 });
+/*
+let greeter = new Greeter();
+greeter.greet();
+
+// This works:
+// jQuery(document).ready(($) => {
+$(document).ready(() => {
+    $('#inputbox').val('Fizbin');
+});
+*/
+// This doesn't:
+// $(document).ready(() => {
+// unless we do:
+// const $ = jQuery;
+// and we have:
+// <script type="text/javascript" src="lib/jquery.js"></script>
+// in index.html
 //# sourceMappingURL=AppMain.js.map

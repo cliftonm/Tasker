@@ -15,7 +15,7 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
         AddInMemoryStore(key, data) {
             let store = new Store_1.Store();
             store.storeType = StoreType_1.StoreType.InMemory;
-            store.data = data;
+            store.SetData(data);
             this.stores[key] = store;
             return store;
         }
@@ -25,7 +25,7 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
         // Eventually will support local stores, REST calls, caching, computational stores, and using other 
         // existing objects as stores.
         GetStoreData(key) {
-            return this.stores[key].data;
+            return this.stores[key].GetRawData();
         }
     }
     exports.StoreManager = StoreManager;

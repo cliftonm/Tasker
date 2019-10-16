@@ -8,7 +8,7 @@
 
 <body>
 
-<h3>Day 1</h3>
+<h2>Day 1</h2>
 <p>General Concepts</p>
 <p>It becomes clear looking at the layout that it is really more of a template 
 for my own requirements and that the actual &quot;task item bar&quot; on the left as well 
@@ -41,7 +41,7 @@ This approach also facilitates development of the UI without needing a server
 and keeps all the UI code on the client rather than spreading it across both 
 JavaScript and C# on the back-end.&nbsp; And no, I'm not interested in using 
 node.js on the back-end.</p>
-<h3>Day 2</h3>
+<h2>Day 2</h2>
 <p>We should be able to have a fairly simple structures.&nbsp; Let's define a 
 few, all of which are of course customizable but we'll define some useful 
 defaults.</p>
@@ -133,7 +133,7 @@ Where they render is determined by other layout information.</p>
 	<li>Sub-tasks (easy to do)</li>
 	<li>Task dependencies</li>
 </ul>
-<h3>Day 3</h3>
+<h2>Day 3</h2>
 <p>So, the more I think about this, the more I realize that this is really a 
 very generalized entity creator/editor with not quite dynamic relationships, 
 much as I've written about in my
@@ -458,7 +458,7 @@ for the attribute value.&nbsp; Who knows what that will do to performance if
 there's hundreds of elements that must be bound, but honestly, I'm not going to 
 worry about that!</p>
 <p>It's 10:30 PM, I'm calling it a night!</p>
-<h3>Day 4</h3>
+<h2>Day 4</h2>
 <p>So here we are with the task of implementing late binding.&nbsp; First, a 
 couple refactorings to the template builder to set up the <code>bindGuid</code> attribute 
 with a unique identifier which we'll use to determine the binding, again using 
@@ -658,9 +658,107 @@ way as well!&nbsp; A brute force implementation looks like this:</p>
 <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals">template literal</a>: <code>let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${i}']`);</code> -- I'll have to refactor the code and use that more often!</p>
 <p>This yields on page load:</p>
 <p><img border="0" src="localstore6.png" width="554" height="136"></p>
-<p>Cool, I can now create and save three tasks!&nbsp; Calling it quits, back 
+<p>Cool, I can now create and save three tasks!&nbsp; Calling it quits for Day 4, back 
 soon to work on reverse binding and better handling of defaults as well as 
 getting rid of this silly &quot;3 tasks&quot; thing and making tasks more dynamic.</p>
+<h2>Day 5</h2>
+<p>So that brute force approach above needs to be fixed, but I don't want the 
+store to know anything about how the records fields map to UI elements, so I 
+think what I'd like to do is provide callbacks for record and property level 
+updates using the good ol' Inversion of Control principle.&nbsp; Possibly 
+something like this should be done for the different store types as well so the 
+application can override behavior per store.&nbsp; Later.</p>
+<p>To the Store class I'll add a couple callbacks with default &quot;do nothing&quot; 
+handlers:</p>
+<pre>recordChangedCallback: (idx: number, record: any, store: Store) =&gt; void = () =&gt; { }; 
+propertyChangedCallback: (idx: number, field: string, value: any, store: Store) =&gt; void = () =&gt; { };</pre>
+<p>and in the <code>Load</code> function, we'll call the <code>recordChangedCallback</code> for every 
+record loaded (probably not what we want to do in the long run!):</p>
+<pre>this.data.forEach((record, idx) =&gt; this.recordChangedCallback(idx, record, this));</pre>
+<p>This gets wired in to the taskStore -- notice it's implemented so that it 
+passes in the template builder, which is sort of like a view, so we can acquire 
+all the field definitions in the &quot;view&quot; template:</p>
+<pre>taskStore.recordChangedCallback = (idx, record, store) =&gt; this.UpdateRecordView(builder, store, idx, record);</pre>
+<p>and the handler looks a lot like the brute force approach above.</p>
+<pre>private UpdateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: any): void {
+  for (let j = 0; j &lt; builder.elements.length; j++) {
+    let tel = builder.elements[j];
+    let guid = tel.guid.ToString();
+    let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+    let val = store.GetProperty(idx, tel.item.field);
+    jel.val(val);
+  }
+}</pre>
+<p>This is a fairly generic approach.&nbsp; Let's do something similar for 
+changing just a property and testing that by setting a record's property value 
+via the store:</p>
+<pre>public SetProperty(idx: number, field: string, value: any): Store {
+  this.CreateNecessaryRecords(idx);
+  this.data[idx][field] = value;
+  this.propertyChangedCallback(idx, field, value, this);  // &lt;== this got added.
+
+  return this;
+}</pre>
+<p>Wired up like this:</p>
+<pre>taskStore.propertyChangedCallback = (idx, field, value, store) =&gt; this.UpdatePropertyView(builder, store, idx, field, value);</pre>
+<p>And implemented like this:</p>
+<pre>private UpdatePropertyView(builder: TemplateBuilder, store: Store, idx: number, field: string, value: any): void {
+  let tel = builder.elements.find(e =&gt; e.item.field == field);
+  let guid = tel.guid.ToString();
+  let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+  jel.val(value);
+}</pre>
+<p>Now we can set a property for a record in a store and it's reflected in the 
+UI:</p>
+<pre>taskStore.SetProperty(1, &quot;Task&quot;, `Random Task #${Math.floor(Math.random() * 100)}`);</pre>
+<p><img border="0" src="setProperty1.png" width="499" height="137"></p>
+<p>So let's look at adding and deleting tasks.&nbsp; Some of you are either 
+laughing or groaning because I've backed myself into another corner with this 
+&quot;record index&quot; concept, which makes deleting and inserting tasks a total 
+nightmare because the <code>storeIdx</code> will go out of sync with the record it's 
+managing.&nbsp; So it's time to throw out this whole concept in favor of a 
+smarter way to handle records.&nbsp; At the moment I've declared the store's 
+data as an array of name:value pairs:</p>
+<pre>data: {}[] = [];</pre>
+<p>but it's time for something smarter -- a way to uniquely identify a record 
+without using a row index, and a way to get that unique identifier associated 
+with the UI elements.&nbsp; The irony here is that a numeric index is a fine way 
+to do this, we just need to map the index to the physical record rather than 
+assume a 1:1 correlation.&nbsp; We also no longer need the 
+<code>CreateNecessaryRecords</code> method but instead we create only this 
+single stub key:value object if the &quot;index&quot; is missing in the index-record map.</p>
+<p>So instead, I now have:</p>
+<pre>private data: RowRecordMap = {};</pre>
+<p>It's private because I don't want anyone touching this structure, which is 
+declared like this:</p>
+<pre>export interface RowRecordMap {
+  [key: number]: {}
+}</pre>
+<p>The most significant refactoring involved the record change callback:</p>
+<pre>jQuery.each(this.data, (k, v) =&gt; this.recordChangedCallback(k, v, this));</pre>
+<p>Pretty much nothing else changes because instead of the index being an array 
+index, it's now a dictionary key and is therefore used in the same way.&nbsp; 
+Here we assume that on an initial load, the record index (from 0 to n-1) 
+corresponds 1:1 with the indices created by the template builder.&nbsp; One 
+other important change is that to save to local storage, we don't want to save 
+the key:value model, just the values:</p>
+<pre>public GetRawData(): {}[] {
+  return jQuery.map(this.data, value =&gt; value);
+}
+
+private SaveToLocalStorage() {
+  let json = JSON.stringify(this.GetRawData());
+  window.localStorage.setItem(this.storeName, json);
+}</pre>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

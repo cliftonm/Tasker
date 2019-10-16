@@ -92,7 +92,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="app\AppConfig.ts" />
     <TypeScriptCompile Include="app\AppMain.ts" />
-    <TypeScriptCompile Include="app\classes\Greeter.ts" />
     <TypeScriptCompile Include="app\classes\Guid.ts" />
     <TypeScriptCompile Include="app\classes\StoreManager.ts" />
     <TypeScriptCompile Include="app\classes\TemplateElement.ts" />
@@ -100,6 +99,7 @@
     <TypeScriptCompile Include="app\interfaces\Item.ts" />
     <TypeScriptCompile Include="app\interfaces\Items.ts" />
     <TypeScriptCompile Include="app\interfaces\KeyStoreMap.ts" />
+    <TypeScriptCompile Include="app\interfaces\RowRecordMap.ts" />
     <TypeScriptCompile Include="modules\require.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
   </ItemGroup>

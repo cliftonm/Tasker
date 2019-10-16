@@ -3,20 +3,31 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     Object.defineProperty(exports, "__esModule", { value: true });
     class Store {
         constructor() {
+            this.data = {};
+            this.recordChangedCallback = () => { };
+            this.propertyChangedCallback = () => { };
             this.storeType = StoreType_1.StoreType.Undefined;
-            this.data = [];
         }
-        SetProperty(idx, property, value) {
-            this.CreateNecessaryRecords(idx);
-            this.data[idx][property] = value;
+        GetRawData() {
+            return jQuery.map(this.data, value => value);
+        }
+        SetData(records) {
+            this.data = {};
+            records.forEach((record, idx) => this.data[idx] = record);
+        }
+        SetProperty(idx, field, value) {
+            this.CreateRecordIfMissing(idx);
+            this.data[idx][field] = value;
+            this.propertyChangedCallback(idx, field, value, this);
             return this;
         }
         GetProperty(idx, property) {
-            this.CreateNecessaryRecords(idx);
+            this.CreateRecordIfMissing(idx);
             let value = this.data[idx][property];
             return value;
         }
         Load() {
+            this.data = {};
             switch (this.storeType) {
                 case StoreType_1.StoreType.InMemory:
                     // TODO: Probably should throw an exception -- how do you load a store that already is in memory???
@@ -27,10 +38,20 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                 case StoreType_1.StoreType.LocalStorage:
                     let json = window.localStorage.getItem(this.storeName);
                     if (json) {
-                        this.data = JSON.parse(json);
+                        try {
+                            // Create indices that map records to a "key", in this case simply the initial row number.
+                            let records = JSON.parse(json);
+                            records.forEach((record, idx) => this.data[idx] = record);
+                        }
+                        catch (ex) {
+                            console.log(ex);
+                            // Storage is corrupt, eek, we're going to remove it!
+                            window.localStorage.removeItem(this.storeName);
+                        }
                     }
                     break;
             }
+            jQuery.each(this.data, (k, v) => this.recordChangedCallback(k, v, this));
             return this;
         }
         Save() {
@@ -49,10 +70,8 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             return this;
         }
         SetDefault(idx, property, value) {
-            this.CreateNecessaryRecords(idx);
-            if (!this.data[idx][property]) {
-                this.data[idx][property] = value;
-            }
+            this.CreateRecordIfMissing(idx);
+            this.data[idx][property] = value;
             return this;
         }
         UpdatePhysicalStorage(idx, property, value) {
@@ -72,14 +91,13 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return this;
         }
-        CreateNecessaryRecords(idx) {
-            // Create additional records as necessary:
-            while (this.data.length - 1 < idx) {
-                this.data.push({});
+        CreateRecordIfMissing(idx) {
+            if (!this.data[idx]) {
+                this.data[idx] = {};
             }
         }
         SaveToLocalStorage() {
-            let json = JSON.stringify(this.data);
+            let json = JSON.stringify(this.GetRawData());
             window.localStorage.setItem(this.storeName, json);
         }
     }

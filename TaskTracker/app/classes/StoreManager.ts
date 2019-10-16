@@ -14,10 +14,10 @@ export class StoreManager {
         return store;
     }
 
-    public AddInMemoryStore(key: string, data: object[]): Store {
+    public AddInMemoryStore(key: string, data: {}[]): Store {
         let store = new Store();
         store.storeType = StoreType.InMemory;
-        store.data = data;
+        store.SetData(data);
         this.stores[key] = store;
 
         return store;
@@ -29,7 +29,7 @@ export class StoreManager {
 
     // Eventually will support local stores, REST calls, caching, computational stores, and using other 
     // existing objects as stores.
-    public GetStoreData(key: string) : any {
-        return this.stores[key].data;
+    public GetStoreData(key: string): any {
+        return this.stores[key].GetRawData();
     }
 }

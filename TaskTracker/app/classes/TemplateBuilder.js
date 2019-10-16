@@ -7,7 +7,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             this.html = "";
         }
         DivBegin(item) {
-            this.html += "<div style='float:left; width:" + item.width + "'>";
+            this.html += `<div style='float:left; width:${item.width}'>`;
             return this;
         }
         DivEnd() {
@@ -21,7 +21,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
         TextInput(item) {
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
-            this.html += "<input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+            this.html += `<input type='text' placeholder='${placeholder}' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;
@@ -36,7 +36,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
         }
         SelectBegin(item) {
             let guid = Guid_1.Guid.NewGuid();
-            this.html += "<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'>";
+            this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;
@@ -46,7 +46,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             return this;
         }
         Option(text, value) {
-            this.html += "<option value='" + (value || text) + "'>" + text + "</option>";
+            this.html += `<option value='${(value || text)}'>${text}</option>`;
             return this;
         }
     }

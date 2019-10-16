@@ -105,11 +105,14 @@ export class AppMain {
         let task3 = this.SetStoreIndex(html, 2);
         jQuery("#template").html(task1 + task2 + task3);
 
+        taskStore.recordChangedCallback = (idx, record, store) => this.UpdateRecordView(builder, store, idx, record);
+        taskStore.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
+
         jQuery(document).ready(() => {
             // Bind the onchange events.
             builder.elements.forEach(el => {
                 let guid = el.guid.ToString();
-                let jels = jQuery("[bindGuid = '" + guid + "']");
+                let jels = jQuery(`[bindGuid = '${guid}']`);
 
                 jels.each((_, elx) => {
                     let jel = jQuery(elx);
@@ -119,7 +122,7 @@ export class AppMain {
                         let field = el.item.field;
                         let val = jel.val();
 
-                        console.log("change for " + el.guid.ToString() + " at index " + recIdx + " value of " + jel.val());
+                        console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
                         taskStore.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
                     });
                 });
@@ -132,6 +135,9 @@ export class AppMain {
             .SetDefault(2, "Status", taskStates[0].text)
             .Save();
 
+        taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
+
+        /*
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < builder.elements.length; j++) {
                 let tel = builder.elements[j];
@@ -140,6 +146,30 @@ export class AppMain {
                 jel.val(taskStore.GetProperty(i, tel.item.field));
             }
         }
+        */
+    }
+
+    private UpdateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}): void {
+        for (let j = 0; j < builder.elements.length; j++) {
+            let tel = builder.elements[j];
+            let guid = tel.guid.ToString();
+            let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+            let val = record[tel.item.field];
+            jel.val(val);
+        }
+    }
+
+    private UpdatePropertyView(builder: TemplateBuilder, store: Store, idx: number, field: string, value: any): void {
+        let tel = builder.elements.find(e => e.item.field == field);
+        let guid = tel.guid.ToString();
+        let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+        jel.val(value);
+    }
+};
+
+
+
+
 
         /*
         let greeter = new Greeter();
@@ -160,5 +190,3 @@ export class AppMain {
         // <script type="text/javascript" src="lib/jquery.js"></script>
         // in index.html
 
-    }
-};
