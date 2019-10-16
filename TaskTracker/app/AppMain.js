@@ -105,7 +105,6 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 for (let j = 0; j < builder.elements.length; j++) {
                     let tel = builder.elements[j];
                     let guid = tel.guid.ToString();
-                    // let jel = jQuery("[bindGuid = '" + guid + "'][storeIdx = '" + i + "']");
                     let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${i}']`);
                     jel.val(taskStore.GetProperty(i, tel.item.field));
                 }
