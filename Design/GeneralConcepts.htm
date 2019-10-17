@@ -976,6 +976,64 @@ days to accomplish here is probably a 30 minute exercise in Vue.&nbsp; However,
 the point here is that I'm actually building the framework and the application 
 together, and quite frankly, having a lot of fun doing it!&nbsp; So that's all 
 that counts! End of Day 5, and I can finally create, edit, and delete tasks!</p>
+<h2>Day 6</h2>
+<p>So this is one of those &quot;rubber meets the road&quot; moments.&nbsp; I'm going to 
+add a couple relationships.&nbsp; Software is not monogamous!&nbsp; I'd like to 
+add contacts and notes that are child entities of the task.&nbsp; My &quot;tasks&quot; are 
+usually integration level tasks, like &quot;add this credit card processor&quot;, which 
+means that I have a bunch of people that I'm talking to, and I want to be able 
+to find them as related to the task.&nbsp; Same with notes, I want to make notes 
+of conversations, discoveries and so forth related to the task.&nbsp; Why this 
+will be a &quot;rubber meets the road&quot; moment is because I currently have no 
+mechanism for identifying and relating together two entities, such as a task and 
+a note.&nbsp; It'll also mean dealing with some hardcoded tags, like here:</p>
+<pre>if (insert) {
+  jQuery(&quot;#template&quot;).prepend(template);
+} else {
+  jQuery(&quot;#template&quot;).append(template);
+}</pre>
+<p>The function needs to be general purpose and therefore the div associated 
+with the entity has to be figured out, not hard-coded.&nbsp; So this makes more 
+sense:</p>
+<pre>if (insert) {
+  jQuery(builder.templateContainerID).prepend(template);
+} else {
+  jQuery(builder.templateContainerID).append(template);
+}</pre>
+<p>Also, the store event callbacks are general purpose, so we can do this:</p>
+<pre>this.AssignStoreCallbacks(taskStore, taskBuilder);
+this.AssignStoreCallbacks(noteStore, noteBuilder);
+...
+private AssignStoreCallbacks(store: Store, builder: TemplateBuilder): void {
+  store.recordCreatedCallback = (idx, record, insert, store) =&gt; this.CreateRecordView(builder, store, idx, record, insert);
+  store.propertyChangedCallback = (idx, field, value, store) =&gt; this.UpdatePropertyView(builder, store, idx, field, value);
+  store.recordDeletedCallback = (idx, store) =&gt; {
+    this.DeleteRecordView(builder, store, idx);
+    store.Save();
+  }
+}</pre>
+<p>This also needs to be fixed:</p>
+<pre>private DeleteRecordView(builder: TemplateBuilder, store: Store, idx: number): void {
+  jQuery(`[templateIdx = '${idx}']`).remove();
+}</pre>
+<p>because the index number is not sufficient to determine the associated entity 
+unless it's also qualified by the container name:</p>
+<pre>private DeleteRecordView(builder: TemplateBuilder, store: Store, idx: number): void {
+  let path = `${builder.templateContainerID} &gt; [templateIdx='${idx}']`;
+  jQuery(path).remove();
+}</pre>
+<p>But of course this assumes that the UI will have unique container names.</p>
+<p>Which leads us to the HTML that defines the layout -- templates must be in 
+containers:</p>
+<pre>&lt;div class=&quot;entitySeparator&quot;&gt;
+  &lt;button type=&quot;button&quot; id=&quot;createTask&quot; class=&quot;createButton&quot;&gt;Create Task&lt;/button&gt;
+  &lt;div id=&quot;taskTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;entitySeparator&quot;&gt;
+  &lt;button type=&quot;button&quot; id=&quot;createNote&quot; class=&quot;createButton&quot;&gt;Create Note&lt;/button&gt;
+  &lt;div id=&quot;noteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;</pre>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

@@ -8,10 +8,12 @@ export class TemplateBuilder
 {
     html: string;
     elements: TemplateElement[] = [];
+    templateContainerID: string;     // the #something tag name to identify the template container.
 
-    constructor()
+    constructor(templateContainerID : string)
     {
         this.html = "";
+        this.templateContainerID = templateContainerID;
     }
 
     public DivBegin(item: Item) : TemplateBuilder {
@@ -57,6 +59,16 @@ export class TemplateBuilder
         let placeholder = item.field;
         let guid = Guid.NewGuid();
         this.html += `<input type='text' placeholder='${placeholder}' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
+        let el = new TemplateElement(item, guid);
+        this.elements.push(el);
+
+        return this;
+    }
+
+    public TextArea(item: Item): TemplateBuilder {
+        let placeholder = item.field;
+        let guid = Guid.NewGuid();
+        this.html += `<textarea placeholder='${placeholder}' style='width:100%; height:${item.height}' storeIdx='{idx}' bindGuid='${guid.ToString()}'></textarea>`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 

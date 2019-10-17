@@ -2,6 +2,7 @@
     line: number;
     width: string;
     control: string;
+    height?: string;
     text?: string;
     field?: string;
     storeName?: string;                 // for list of things like used for comboboxes

@@ -19,8 +19,8 @@ var storeManager: StoreManager;
 var eventRouter: EventRouter;
 
 export class AppMain {
-    private CreateHtmlTemplate(template: Items, storeManager: StoreManager, storeName: string) : TemplateBuilder {
-        let builder = new TemplateBuilder();
+    private CreateHtmlTemplate(templateContainerID: string, template: Items, storeManager: StoreManager, storeName: string): TemplateBuilder {
+        let builder = new TemplateBuilder(templateContainerID);
         let line = -1;
         let firstLine = true;
 
@@ -46,6 +46,10 @@ export class AppMain {
             switch (item.control) {
                 case "textbox":
                     builder.TextInput(item);
+                    break;
+
+                case "textarea":
+                    builder.TextArea(item);
                     break;
 
                 case "combobox":
@@ -74,7 +78,14 @@ export class AppMain {
     }
 
     public run() {
-        let template = [     // Task Template
+        let relationships = [
+            {
+                parent: "Tasks",
+                children: ["Contacts", "Notes"]
+            }
+        ];
+
+        let taskTemplate = [
             {
                 field: "Task",
                 line: 0,
@@ -104,6 +115,23 @@ export class AppMain {
             }
         ];
 
+        let noteTemplate = [
+            {
+                field: "Note",
+                line: 0,
+                width: "80%",
+                height: "100px",
+                control: "textarea"
+            },
+            {
+                text: "Delete",
+                line: 0,
+                width: "20%",
+                control: "button",
+                route: "DeleteRecord",
+            }
+        ];
+
         let taskStates = [
             { text: 'TODO'},
             { text: 'Working On' },
@@ -120,12 +148,14 @@ export class AppMain {
         storeManager = new StoreManager();
         storeManager.AddInMemoryStore("StatusList", taskStates);
         let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
+        let noteStore = storeManager.CreateStore("Notes", StoreType.LocalStorage);
 
         eventRouter = new EventRouter();
         eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
         eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
 
-        let builder = this.CreateHtmlTemplate(template, storeManager, taskStore.storeName);
+        let taskBuilder = this.CreateHtmlTemplate("#taskTemplateContainer", taskTemplate, storeManager, taskStore.storeName);
+        let noteBuilder = this.CreateHtmlTemplate("#noteTemplateContainer", noteTemplate, storeManager, noteStore.storeName);
 
         /*
         let task1 = this.SetStoreIndex(html, 0);
@@ -134,12 +164,8 @@ export class AppMain {
         jQuery("#template").html(task1 + task2 + task3);
         */
 
-        taskStore.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
-        taskStore.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
-        taskStore.recordDeletedCallback = (idx, store) => {
-            this.DeleteRecordView(builder, store, idx);
-            store.Save();
-        }
+        this.AssignStoreCallbacks(taskStore, taskBuilder);
+        this.AssignStoreCallbacks(noteStore, noteBuilder);
 
         jQuery(document).ready(() => {
             jQuery("#createTask").on('click', () => {
@@ -148,41 +174,16 @@ export class AppMain {
                 taskStore.Save();
             });
 
-            // Bind the onchange events.
-            builder.elements.forEach(el => {
-                let guid = el.guid.ToString();
-                let jels = jQuery(`[bindGuid = '${guid}']`);
-                let assocStoreName = el.item.associatedStoreName;
-                let store = storeManager.GetStore(assocStoreName);
-
-                jels.each((_, elx) => {
-                    let jel = jQuery(elx);
-                    let recIdx = Number(jel.attr("storeIdx"));
-
-                    switch (el.item.control) {
-                        case "button":
-                            jel.on('click', () => {
-                                console.log(`click for ${guid} at index ${recIdx}`);
-                                eventRouter.Route(el.item.route, store, recIdx);
-                            });
-                            break;
-
-                        case "textbox":
-                        case "combobox":
-                            jel.on('change', () => {
-                                let field = el.item.field;
-                                let val = jel.val();
-
-                                console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
-                                storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
-                            });
-                            break;
-                    }
-                });
+            jQuery("#createNote").on('click', () => {
+                let idx = eventRouter.Route("CreateRecord", noteStore, 0);   // insert at position 0
+                noteStore.Save();
             });
+
+            this.BindElementEvents(taskBuilder, _ => true);
         });
 
         taskStore.Load();
+        noteStore.Load();
         /*
             .SetDefault(0, "Status", taskStates[0].text)
             .SetDefault(1, "Status", taskStates[0].text)
@@ -193,17 +194,26 @@ export class AppMain {
         // taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
     }
 
+    private AssignStoreCallbacks(store: Store, builder: TemplateBuilder): void {
+        store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
+        store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
+        store.recordDeletedCallback = (idx, store) => {
+            this.DeleteRecordView(builder, store, idx);
+            store.Save();
+        }
+    }
+
     private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}, insert: boolean): void {
         let html = builder.html;
         let template = this.SetStoreIndex(html, idx);
 
         if (insert) {
-            jQuery("#template").prepend(template);
+            jQuery(builder.templateContainerID).prepend(template);
         } else {
-            jQuery("#template").append(template);
+            jQuery(builder.templateContainerID).append(template);
         }
 
-        this.BindSpecificRecord(builder, idx);
+        this.BindElementEvents(builder, recIdx => recIdx == idx);
 
         for (let j = 0; j < builder.elements.length; j++) {
             let tel = builder.elements[j];
@@ -222,11 +232,11 @@ export class AppMain {
     }
 
     private DeleteRecordView(builder: TemplateBuilder, store: Store, idx: number): void {
-        jQuery(`[templateIdx = '${idx}']`).remove();
+        let path = `${builder.templateContainerID} > [templateIdx='${idx}']`;
+        jQuery(path).remove();
     }
 
-    // TODO: This is almost exactly identical to the document.ready process except for the "if (recIdx == idx)".  Refactor for all the common code.
-    private BindSpecificRecord(builder: TemplateBuilder, idx: number): void {
+    private BindElementEvents(builder: TemplateBuilder, onCondition: (recIdx: number) => boolean): void {
         builder.elements.forEach(el => {
             let guid = el.guid.ToString();
             let jels = jQuery(`[bindGuid = '${guid}']`);
@@ -237,7 +247,7 @@ export class AppMain {
                 let jel = jQuery(elx);
                 let recIdx = Number(jel.attr("storeIdx"));
 
-                if (recIdx == idx) {
+                if (onCondition(recIdx)) {
                     switch (el.item.control) {
                         case "button":
                             jel.on('click', () => {
@@ -246,6 +256,7 @@ export class AppMain {
                             });
                             break;
 
+                        case "textarea":
                         case "textbox":
                         case "combobox":
                             jel.on('change', () => {

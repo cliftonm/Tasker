@@ -2,9 +2,10 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class TemplateBuilder {
-        constructor() {
+        constructor(templateContainerID) {
             this.elements = [];
             this.html = "";
+            this.templateContainerID = templateContainerID;
         }
         DivBegin(item) {
             this.html += `<div style='float:left; width:${item.width}'>`;
@@ -37,6 +38,14 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
             this.html += `<input type='text' placeholder='${placeholder}' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
+            let el = new TemplateElement_1.TemplateElement(item, guid);
+            this.elements.push(el);
+            return this;
+        }
+        TextArea(item) {
+            let placeholder = item.field;
+            let guid = Guid_1.Guid.NewGuid();
+            this.html += `<textarea placeholder='${placeholder}' style='width:100%; height:${item.height}' storeIdx='{idx}' bindGuid='${guid.ToString()}'></textarea>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;
