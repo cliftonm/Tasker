@@ -4,9 +4,14 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     class Store {
         constructor() {
             this.data = {};
-            this.recordChangedCallback = () => { };
+            this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
+            this.recordDeletedCallback = () => { };
             this.storeType = StoreType_1.StoreType.Undefined;
+        }
+        Records() {
+            // ECMA 5+ must use "keys", ECMA 7+ can use "entries"
+            return Object.keys(this.data).length;
         }
         GetRawData() {
             return jQuery.map(this.data, value => value);
@@ -25,6 +30,19 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             this.CreateRecordIfMissing(idx);
             let value = this.data[idx][property];
             return value;
+        }
+        CreateRecord(insert = false) {
+            let nextIdx = 0;
+            if (this.Records() > 0) {
+                nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
+            }
+            this.data[nextIdx] = {};
+            this.recordCreatedCallback(nextIdx, {}, insert, this);
+            return nextIdx;
+        }
+        DeleteRecord(idx) {
+            delete this.data[idx];
+            this.recordDeletedCallback(idx, this);
         }
         Load() {
             this.data = {};
@@ -51,7 +69,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     }
                     break;
             }
-            jQuery.each(this.data, (k, v) => this.recordChangedCallback(k, v, this));
+            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
             return this;
         }
         Save() {
@@ -71,7 +89,9 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
         }
         SetDefault(idx, property, value) {
             this.CreateRecordIfMissing(idx);
-            this.data[idx][property] = value;
+            if (!this.data[idx][property]) {
+                this.data[idx][property] = value;
+            }
             return this;
         }
         UpdatePhysicalStorage(idx, property, value) {

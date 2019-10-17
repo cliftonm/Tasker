@@ -821,11 +821,161 @@ should be quite flexible but only if the code supports the behaviors we need.</p
   line: 1,
   width: &quot;20%&quot;,
   control: &quot;button&quot;,
-  route: &quot;deleteRecord&quot;,
+  route: &quot;DeleteRecord&quot;,
 }</pre>
 <p>Note that I don't call the route &quot;deleteTask&quot;, because deleting a record 
-should be handled in a very general purpose manner.</p>
-<p>&nbsp;</p>
+should be handled in a very general purpose manner.&nbsp; The event router start 
+of very simple:</p>
+<pre>import { Store } from &quot;../classes/Store&quot;
+import { RouteHandlerMap } from &quot;../interfaces/RouteHandlerMap&quot;
+
+export class EventRouter {
+  routes: RouteHandlerMap = {};
+
+  public AddRoute(routeName: string, fnc: (store: Store, idx: number) =&gt; void) {
+    this.routes[routeName] = fnc;
+  }
+
+  public Route(routeName: string, store: Store, idx: number): void {
+    this.routes[routeName](store, idx);
+  }
+}</pre>
+<p>The delete record handler is initialized:</p>
+<pre>let eventRouter = new EventRouter();
+eventRouter.AddRoute(&quot;DeleteRecord&quot;, (store, idx) =&gt; store.DeleteRecord(idx));</pre>
+<p>A callback and the DeleteRecord function is added to the store:</p>
+<pre>recordDeletedCallback: (idx: number, store: Store) =&gt; void = () =&gt; { }; 
+...
+public DeleteRecord(idx: number) : void {
+  delete this.data[idx];
+  this.recordDeletedCallback(idx, this);
+}</pre>
+<p>The delete record callback is initialized:</p>
+<pre>taskStore.recordDeletedCallback = (idx, store) =&gt; {
+  this.DeleteRecordView(builder, store, idx);
+  store.Save();
+}</pre>
+<p>The router is invoked when the button is clicked:</p>
+<pre>case &quot;button&quot;:
+  jel.on('click', () =&gt; {
+    let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+    console.log(`click for ${el.guid.ToString()} at index ${recIdx}`);
+    eventRouter.Route(el.item.route, storeManager.GetStore(el.item.associatedStoreName), recIdx);
+  });
+break;</pre>
+<p>and the div wrapping the record is removed:</p>
+<pre>private DeleteRecordView(builder: TemplateBuilder, store: Store, idx: number): void {
+  jQuery(`[templateIdx = '${idx}']`).remove();
+}</pre>
+<p>Ignoring:</p>
+<ul>
+	<li>The &quot;templateIdx&quot; attribute name for now, which obviously has to be 
+	specified somehow to support more than one template entity type.</li>
+	<li>That this removes the entire div as opposed to, say, clearing the fields 
+	or removing a row from a grid, this works nicely.&nbsp; </li>
+<li>That the Save call doesn't have a clue as to how to send a REST call to 
+delete the specific record.</li>
+</ul>
+<p>We can mosey on along and after clicking on the delete button for second 
+task, T2, we now see:</p>
+<p><img border="0" src="delete5.png" width="555" height="99"></p>
+<p>and our local storage looks like this:</p>
+<p><img border="0" src="delete6.png" width="410" height="59"></p>
+<p>Now let's refactor the load process so that the callback dynamically creates 
+the template instances, which will be a precursor to inserting a new task.&nbsp; 
+First, the <code>recordCreatedCallback</code> is renamed to <code>recordCreatedCallback</code>, which is a 
+much better name!&nbsp; Then we're going to remove this prototyping code:</p>
+<pre>let task1 = this.SetStoreIndex(html, 0);
+let task2 = this.SetStoreIndex(html, 1);
+let task3 = this.SetStoreIndex(html, 2);
+jQuery(&quot;#template&quot;).html(task1 + task2 + task3);</pre>
+<p>because our template &quot;view&quot; is going to be created dynamically as records are 
+loaded.&nbsp; So now the <code>CreateRecordView</code> function looks like this:</p>
+<pre>private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}): void {
+  let html = builder.html;
+  let template = this.SetStoreIndex(html, idx);
+  jQuery(&quot;#template&quot;).append(template);
+
+  for (let j = 0; j &lt; builder.elements.length; j++) {
+    let tel = builder.elements[j];
+    let guid = tel.guid.ToString();
+    let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+    let val = record[tel.item.field];
+    jel.val(val);
+  }
+}</pre>
+<h3>Inserting Tasks</h3>
+<p>And because in testing I obliterated all my tasks, I now have to implement a 
+Create Task button!&nbsp; The events for all elements in the template will also 
+need to be wired up every time we create a task!&nbsp; First, the HTML:</p>
+<pre>&lt;button type=&quot;button&quot; id=&quot;createTask&quot;&gt;Create Task&lt;/button&gt;
+&lt;div id=&quot;template&quot; style=&quot;width:40%&quot;&gt;&lt;/div&gt;</pre>
+<p>Then wiring up the event partly using the event router:</p>
+<pre>jQuery(&quot;#createTask&quot;).on('click', () =&gt; {
+  let idx = eventRouter.Route(&quot;CreateRecord&quot;, taskStore, 0); // insert at position 0
+  taskStore.SetDefault(idx, &quot;Status&quot;, taskStates[0].text);
+  taskStore.Save();
+});</pre>
+<p>and the route definition:</p>
+<pre>eventRouter.AddRoute(&quot;CreateRecord&quot;, (store, idx) =&gt; store.CreateRecord(true));</pre>
+<p>and the implementation in the store:</p>
+<pre>public CreateRecord(insert = false): number {
+  let nextIdx = 0;
+
+  if (this.Records() &gt; 0) {
+    nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
+  }
+
+  this.data[nextIdx] = {};
+  this.recordCreatedCallback(nextIdx, {}, insert, this);
+
+  return nextIdx;
+}</pre>
+<p>Notice how we obtain a &quot;unique&quot; record &quot;index&quot;, and how we can specify 
+whether to insert at the beginning or append to the end, not of the data records 
+(these are order independent) but the flag gets passed on to the &quot;view&quot; that 
+handles where the template should be created, so once again we refactor 
+<code>CreateRecordView</code>:</p>
+<pre>private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}, insert: boolean): void {
+  let html = builder.html;
+  let template = this.SetStoreIndex(html, idx);
+
+  if (insert) {
+    jQuery(&quot;#template&quot;).prepend(template);
+  } else {
+    jQuery(&quot;#template&quot;).append(template);
+  }
+
+  this.BindSpecificRecord(builder, idx);
+
+  for (let j = 0; j &lt; builder.elements.length; j++) {
+    let tel = builder.elements[j];
+    let guid = tel.guid.ToString();
+    let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
+    let val = record[tel.item.field];
+    jel.val(val);
+  }
+}</pre>
+<p>I'm not going to show you the BindSpecificRecord function because it's almost 
+identical to the binding that occurs in the document ready event, and so all 
+that common code needs to be refactored before I show it to you!&nbsp; One odd 
+behavior that I'm saving for the next day is that when the template is created 
+this way, the combobox doesn't default to &quot;TODO&quot; - will have to figure out why.&nbsp; 
+Regardless, starting from a blank slate:</p>
+<p><img border="0" src="insert1.png" width="101" height="33"></p>
+<p>I created to tasks, note how they are in reverse order because tasks are <i>
+prepended</i> in the UI:</p>
+<p><img border="0" src="insert2.png" width="552" height="119"></p>
+<p>and we can see that they are <i>appended</i> in the local storage:</p>
+<p><img border="0" src="insert3.png" width="569" height="55"></p>
+<p>This of course causes a problem when the page is refreshed:</p>
+<p><img border="0" src="insert4.png" width="551" height="114"></p>
+<p>The order got changed!&nbsp; Hmmm...</p>
+<p>Now, from demos I've seen of Vue and other frameworks, doing what has taken 5 
+days to accomplish here is probably a 30 minute exercise in Vue.&nbsp; However, 
+the point here is that I'm actually building the framework and the application 
+together, and quite frankly, having a lot of fun doing it!&nbsp; So that's all 
+that counts! End of Day 5, and I can finally create, edit, and delete tasks!</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

@@ -5,8 +5,11 @@ define(["require", "exports"], function (require, exports) {
         constructor() {
             this.routes = {};
         }
-        AddRoute(name, fnc) {
-            this.routes[name] = fnc;
+        AddRoute(routeName, fnc) {
+            this.routes[routeName] = fnc;
+        }
+        Route(routeName, store, idx) {
+            return this.routes[routeName](store, idx);
         }
     }
     exports.EventRouter = EventRouter;

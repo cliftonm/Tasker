@@ -11,7 +11,12 @@ import { TemplateBuilder } from "./classes/TemplateBuilder"
 import { Store } from "./classes/Store"
 import { StoreType } from "./enums/StoreType"
 import { StoreManager } from "./classes/StoreManager"
+import { EventRouter } from "./classes/EventRouter"
 import { Items } from "./interfaces/Items"
+
+// Globals, implemented poorly for now:
+var storeManager: StoreManager;
+var eventRouter: EventRouter;
 
 export class AppMain {
     private CreateHtmlTemplate(template: Items, storeManager: StoreManager, storeName: string) : TemplateBuilder {
@@ -95,7 +100,7 @@ export class AppMain {
                 line: 1,
                 width: "20%",
                 control: "button",
-                route: "deleteRecord",
+                route: "DeleteRecord",
             }
         ];
 
@@ -112,41 +117,59 @@ export class AppMain {
             { text: 'Stuck' },
         ];
 
-        let storeManager = new StoreManager();
+        storeManager = new StoreManager();
         storeManager.AddInMemoryStore("StatusList", taskStates);
         let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
 
+        eventRouter = new EventRouter();
+        eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
+        eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
+
         let builder = this.CreateHtmlTemplate(template, storeManager, taskStore.storeName);
-        let html = builder.html;
+
+        /*
         let task1 = this.SetStoreIndex(html, 0);
         let task2 = this.SetStoreIndex(html, 1);
         let task3 = this.SetStoreIndex(html, 2);
         jQuery("#template").html(task1 + task2 + task3);
+        */
 
-        taskStore.recordChangedCallback = (idx, record, store) => this.UpdateRecordView(builder, store, idx, record);
+        taskStore.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
         taskStore.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
+        taskStore.recordDeletedCallback = (idx, store) => {
+            this.DeleteRecordView(builder, store, idx);
+            store.Save();
+        }
 
         jQuery(document).ready(() => {
+            jQuery("#createTask").on('click', () => {
+                let idx = eventRouter.Route("CreateRecord", taskStore, 0);   // insert at position 0
+                taskStore.SetDefault(idx, "Status", taskStates[0].text);
+                taskStore.Save();
+            });
+
             // Bind the onchange events.
             builder.elements.forEach(el => {
                 let guid = el.guid.ToString();
                 let jels = jQuery(`[bindGuid = '${guid}']`);
+                let assocStoreName = el.item.associatedStoreName;
+                let store = storeManager.GetStore(assocStoreName);
 
                 jels.each((_, elx) => {
                     let jel = jQuery(elx);
+                    let recIdx = Number(jel.attr("storeIdx"));
 
                     switch (el.item.control) {
                         case "button":
                             jel.on('click', () => {
-                                let recIdx = Number(jel.attr("storeIdx"));
-                                console.log(`click for ${el.guid.ToString()} at index ${recIdx}`);
+                                console.log(`click for ${guid} at index ${recIdx}`);
+                                eventRouter.Route(el.item.route, store, recIdx);
                             });
                             break;
 
                         case "textbox":
                         case "combobox":
                             jel.on('change', () => {
-                                let recIdx = Number(jel.attr("storeIdx"));
                                 let field = el.item.field;
                                 let val = jel.val();
 
@@ -159,16 +182,29 @@ export class AppMain {
             });
         });
 
-        taskStore.Load()
+        taskStore.Load();
+        /*
             .SetDefault(0, "Status", taskStates[0].text)
             .SetDefault(1, "Status", taskStates[0].text)
             .SetDefault(2, "Status", taskStates[0].text)
             .Save();
+        */
 
-        taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
+        // taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
     }
 
-    private UpdateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}): void {
+    private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}, insert: boolean): void {
+        let html = builder.html;
+        let template = this.SetStoreIndex(html, idx);
+
+        if (insert) {
+            jQuery("#template").prepend(template);
+        } else {
+            jQuery("#template").append(template);
+        }
+
+        this.BindSpecificRecord(builder, idx);
+
         for (let j = 0; j < builder.elements.length; j++) {
             let tel = builder.elements[j];
             let guid = tel.guid.ToString();
@@ -183,6 +219,47 @@ export class AppMain {
         let guid = tel.guid.ToString();
         let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
         jel.val(value);
+    }
+
+    private DeleteRecordView(builder: TemplateBuilder, store: Store, idx: number): void {
+        jQuery(`[templateIdx = '${idx}']`).remove();
+    }
+
+    // TODO: This is almost exactly identical to the document.ready process except for the "if (recIdx == idx)".  Refactor for all the common code.
+    private BindSpecificRecord(builder: TemplateBuilder, idx: number): void {
+        builder.elements.forEach(el => {
+            let guid = el.guid.ToString();
+            let jels = jQuery(`[bindGuid = '${guid}']`);
+            let assocStoreName = el.item.associatedStoreName;
+            let store = storeManager.GetStore(assocStoreName);
+
+            jels.each((_, elx) => {
+                let jel = jQuery(elx);
+                let recIdx = Number(jel.attr("storeIdx"));
+
+                if (recIdx == idx) {
+                    switch (el.item.control) {
+                        case "button":
+                            jel.on('click', () => {
+                                console.log(`click for ${guid} at index ${recIdx}`);
+                                eventRouter.Route(el.item.route, store, recIdx);
+                            });
+                            break;
+
+                        case "textbox":
+                        case "combobox":
+                            jel.on('change', () => {
+                                let field = el.item.field;
+                                let val = jel.val();
+
+                                console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
+                                storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+                            });
+                            break;
+                    }
+                }
+            });
+        });
     }
 };
 

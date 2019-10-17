@@ -2,6 +2,6 @@
 
 export interface RouteHandlerMap
 {
-    [route: string]: (store: Store, idx: number) => void;
+    [route: string]: (store: Store, idx: number) => any;
 }
                        
