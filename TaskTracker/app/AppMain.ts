@@ -248,6 +248,8 @@ export class AppMain {
                 let recIdx = Number(jel.attr("storeIdx"));
 
                 if (onCondition(recIdx)) {
+                    jel.on('focus', () => this.RecordSelected(builder, recIdx));
+
                     switch (el.item.control) {
                         case "button":
                             jel.on('click', () => {
@@ -262,7 +264,6 @@ export class AppMain {
                             jel.on('change', () => {
                                 let field = el.item.field;
                                 let val = jel.val();
-
                                 console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
                                 storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
                             });
@@ -271,6 +272,12 @@ export class AppMain {
                 }
             });
         });
+    }
+
+    private RecordSelected(builder: TemplateBuilder, recIdx: number): void {
+        jQuery(builder.templateContainerID).children().removeClass("recordSelected");
+        let path = `${builder.templateContainerID} > [templateIdx='${recIdx}']`;
+        jQuery(path).addClass("recordSelected");
     }
 };
 

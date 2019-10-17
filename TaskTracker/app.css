@@ -1,5 +1,5 @@
 ﻿.createButton {
-    margin-bottom: 5px;
+    margin-bottom: 3px;
 }
 
 .templateContainer {
@@ -12,5 +12,17 @@
 }
 
 .recordSeparator {
-    height: 2px;
+    margin-bottom: 2px;
+}
+
+.recordDeselected {
+    border-left-style: solid;
+    border-left-width: 3px;
+    border-left-color: transparent;
+}
+
+.recordSelected {
+    border-left-style: solid;
+    border-left-width: 3px;
+    border-left-color: green;
 }

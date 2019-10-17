@@ -16,7 +16,7 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             return this;
         }
         TemplateDivBegin() {
-            this.html += `<div templateIdx='{idx}'>`;
+            this.html += "<div templateIdx='{idx}' class='recordSeparator recordDeselected'>";
             return this;
         }
         TemplateDivEnd() {

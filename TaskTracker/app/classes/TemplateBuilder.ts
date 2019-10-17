@@ -29,7 +29,7 @@ export class TemplateBuilder
     }
 
     public TemplateDivBegin(): TemplateBuilder {
-        this.html += `<div templateIdx='{idx}'>`;
+        this.html += "<div templateIdx='{idx}' class='recordSeparator recordDeselected'>";
 
         return this;
     }

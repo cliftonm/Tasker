@@ -1022,8 +1022,8 @@ unless it's also qualified by the container name:</p>
   let path = `${builder.templateContainerID} &gt; [templateIdx='${idx}']`;
   jQuery(path).remove();
 }</pre>
-<p>But of course this assumes that the UI will have unique container names.</p>
-<p>Which leads us to the HTML that defines the layout -- templates must be in 
+<p>But of course this assumes that the UI will have unique container names.&nbsp; 
+This leads us to the HTML that defines the layout -- templates must be in 
 containers:</p>
 <pre>&lt;div class=&quot;entitySeparator&quot;&gt;
   &lt;button type=&quot;button&quot; id=&quot;createTask&quot; class=&quot;createButton&quot;&gt;Create Task&lt;/button&gt;
@@ -1033,6 +1033,37 @@ containers:</p>
   &lt;button type=&quot;button&quot; id=&quot;createNote&quot; class=&quot;createButton&quot;&gt;Create Note&lt;/button&gt;
   &lt;div id=&quot;noteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
 &lt;/div&gt;</pre>
+<p>At this point, I can create tasks and notes:</p>
+<p><img border="0" src="rel1.png" width="777" height="183"></p>
+<p>and they persist quite nicely in the local storage as well:</p>
+<p><img border="0" src="rel2.png" width="894" height="160"></p>
+<p>To figure out next:</p>
+<ol>
+	<li>Some unique ID field in the record that is persisted.&nbsp; Normally 
+	this would be the primary key, but we're not saving the data to a database 
+	and I'd like the unique ID to be decoupled from the database's PK, 
+	particularly if the user is working disconnected from the Internet, which we 
+	should be able to fairly easily support.</li>
+	<li>Clicking on the parent (the task in our case) should bring up the 
+	specific child records.</li>
+	<li>Do we have separate stores (like &quot;Task-Note&quot; and &quot;Task-Contact&quot;) for 
+	each parent-child relationship or do we create a &quot;metastore&quot; with 
+	parent-child entity names and this unique ID?</li>
+	<li>How do we indicate to the user the selected parent that will be 
+	associated with the child entities?</li>
+</ol>
+<p>Regard #4, I like an unobtrusive approach like this, where the green left 
+border indicates the record that's been selected.</p>
+<p><img border="0" src="select1.png" width="209" height="93"></p>
+<p>The trick here is that we want to remove the selection only for the entity 
+records associated with the selection:</p>
+<pre>private RecordSelected(builder: TemplateBuilder, recIdx: number): void {
+  jQuery(builder.templateContainerID).children().removeClass(&quot;recordSelected&quot;);
+  let path = `${builder.templateContainerID} &gt; [templateIdx='${recIdx}']`;
+  jQuery(path).addClass(&quot;recordSelected&quot;);
+}</pre>
+<p>This way we can select a record for each entity type:</p>
+<p><img border="0" src="select2.png" width="379" height="361"></p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

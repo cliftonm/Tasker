@@ -198,6 +198,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     let jel = jQuery(elx);
                     let recIdx = Number(jel.attr("storeIdx"));
                     if (onCondition(recIdx)) {
+                        jel.on('focus', () => this.RecordSelected(builder, recIdx));
                         switch (el.item.control) {
                             case "button":
                                 jel.on('click', () => {
@@ -219,6 +220,11 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     }
                 });
             });
+        }
+        RecordSelected(builder, recIdx) {
+            jQuery(builder.templateContainerID).children().removeClass("recordSelected");
+            let path = `${builder.templateContainerID} > [templateIdx='${recIdx}']`;
+            jQuery(path).addClass("recordSelected");
         }
     }
     exports.AppMain = AppMain;
