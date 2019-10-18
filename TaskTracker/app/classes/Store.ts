@@ -1,17 +1,22 @@
 ﻿import { StoreType } from "../enums/StoreType"
 import { RowRecordMap } from "../interfaces/RowRecordMap"
+import { StoreManager } from "./StoreManager";
 
 export class Store {
     storeType: StoreType;
     cached: boolean;
     private data: RowRecordMap = {};
     storeName: string;
+    storeManager: StoreManager;
     recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store) => void = () => { };         
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
     recordDeletedCallback: (idx: number, store: Store) => void = () => { };         
 
-    constructor() {
+    constructor(storeManager: StoreManager, storeType: StoreType, storeName: string) {
         this.storeType = StoreType.Undefined;
+        this.storeManager = storeManager;
+        this.storeType = storeType;
+        this.storeName = storeName;
     }
 
     public Records(): number {
@@ -50,7 +55,7 @@ export class Store {
             nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
         }
 
-        this.data[nextIdx] = {};
+        this.data[nextIdx] = this.storeManager.GetPrimaryKey();
         this.recordCreatedCallback(nextIdx, {}, insert, this);
 
         return nextIdx;

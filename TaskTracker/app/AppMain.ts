@@ -11,6 +11,7 @@ import { TemplateBuilder } from "./classes/TemplateBuilder"
 import { Store } from "./classes/Store"
 import { StoreType } from "./enums/StoreType"
 import { StoreManager } from "./classes/StoreManager"
+import { ParentChildStore } from "./stores/ParentChildStore"
 import { EventRouter } from "./classes/EventRouter"
 import { Items } from "./interfaces/Items"
 
@@ -146,7 +147,16 @@ export class AppMain {
         ];
 
         storeManager = new StoreManager();
+
+        // For testing:
+        let n = 0;
+        storeManager.getPrimaryKeyCallback = () => {
+            return { __ID: ++n };
+        }
+
         storeManager.AddInMemoryStore("StatusList", taskStates);
+        let parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, "ParentChildRelationships");
+        storeManager.RegisterStore(parentChildRelationshipStore);
         let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
         let noteStore = storeManager.CreateStore("Notes", StoreType.LocalStorage);
 

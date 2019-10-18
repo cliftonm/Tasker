@@ -980,7 +980,8 @@ that counts! End of Day 5, and I can finally create, edit, and delete tasks!</p>
 <p>So this is one of those &quot;rubber meets the road&quot; moments.&nbsp; I'm going to 
 add a couple relationships.&nbsp; Software is not monogamous!&nbsp; I'd like to 
 add contacts and notes that are child entities of the task.&nbsp; My &quot;tasks&quot; are 
-usually integration level tasks, like &quot;add this credit card processor&quot;, which 
+usually integration level tasks (they probably should be called projects instead 
+of tasks!), like &quot;add this credit card processor&quot;, which 
 means that I have a bunch of people that I'm talking to, and I want to be able 
 to find them as related to the task.&nbsp; Same with notes, I want to make notes 
 of conversations, discoveries and so forth related to the task.&nbsp; Why this 
@@ -1048,7 +1049,8 @@ containers:</p>
 	specific child records.</li>
 	<li>Do we have separate stores (like &quot;Task-Note&quot; and &quot;Task-Contact&quot;) for 
 	each parent-child relationship or do we create a &quot;metastore&quot; with 
-	parent-child entity names and this unique ID?</li>
+	parent-child entity names and this unique ID?&nbsp; Or do we create a 
+	hierarchical structure where, say, a task has child elements such as notes?</li>
 	<li>How do we indicate to the user the selected parent that will be 
 	associated with the child entities?</li>
 </ol>
@@ -1064,7 +1066,130 @@ records associated with the selection:</p>
 }</pre>
 <p>This way we can select a record for each entity type:</p>
 <p><img border="0" src="select2.png" width="379" height="361"></p>
+<p>Regarding #3, a hierarchical structure is out of the question, as it 
+potentially creates a highly denormalized dataset.&nbsp; Consider that a task 
+(or if I want to add projects at some point, a project) may have the same 
+contact information.&nbsp; If I update the contact, do I want find all the 
+occurrences in an arbitrary hierarchy where that contact exists and update each 
+and every one of them?&nbsp; What if I delete a contact because that person no 
+longer works at that company?&nbsp; Heck no.&nbsp; And separate parent-child 
+stores is rejected because of the number of local storage items (or database 
+tables) that it requires.&nbsp; Particularly when it comes to database tables, 
+the last thing I want to do is create parent-child tables on the fly.&nbsp; So a 
+single meta-store that manages the mappings of all parent-child relationships 
+seems most reasonable at the moment, the major consideration is the performance 
+when the &quot;table&quot; contains potentially thousands (or magnitudes more) of 
+relationships.&nbsp; At this point, such a scenario doesn't need to be 
+considered.</p>
+<p>Here we have our first concrete model:</p>
+<pre>export class ParentChildRelationshipModel {
+  parent: string;
+  child: string;
+  parentId: number;
+  childId: number;
+}</pre>
+<p>Notice that the parent and child ID's are numbers.&nbsp; The maximum number 
+is 2<sup>1024</sup>, the problem though is that the <code>Number</code> type is a 64-bit 
+floating point value, so it's not the range but the precision that is of 
+concern.&nbsp; I'm guessing that finding parent-child relationships by a number 
+ID rather than, say, a GUID ID, will be faster and that I don't have to worry 
+about precision too much at this point.</p>
+<p>And (horrors), similar to ExtJS, we actually have a concrete <code>ParentChildStore</code> 
+which will have a function for acquiring a unique number ID:</p>
+<pre>import { Store } from &quot;../classes/Store&quot;
+
+export class ParentChildStore extends Store {
+}</pre>
+<p>The parent-child store is created a little bit differently:</p>
+<pre>let parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, &quot;ParentChildRelationships&quot;);
+storeManager.RegisterStore(parentChildRelationshipStore);</pre>
+<p>And we can access a concrete store type using this function, note the 
+comments:</p>
+<pre>public GetTypedStore&lt;T&gt;(storeName: string): T {
+  // Compiler says: Conversion of type 'Store' to type 'T' may be a mistake because 
+  // neither type sufficiently overlaps with the other. If this was intentional, 
+  // convert the expression to 'unknown' first.
+  // So how do I tell it that T must extended from Store?
+  return (&lt;unknown&gt;this.stores[storeName]) as T;
+}</pre>
+<p>In C#, I would write something like <code>GetStore&lt;T&gt;(string storeName) where T : 
+Store</code> and the downcast to <code>T</code> would work fine, but I have no idea how to do this in 
+TypeScript.<br>
+<br>
+While I need a persistable counter, like a sequence, to get the next ID, let's 
+look at the CreateRecord function first:</p>
+<pre>public CreateRecord(insert = false): number {
+  let nextIdx = 0;
+
+  if (this.Records() &gt; 0) {
+    nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
+  }
+
+  this.data[nextIdx] = {};        &lt;== THIS LINE IN PARTICULAR
+  this.recordCreatedCallback(nextIdx, {}, insert, this);
+
+  return nextIdx;
+}</pre>
+<p>
+It's the assignment of the empty object that needs to set an ID, but I don't 
+want to code that in the store -- I prefer to have that decoupled, so I'll 
+implement it as a call to the StoreManager which will then invoke a callback to 
+the application, so the unique record identifier can be something that the 
+application manages.&nbsp; We could even do a &quot;per store&quot; callback, but that's 
+unnecessary at this point.&nbsp; So now the store calls:</p>
+<pre>this.data[nextIdx] = this.storeManager.GetPrimaryKey();</pre>
+<p>
+The definition for the callback is crazy 
+looking, in that it defaults to returning {}:</p>
+<pre>
+getPrimaryKeyCallback: () =&gt; any = () =&gt; {};</pre>
+<p>
+and for testing, let's just implement a basic counter:</p>
+<pre>
+storeManager = new StoreManager();
+
+// For testing:
+let n = 0;
+storeManager.getPrimaryKeyCallback = () =&gt; {
+  return { __ID: ++n };
+}</pre>
+<p>
+and we can see that this creates the primary key key-value pair when I create a 
+task!</p>
+<p>
+<img border="0" src="pk1.png" width="225" height="47"></p>
+<p>
+So this is the end of Day 6.&nbsp; I still need to persist the sequence, 
+probably a &quot;Sequence&quot; store that allows me to define different sequences, and of 
+course create the parent-child records and the UI behavior.&nbsp; Getting there!</p>
+<p>
+&nbsp;</p>
+<p>
+&nbsp;</p>
+<p>
+&nbsp;</p>
+<p>
+&nbsp;</p>
+<p>
+&nbsp;</p>
 <p>&nbsp;</p>
+<p>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

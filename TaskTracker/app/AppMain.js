@@ -1,6 +1,6 @@
 // Sort of works, I get "Cannot read property 'default' of undefined"
 // import * as jQuery from "../lib/jquery"
-define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", "./classes/StoreManager", "./classes/EventRouter"], function (require, exports, TemplateBuilder_1, StoreType_1, StoreManager_1, EventRouter_1) {
+define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", "./classes/StoreManager", "./stores/ParentChildStore", "./classes/EventRouter"], function (require, exports, TemplateBuilder_1, StoreType_1, StoreManager_1, ParentChildStore_1, EventRouter_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Globals, implemented poorly for now:
@@ -114,7 +114,14 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 { text: 'Stuck' },
             ];
             storeManager = new StoreManager_1.StoreManager();
+            // For testing:
+            let n = 0;
+            storeManager.getPrimaryKeyCallback = () => {
+                return { __ID: ++n };
+            };
             storeManager.AddInMemoryStore("StatusList", taskStates);
+            let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");
+            storeManager.RegisterStore(parentChildRelationshipStore);
             let taskStore = storeManager.CreateStore("Tasks", StoreType_1.StoreType.LocalStorage);
             let noteStore = storeManager.CreateStore("Notes", StoreType_1.StoreType.LocalStorage);
             eventRouter = new EventRouter_1.EventRouter();

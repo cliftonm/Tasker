@@ -70,6 +70,7 @@
     <TypeScriptSourceRoot />
   </PropertyGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="app\models\ParentChildRelationshipModel.ts" />
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -118,6 +119,9 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app\interfaces\RouteHandlerMap.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="app\stores\ParentChildStore.ts" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

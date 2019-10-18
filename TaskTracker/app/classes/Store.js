@@ -2,12 +2,15 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class Store {
-        constructor() {
+        constructor(storeManager, storeType, storeName) {
             this.data = {};
             this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
             this.recordDeletedCallback = () => { };
             this.storeType = StoreType_1.StoreType.Undefined;
+            this.storeManager = storeManager;
+            this.storeType = storeType;
+            this.storeName = storeName;
         }
         Records() {
             // ECMA 5+ must use "keys", ECMA 7+ can use "entries"
@@ -36,7 +39,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
-            this.data[nextIdx] = {};
+            this.data[nextIdx] = this.storeManager.GetPrimaryKey();
             this.recordCreatedCallback(nextIdx, {}, insert, this);
             return nextIdx;
         }

@@ -4,28 +4,39 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
     class StoreManager {
         constructor() {
             this.stores = {};
+            this.getPrimaryKeyCallback = () => { };
         }
-        CreateStore(key, storeType) {
-            let store = new Store_1.Store();
-            store.storeType = storeType;
-            store.storeName = key;
-            this.stores[key] = store;
+        CreateStore(storeName, storeType) {
+            let store = new Store_1.Store(this, storeType, storeName);
+            this.stores[storeName] = store;
             return store;
         }
-        AddInMemoryStore(key, data) {
-            let store = new Store_1.Store();
-            store.storeType = StoreType_1.StoreType.InMemory;
+        RegisterStore(store) {
+            this.stores[store.storeName] = store;
+        }
+        AddInMemoryStore(storeName, data) {
+            let store = new Store_1.Store(this, StoreType_1.StoreType.InMemory, storeName);
             store.SetData(data);
-            this.stores[key] = store;
+            this.stores[storeName] = store;
             return store;
         }
-        GetStore(key) {
-            return this.stores[key];
+        GetStore(storeName) {
+            return this.stores[storeName];
+        }
+        GetTypedStore(storeName) {
+            // Compiler says: Conversion of type 'Store' to type 'T' may be a mistake because 
+            // neither type sufficiently overlaps with the other.If this was intentional, 
+            // convert the expression to 'unknown' first.
+            // So how do I tell it that T must extended from Store?
+            return this.stores[storeName];
         }
         // Eventually will support local stores, REST calls, caching, computational stores, and using other 
         // existing objects as stores.
-        GetStoreData(key) {
-            return this.stores[key].GetRawData();
+        GetStoreData(storeName) {
+            return this.stores[storeName].GetRawData();
+        }
+        GetPrimaryKey() {
+            return this.getPrimaryKeyCallback();
         }
     }
     exports.StoreManager = StoreManager;
