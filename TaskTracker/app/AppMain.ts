@@ -25,7 +25,7 @@ var parentChildRelationshipStore: ParentChildStore;
 var relationships : Relationship[] = [
     {
         parent: "Tasks",
-        children: ["Notes"]
+        children: ["Contacts", "Notes"]
     }
 ];
 
@@ -143,6 +143,13 @@ export class AppMain {
             }
         ];
 
+        let contactTemplate = [
+            { field: "Name", line: 0, width: "50%", control: "textbox" },
+            { field: "Email", line: 0, width: "50%", control: "textbox" },
+            { field: "Comment", line: 1, width: "80%", control: "textbox" },
+            { text: "Delete", line: 1, width: "20%", control: "button", route: "DeleteRecord" }
+        ];
+
         let taskStates = [
             { text: 'TODO'},
             { text: 'Working On' },
@@ -172,6 +179,7 @@ export class AppMain {
 
         let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
         let noteStore = storeManager.CreateStore("Notes", StoreType.LocalStorage);
+        let contactStore = storeManager.CreateStore("Contacts", StoreType.LocalStorage);
 
         eventRouter = new EventRouter();
         eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
@@ -179,9 +187,11 @@ export class AppMain {
 
         let taskBuilder = this.CreateHtmlTemplate("#taskTemplateContainer", taskTemplate, storeManager, taskStore.storeName);
         let noteBuilder = this.CreateHtmlTemplate("#noteTemplateContainer", noteTemplate, storeManager, noteStore.storeName);
+        let contactBuilder = this.CreateHtmlTemplate("#contactTemplateContainer", contactTemplate, storeManager, contactStore.storeName);
 
         this.AssignStoreCallbacks(taskStore, taskBuilder);
         this.AssignStoreCallbacks(noteStore, noteBuilder);
+        this.AssignStoreCallbacks(contactStore, contactBuilder);
 
         jQuery(document).ready(() => {
             jQuery("#createTask").on('click', () => {
@@ -196,11 +206,18 @@ export class AppMain {
                 noteStore.Save();
             });
 
+            jQuery("#createTaskContact").on('click', () => {
+                let idx = eventRouter.Route("CreateRecord", contactStore, 0);   // insert at position 0
+                parentChildRelationshipStore.AddRelationship(taskStore, contactStore, idx);
+                contactStore.Save();
+            });
+
             this.BindElementEvents(taskBuilder, _ => true);
         });
 
         taskStore.Load();
         noteStore.Load(false);
+        contactStore.Load(false);
         /*
             .SetDefault(0, "Status", taskStates[0].text)
             .SetDefault(1, "Status", taskStates[0].text)
@@ -212,7 +229,7 @@ export class AppMain {
     }
 
     private AssignStoreCallbacks(store: Store, builder: TemplateBuilder): void {
-        store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
+        store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, insert);
         store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
         store.recordDeletedCallback = (idx, store) => {
             this.DeleteRecordView(builder, idx);
@@ -220,7 +237,8 @@ export class AppMain {
         }
     }
 
-    private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}, insert: boolean): void {
+    private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, insert: boolean): void {
+        let record = store.GetRecord(idx);
         let html = builder.html;
         let template = this.SetStoreIndex(html, idx);
 
@@ -325,7 +343,7 @@ export class AppMain {
 
                 childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
                     let rec = childStore.GetRecord(recIdx);
-                    this.CreateRecordView(builder, childStore, recIdx, rec, false);
+                    this.CreateRecordView(builder, childStore, recIdx, false);
                 });
             });
         }

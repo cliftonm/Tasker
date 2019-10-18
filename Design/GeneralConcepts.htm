@@ -1363,7 +1363,65 @@ builder):</p>
     });
   }
 }</pre>
-<p>&nbsp;</p>
+<p>And it works!&nbsp; Clicking on Task 1, where I created 2 notes:</p>
+<p><img border="0" src="rel4.png" width="560" height="358"></p>
+<p>Clicking on Task 2, where I created 1 note:</p>
+<p><img border="0" src="rel5.png" width="559" height="258"></p>
+<h3>Contacts</h3>
+<p>Now let's have fun and create another child, Contacts.</p>
+<p>Update the relationship map:</p>
+<pre>var relationships : Relationship[] = [
+  {
+    parent: &quot;Tasks&quot;,
+    children: [&quot;Contacts&quot;, &quot;Notes&quot;]
+  }
+];</pre>
+<p>Update the HTML:</p>
+<pre>&lt;div class=&quot;entitySeparator&quot;&gt;
+  &lt;button type=&quot;button&quot; id=&quot;createTask&quot; class=&quot;createButton&quot;&gt;Create Task&lt;/button&gt;
+  &lt;div id=&quot;taskTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;entitySeparator&quot;&gt;
+  &lt;button type=&quot;button&quot; id=&quot;createTaskContact&quot; class=&quot;createButton&quot;&gt;Create Contact&lt;/button&gt;
+  &lt;div id=&quot;contactTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;entitySeparator&quot;&gt;
+  &lt;button type=&quot;button&quot; id=&quot;createTaskNote&quot; class=&quot;createButton&quot;&gt;Create Note&lt;/button&gt;
+  &lt;div id=&quot;noteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;/div&gt;</pre>
+<p>Create the contact template:</p>
+<pre>let contactTemplate = [
+  { field: &quot;Name&quot;, line: 0, width: &quot;50%&quot;, control: &quot;textbox&quot; },
+  { field: &quot;Email&quot;, line: 0, width: &quot;50%&quot;, control: &quot;textbox&quot; },
+  { field: &quot;Comment&quot;, line: 1, width: &quot;100%&quot;, control: &quot;textbox&quot; },
+  { text: &quot;Delete&quot;, line: 1, width: &quot;20%&quot;, control: &quot;button&quot;, route: &quot;DeleteRecord&quot; }
+];</pre>
+<p>Create the store:</p>
+<pre>let contactStore = storeManager.CreateStore(&quot;Contacts&quot;, StoreType.LocalStorage);</pre>
+<p>Create the builder:</p>
+<pre>let contactBuilder = this.CreateHtmlTemplate(&quot;#contactTemplateContainer&quot;, contactTemplate, storeManager, contactStore.storeName);</pre>
+<p>Assign the callbacks:</p>
+<pre>this.AssignStoreCallbacks(contactStore, contactBuilder);</pre>
+
+<p>Add the relationship:</p>
+<pre>jQuery(&quot;#createTaskContact&quot;).on('click', () =&gt; {
+  let idx = eventRouter.Route(&quot;CreateRecord&quot;, contactStore, 0); // insert at position 0
+  parentChildRelationshipStore.AddRelationship(taskStore, contactStore, idx);
+  contactStore.Save();
+});</pre>
+<p>Load the contacts but don't render them on the view (prevent the callback in 
+other words):</p>
+<pre>taskStore.Load();
+noteStore.Load(false);
+contactStore.Load(false);</pre>
+<p>And there we are: we've just added another child entity to Tasks!</p>
+<p><img border="0" src="rel6.png" width="555" height="261"></p>
+<p>Now, having gone through that exercise, with the exception of the HTML to 
+hold the contacts and the contact template itself, all the rest of the stuff we 
+manually did can be handled with a function call, which will be Day 8.&nbsp; We 
+also have to deal with deleting the relationship entry when a child is deleted, 
+and deleting all the child relationships when a parent is deleted. Goodnight!</p>
+<h2>Day 8</h2>
 <p>&nbsp;</p>
 
 </body>

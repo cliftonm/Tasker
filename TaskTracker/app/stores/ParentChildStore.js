@@ -18,7 +18,7 @@ define(["require", "exports", "../classes/Store", "../models/ParentChildRelation
                 // or throw an exception?
             }
         }
-        GetChildRecords(parent, parentId, child) {
+        GetChildInfo(parent, parentId, child) {
             let childRecs = this.FindRecordsOfType(rel => rel.parent == parent && rel.parentId == parentId && rel.child == child);
             let childRecIds = childRecs.map(r => r.childId);
             let childStore = this.storeManager.GetStore(child);

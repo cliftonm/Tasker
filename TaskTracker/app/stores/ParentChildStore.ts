@@ -21,7 +21,7 @@ export class ParentChildStore extends Store {
         }
     }
 
-    GetChildRecords(parent: string, parentId: number, child: string): ChildRecordInfo {
+    GetChildInfo(parent: string, parentId: number, child: string): ChildRecordInfo {
         let childRecs = this.FindRecordsOfType<ParentChildRelationshipModel>(rel => rel.parent == parent && rel.parentId == parentId && rel.child == child);
         let childRecIds = childRecs.map(r => r.childId);
         let childStore = this.storeManager.GetStore(child);

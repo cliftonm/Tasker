@@ -10,7 +10,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
     var relationships = [
         {
             parent: "Tasks",
-            children: ["Notes"]
+            children: ["Contacts", "Notes"]
         }
     ];
     var builders = {};
@@ -104,6 +104,12 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     route: "DeleteRecord",
                 }
             ];
+            let contactTemplate = [
+                { field: "Name", line: 0, width: "50%", control: "textbox" },
+                { field: "Email", line: 0, width: "50%", control: "textbox" },
+                { field: "Comment", line: 1, width: "80%", control: "textbox" },
+                { text: "Delete", line: 1, width: "20%", control: "button", route: "DeleteRecord" }
+            ];
             let taskStates = [
                 { text: 'TODO' },
                 { text: 'Working On' },
@@ -129,13 +135,16 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             parentChildRelationshipStore.Load();
             let taskStore = storeManager.CreateStore("Tasks", StoreType_1.StoreType.LocalStorage);
             let noteStore = storeManager.CreateStore("Notes", StoreType_1.StoreType.LocalStorage);
+            let contactStore = storeManager.CreateStore("Contacts", StoreType_1.StoreType.LocalStorage);
             eventRouter = new EventRouter_1.EventRouter();
             eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
             eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
             let taskBuilder = this.CreateHtmlTemplate("#taskTemplateContainer", taskTemplate, storeManager, taskStore.storeName);
             let noteBuilder = this.CreateHtmlTemplate("#noteTemplateContainer", noteTemplate, storeManager, noteStore.storeName);
+            let contactBuilder = this.CreateHtmlTemplate("#contactTemplateContainer", contactTemplate, storeManager, contactStore.storeName);
             this.AssignStoreCallbacks(taskStore, taskBuilder);
             this.AssignStoreCallbacks(noteStore, noteBuilder);
+            this.AssignStoreCallbacks(contactStore, contactBuilder);
             jQuery(document).ready(() => {
                 jQuery("#createTask").on('click', () => {
                     let idx = eventRouter.Route("CreateRecord", taskStore, 0); // insert at position 0
@@ -147,10 +156,16 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     parentChildRelationshipStore.AddRelationship(taskStore, noteStore, idx);
                     noteStore.Save();
                 });
+                jQuery("#createTaskContact").on('click', () => {
+                    let idx = eventRouter.Route("CreateRecord", contactStore, 0); // insert at position 0
+                    parentChildRelationshipStore.AddRelationship(taskStore, contactStore, idx);
+                    contactStore.Save();
+                });
                 this.BindElementEvents(taskBuilder, _ => true);
             });
             taskStore.Load();
             noteStore.Load(false);
+            contactStore.Load(false);
             /*
                 .SetDefault(0, "Status", taskStates[0].text)
                 .SetDefault(1, "Status", taskStates[0].text)
@@ -160,14 +175,15 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             // taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
         }
         AssignStoreCallbacks(store, builder) {
-            store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
+            store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, insert);
             store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
             store.recordDeletedCallback = (idx, store) => {
                 this.DeleteRecordView(builder, idx);
                 store.Save();
             };
         }
-        CreateRecordView(builder, store, idx, record, insert) {
+        CreateRecordView(builder, store, idx, insert) {
+            let record = store.GetRecord(idx);
             let html = builder.html;
             let template = this.SetStoreIndex(html, idx);
             if (insert) {
@@ -257,7 +273,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     let childStore = childRecs.store;
                     childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
                         let rec = childStore.GetRecord(recIdx);
-                        this.CreateRecordView(builder, childStore, recIdx, rec, false);
+                        this.CreateRecordView(builder, childStore, recIdx, false);
                     });
                 });
             }
