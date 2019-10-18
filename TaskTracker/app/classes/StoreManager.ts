@@ -4,7 +4,7 @@ import { KeyStoreMap } from "../interfaces/KeyStoreMap"
 
 export class StoreManager {
     stores: KeyStoreMap = {};
-    getPrimaryKeyCallback: () => any = () => {};
+    getPrimaryKeyCallback: (storeName: string) => any = () => {};
 
     public CreateStore(storeName: string, storeType: StoreType): Store {
         let store = new Store(this, storeType, storeName);
@@ -43,7 +43,7 @@ export class StoreManager {
         return this.stores[storeName].GetRawData();
     }
 
-    public GetPrimaryKey(): any {
-        return this.getPrimaryKeyCallback();
+    public GetPrimaryKey(storeName : string): any {
+        return this.getPrimaryKeyCallback(storeName);
     }
 }

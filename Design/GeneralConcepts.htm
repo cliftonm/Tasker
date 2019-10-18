@@ -1162,37 +1162,71 @@ task!</p>
 So this is the end of Day 6.&nbsp; I still need to persist the sequence, 
 probably a &quot;Sequence&quot; store that allows me to define different sequences, and of 
 course create the parent-child records and the UI behavior.&nbsp; Getting there!</p>
+<h2>
+Day 7</h2>
 <p>
-&nbsp;</p>
-<p>
-&nbsp;</p>
-<p>
-&nbsp;</p>
-<p>
-&nbsp;</p>
-<p>
-&nbsp;</p>
-<p>&nbsp;</p>
-<p>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-<br>
-&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+So a sequence store seems like a good idea.&nbsp; Again, this can be a concrete 
+model and store.&nbsp; The model:</p>
+<pre>export class SequenceModel {
+  key: string;
+  n: number;
+
+  constructor(key: string) {
+    this.key = key;
+    this.n = 0;
+  }
+}</pre>
+<p>The <code>Sequence</code> store:</p>
+<pre>import { Store } from &quot;../classes/Store&quot;
+import { SequenceModel } from &quot;../models/SequenceModel&quot;
+
+export class SequenceStore extends Store {
+  GetNext(skey: string): number {
+    let n = 0;
+    let recIdx = this.FindRecordOfType&lt;SequenceModel&gt;(r =&gt; r.key == skey);
+    
+    if (recIdx == -1) {
+      recIdx = this.CreateRecord();
+      this.SetProperty(recIdx, &quot;key&quot;, skey);
+      this.SetProperty(recIdx, &quot;count&quot;, 0);
+    }
+
+    n = this.GetProperty(recIdx, &quot;count&quot;) + 1;
+    this.SetProperty(recIdx, &quot;count&quot;, n);
+    this.Save();
+
+    return n;
+  }
+}</pre>
+<p>and the <code>FindRecordOfType</code> function:</p>
+<pre>public FindRecordOfType&lt;T&gt;(where: (T) =&gt; boolean): number {
+  let idx = -1;
+
+  for (let k of Object.keys(this.data)) {
+    if (where(&lt;T&gt;this.data[k])) {
+      idx = parseInt(k);
+      break;
+    }
+  }
+
+  return idx;
+}</pre>
+<p>We can write a simple test:</p>
+<pre>let seqStore = new SequenceStore(storeManager, StoreType.LocalStorage, &quot;Sequences&quot;);
+storeManager.RegisterStore(seqStore);
+seqStore.Load();
+let n1 = seqStore.GetNext(&quot;c1&quot;);
+let n2 = seqStore.GetNext(&quot;c2&quot;);
+let n3 = seqStore.GetNext(&quot;c2&quot;);</pre>
+<p>and in the local storage, we see:</p>
+<p><img border="0" src="seq1.png" width="330" height="62"></p>
+<p>so we can now assign sequences to each of the stores:</p>
+<pre>storeManager.getPrimaryKeyCallback = (storeName: string) =&gt; {
+  return { __ID: seqStore.GetNext(storeName) };</pre>
+<p>Except that creating the sequence results in infinite recursion, because the 
+sequence record is trying to get it's own primary key!!!</p>
+<p><img border="0" src="seq2.png" width="620" height="202"></p>
+<p>Oops.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

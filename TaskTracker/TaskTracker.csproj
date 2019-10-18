@@ -102,6 +102,8 @@
     <TypeScriptCompile Include="app\interfaces\Items.ts" />
     <TypeScriptCompile Include="app\interfaces\KeyStoreMap.ts" />
     <TypeScriptCompile Include="app\interfaces\RowRecordMap.ts" />
+    <TypeScriptCompile Include="app\models\SequenceModel.ts" />
+    <TypeScriptCompile Include="app\stores\SequenceStore.ts" />
     <TypeScriptCompile Include="modules\require.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
   </ItemGroup>

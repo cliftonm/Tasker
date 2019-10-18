@@ -35,8 +35,8 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
         GetStoreData(storeName) {
             return this.stores[storeName].GetRawData();
         }
-        GetPrimaryKey() {
-            return this.getPrimaryKeyCallback();
+        GetPrimaryKey(storeName) {
+            return this.getPrimaryKeyCallback(storeName);
         }
     }
     exports.StoreManager = StoreManager;

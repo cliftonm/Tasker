@@ -14,6 +14,7 @@ import { StoreManager } from "./classes/StoreManager"
 import { ParentChildStore } from "./stores/ParentChildStore"
 import { EventRouter } from "./classes/EventRouter"
 import { Items } from "./interfaces/Items"
+import { SequenceStore } from "./stores/SequenceStore";
 
 // Globals, implemented poorly for now:
 var storeManager: StoreManager;
@@ -148,10 +149,11 @@ export class AppMain {
 
         storeManager = new StoreManager();
 
-        // For testing:
-        let n = 0;
-        storeManager.getPrimaryKeyCallback = () => {
-            return { __ID: ++n };
+        let seqStore = new SequenceStore(storeManager, StoreType.LocalStorage, "Sequences");
+        storeManager.RegisterStore(seqStore);
+        seqStore.Load();
+        storeManager.getPrimaryKeyCallback = (storeName: string) => {
+            return { __ID: seqStore.GetNext(storeName) };
         }
 
         storeManager.AddInMemoryStore("StatusList", taskStates);

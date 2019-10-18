@@ -1,6 +1,6 @@
 // Sort of works, I get "Cannot read property 'default' of undefined"
 // import * as jQuery from "../lib/jquery"
-define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", "./classes/StoreManager", "./stores/ParentChildStore", "./classes/EventRouter"], function (require, exports, TemplateBuilder_1, StoreType_1, StoreManager_1, ParentChildStore_1, EventRouter_1) {
+define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", "./classes/StoreManager", "./stores/ParentChildStore", "./classes/EventRouter", "./stores/SequenceStore"], function (require, exports, TemplateBuilder_1, StoreType_1, StoreManager_1, ParentChildStore_1, EventRouter_1, SequenceStore_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Globals, implemented poorly for now:
@@ -114,10 +114,11 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 { text: 'Stuck' },
             ];
             storeManager = new StoreManager_1.StoreManager();
-            // For testing:
-            let n = 0;
-            storeManager.getPrimaryKeyCallback = () => {
-                return { __ID: ++n };
+            let seqStore = new SequenceStore_1.SequenceStore(storeManager, StoreType_1.StoreType.LocalStorage, "Sequences");
+            storeManager.RegisterStore(seqStore);
+            seqStore.Load();
+            storeManager.getPrimaryKeyCallback = (storeName) => {
+                return { __ID: seqStore.GetNext(storeName) };
             };
             storeManager.AddInMemoryStore("StatusList", taskStates);
             let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");

@@ -16,6 +16,26 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             // ECMA 5+ must use "keys", ECMA 7+ can use "entries"
             return Object.keys(this.data).length;
         }
+        FindRecord(where) {
+            let idx = -1;
+            for (let k of Object.keys(this.data)) {
+                if (where(this.data[k])) {
+                    idx = parseInt(k);
+                    break;
+                }
+            }
+            return idx;
+        }
+        FindRecordOfType(where) {
+            let idx = -1;
+            for (let k of Object.keys(this.data)) {
+                if (where(this.data[k])) {
+                    idx = parseInt(k);
+                    break;
+                }
+            }
+            return idx;
+        }
         GetRawData() {
             return jQuery.map(this.data, value => value);
         }
@@ -39,7 +59,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
-            this.data[nextIdx] = this.storeManager.GetPrimaryKey();
+            this.data[nextIdx] = this.storeManager.GetPrimaryKey(this.storeName);
             this.recordCreatedCallback(nextIdx, {}, insert, this);
             return nextIdx;
         }

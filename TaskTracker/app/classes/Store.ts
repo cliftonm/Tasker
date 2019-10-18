@@ -24,6 +24,32 @@ export class Store {
         return Object.keys(this.data).length;
     }
 
+    public FindRecord(where: ({ }) => boolean): number {
+        let idx = -1;
+
+        for (let k of Object.keys(this.data)) {
+            if (where(this.data[k])) {
+                idx = parseInt(k);
+                break;
+            }
+        }
+
+        return idx;
+    }
+
+    public FindRecordOfType<T>(where: (T) => boolean): number {
+        let idx = -1;
+
+        for (let k of Object.keys(this.data)) {
+            if (where(<T>this.data[k])) {
+                idx = parseInt(k);
+                break;
+            }
+        }
+
+        return idx;
+    }
+
     public GetRawData(): {}[] {
         return jQuery.map(this.data, value => value);
     }
@@ -55,7 +81,7 @@ export class Store {
             nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
         }
 
-        this.data[nextIdx] = this.storeManager.GetPrimaryKey();
+        this.data[nextIdx] = this.storeManager.GetPrimaryKey(this.storeName);
         this.recordCreatedCallback(nextIdx, {}, insert, this);
 
         return nextIdx;
