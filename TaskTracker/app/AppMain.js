@@ -6,9 +6,18 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
     // Globals, implemented poorly for now:
     var storeManager;
     var eventRouter;
+    var parentChildRelationshipStore;
+    var relationships = [
+        {
+            parent: "Tasks",
+            children: ["Notes"]
+        }
+    ];
+    var builders = {};
     class AppMain {
         CreateHtmlTemplate(templateContainerID, template, storeManager, storeName) {
             let builder = new TemplateBuilder_1.TemplateBuilder(templateContainerID);
+            builders[storeName] = { builder, template: templateContainerID };
             let line = -1;
             let firstLine = true;
             builder.TemplateDivBegin();
@@ -50,12 +59,6 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             return newHtml;
         }
         run() {
-            let relationships = [
-                {
-                    parent: "Tasks",
-                    children: ["Contacts", "Notes"]
-                }
-            ];
             let taskTemplate = [
                 {
                     field: "Task",
@@ -121,7 +124,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 return { __ID: seqStore.GetNext(storeName) };
             };
             storeManager.AddInMemoryStore("StatusList", taskStates);
-            let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");
+            parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
             let taskStore = storeManager.CreateStore("Tasks", StoreType_1.StoreType.LocalStorage);
@@ -147,7 +150,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 this.BindElementEvents(taskBuilder, _ => true);
             });
             taskStore.Load();
-            noteStore.Load();
+            noteStore.Load(false);
             /*
                 .SetDefault(0, "Status", taskStates[0].text)
                 .SetDefault(1, "Status", taskStates[0].text)
@@ -160,7 +163,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
             store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
             store.recordDeletedCallback = (idx, store) => {
-                this.DeleteRecordView(builder, store, idx);
+                this.DeleteRecordView(builder, idx);
                 store.Save();
             };
         }
@@ -188,9 +191,13 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
             jel.val(value);
         }
-        DeleteRecordView(builder, store, idx) {
+        DeleteRecordView(builder, idx) {
             let path = `${builder.templateContainerID} > [templateIdx='${idx}']`;
             jQuery(path).remove();
+        }
+        DeleteAllRecordsView(builder) {
+            let path = `${builder.templateContainerID}`;
+            jQuery(path).children().remove();
         }
         BindElementEvents(builder, onCondition) {
             builder.elements.forEach(el => {
@@ -202,8 +209,13 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     let jel = jQuery(elx);
                     let recIdx = Number(jel.attr("storeIdx"));
                     if (onCondition(recIdx)) {
-                        jel.on('focus', () => this.RecordSelected(builder, recIdx));
-                        store.selectedRecordIndex = recIdx;
+                        jel.on('focus', () => {
+                            if (store.selectedRecordIndex != recIdx) {
+                                this.RecordSelected(builder, recIdx);
+                                store.selectedRecordIndex = recIdx;
+                                this.ShowChildRecords(store, recIdx, relationships);
+                            }
+                        });
                         switch (el.item.control) {
                             case "button":
                                 jel.on('click', () => {
@@ -230,6 +242,25 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             jQuery(builder.templateContainerID).children().removeClass("recordSelected");
             let path = `${builder.templateContainerID} > [templateIdx='${recIdx}']`;
             jQuery(path).addClass("recordSelected");
+        }
+        ShowChildRecords(parentStore, parentRecIdx, relationships) {
+            let parentStoreName = parentStore.storeName;
+            let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
+            let relArray = relationships.filter(r => r.parent == parentStoreName);
+            // Only one record for the parent type should exist.
+            if (relArray.length == 1) {
+                let rel = relArray[0];
+                rel.children.forEach(child => {
+                    let builder = builders[child].builder;
+                    this.DeleteAllRecordsView(builder);
+                    let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
+                    let childStore = childRecs.store;
+                    childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
+                        let rec = childStore.GetRecord(recIdx);
+                        this.CreateRecordView(builder, childStore, recIdx, rec, false);
+                    });
+                });
+            }
         }
     }
     exports.AppMain = AppMain;

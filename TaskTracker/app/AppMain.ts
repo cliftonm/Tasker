@@ -14,15 +14,31 @@ import { StoreManager } from "./classes/StoreManager"
 import { ParentChildStore } from "./stores/ParentChildStore"
 import { EventRouter } from "./classes/EventRouter"
 import { Items } from "./interfaces/Items"
+import { Relationship } from "./interfaces/Relationship"
 import { SequenceStore } from "./stores/SequenceStore";
 
 // Globals, implemented poorly for now:
 var storeManager: StoreManager;
 var eventRouter: EventRouter;
+var parentChildRelationshipStore: ParentChildStore;
+
+var relationships : Relationship[] = [
+    {
+        parent: "Tasks",
+        children: ["Notes"]
+    }
+];
+
+interface StoreTemplateBuilder {
+    [storeName: string]: { builder: TemplateBuilder, template: string };
+}
+
+var builders: StoreTemplateBuilder = {};
 
 export class AppMain {
     private CreateHtmlTemplate(templateContainerID: string, template: Items, storeManager: StoreManager, storeName: string): TemplateBuilder {
         let builder = new TemplateBuilder(templateContainerID);
+        builders[storeName] = { builder, template: templateContainerID };
         let line = -1;
         let firstLine = true;
 
@@ -80,13 +96,6 @@ export class AppMain {
     }
 
     public run() {
-        let relationships = [
-            {
-                parent: "Tasks",
-                children: ["Contacts", "Notes"]
-            }
-        ];
-
         let taskTemplate = [
             {
                 field: "Task",
@@ -157,7 +166,7 @@ export class AppMain {
         }
 
         storeManager.AddInMemoryStore("StatusList", taskStates);
-        let parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, "ParentChildRelationships");
+        parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, "ParentChildRelationships");
         storeManager.RegisterStore(parentChildRelationshipStore);
         parentChildRelationshipStore.Load();
 
@@ -191,7 +200,7 @@ export class AppMain {
         });
 
         taskStore.Load();
-        noteStore.Load();
+        noteStore.Load(false);
         /*
             .SetDefault(0, "Status", taskStates[0].text)
             .SetDefault(1, "Status", taskStates[0].text)
@@ -206,7 +215,7 @@ export class AppMain {
         store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, record, insert);
         store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
         store.recordDeletedCallback = (idx, store) => {
-            this.DeleteRecordView(builder, store, idx);
+            this.DeleteRecordView(builder, idx);
             store.Save();
         }
     }
@@ -239,9 +248,14 @@ export class AppMain {
         jel.val(value);
     }
 
-    private DeleteRecordView(builder: TemplateBuilder, store: Store, idx: number): void {
+    private DeleteRecordView(builder: TemplateBuilder, idx: number): void {
         let path = `${builder.templateContainerID} > [templateIdx='${idx}']`;
         jQuery(path).remove();
+    }
+
+    private DeleteAllRecordsView(builder: TemplateBuilder) : void {
+        let path = `${builder.templateContainerID}`;
+        jQuery(path).children().remove();
     }
 
     private BindElementEvents(builder: TemplateBuilder, onCondition: (recIdx: number) => boolean) : void {
@@ -256,8 +270,13 @@ export class AppMain {
                 let recIdx = Number(jel.attr("storeIdx"));
 
                 if (onCondition(recIdx)) {
-                    jel.on('focus', () => this.RecordSelected(builder, recIdx));
-                    store.selectedRecordIndex = recIdx;
+                    jel.on('focus', () => {
+                        if (store.selectedRecordIndex != recIdx) {
+                            this.RecordSelected(builder, recIdx);
+                            store.selectedRecordIndex = recIdx;
+                            this.ShowChildRecords(store, recIdx, relationships);
+                        }
+                    });
 
                     switch (el.item.control) {
                         case "button":
@@ -288,11 +307,30 @@ export class AppMain {
         let path = `${builder.templateContainerID} > [templateIdx='${recIdx}']`;
         jQuery(path).addClass("recordSelected");
     }
+
+    private ShowChildRecords(parentStore: Store, parentRecIdx: number, relationships: Relationship[]): void {
+        let parentStoreName = parentStore.storeName;
+        let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
+        let relArray = relationships.filter(r => r.parent == parentStoreName);
+
+        // Only one record for the parent type should exist.
+        if (relArray.length == 1) {
+            let rel = relArray[0];
+
+            rel.children.forEach(child => {
+                let builder = builders[child].builder;
+                this.DeleteAllRecordsView(builder);
+                let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
+                let childStore = childRecs.store;
+
+                childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
+                    let rec = childStore.GetRecord(recIdx);
+                    this.CreateRecordView(builder, childStore, recIdx, rec, false);
+                });
+            });
+        }
+    }
 };
-
-
-
-
 
         /*
         let greeter = new Greeter();

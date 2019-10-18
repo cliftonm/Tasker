@@ -27,6 +27,16 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return idx;
         }
+        FindRecords(where) {
+            let recs = [];
+            for (let k of Object.keys(this.data)) {
+                if (where(this.data[k])) {
+                    recs.push(k);
+                }
+            }
+            return recs;
+        }
+        // Hmmm.  This returns the recIdx, whereas FindRecordsOfType<T> below returns T[]
         FindRecordOfType(where) {
             let idx = -1;
             for (let k of Object.keys(this.data)) {
@@ -37,12 +47,24 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return idx;
         }
+        FindRecordsOfType(where) {
+            let recs = [];
+            for (let k of Object.keys(this.data)) {
+                if (where(this.data[k])) {
+                    recs.push(this.data[k]);
+                }
+            }
+            return recs;
+        }
         GetRawData() {
             return jQuery.map(this.data, value => value);
         }
         SetData(records) {
             this.data = {};
             records.forEach((record, idx) => this.data[idx] = record);
+        }
+        GetRecord(idx) {
+            return this.data[idx];
         }
         SetRecord(idx, record) {
             this.CreateRecordIfMissing(idx);
@@ -73,7 +95,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             delete this.data[idx];
             this.recordDeletedCallback(idx, this);
         }
-        Load() {
+        Load(createRecordView = true) {
             this.data = {};
             switch (this.storeType) {
                 case StoreType_1.StoreType.InMemory:
@@ -98,7 +120,9 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     }
                     break;
             }
-            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
+            if (createRecordView) {
+                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
+            }
             return this;
         }
         Save() {

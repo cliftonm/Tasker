@@ -38,6 +38,19 @@ export class Store {
         return idx;
     }
 
+    public FindRecords(where: ({ }) => boolean): number[] {
+        let recs = [];
+
+        for (let k of Object.keys(this.data)) {
+            if (where(this.data[k])) {
+                recs.push(k);
+            }
+        }
+
+        return recs;
+    }
+
+    // Hmmm.  This returns the recIdx, whereas FindRecordsOfType<T> below returns T[]
     public FindRecordOfType<T>(where: (T) => boolean): number {
         let idx = -1;
 
@@ -51,6 +64,18 @@ export class Store {
         return idx;
     }
 
+    public FindRecordsOfType<T>(where: (T) => boolean): T[] {
+        let recs = [];
+
+        for (let k of Object.keys(this.data)) {
+            if (where(<T>this.data[k])) {
+                recs.push(this.data[k]);
+            }
+        }
+
+        return recs;
+    }
+
     public GetRawData(): {}[] {
         return jQuery.map(this.data, value => value);
     }
@@ -58,6 +83,10 @@ export class Store {
     public SetData(records: {}[]): void {
         this.data = {};
         records.forEach((record, idx) => this.data[idx] = record);
+    }
+
+    public GetRecord(idx: number): {} {
+        return this.data[idx];
     }
 
     public SetRecord(idx: number, record: {}): Store {
@@ -100,7 +129,7 @@ export class Store {
         this.recordDeletedCallback(idx, this);
     }
 
-    public Load(): Store {
+    public Load(createRecordView : boolean = true): Store {
         this.data = {};
 
         switch (this.storeType) {
@@ -129,7 +158,9 @@ export class Store {
                 break;
         }
 
-        jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
+        if (createRecordView) {
+            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
+        }
 
         return this;
     }

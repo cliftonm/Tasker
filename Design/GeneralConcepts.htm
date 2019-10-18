@@ -1256,8 +1256,10 @@ hold the selected record index in the store:</p>
 <pre>selectedRecordIndex: number = undefined; // multiple selection not allowed.</pre>
 <p>And in the <code>BindElementEvents</code> function, where we call <code>RecordSelected</code>, we'll 
 add setting this field in the store:</p>
-<pre>jel.on('focus', () =&gt; this.RecordSelected(builder, recIdx));
-store.selectedRecordIndex = recIdx;</pre>
+<pre>jel.on('focus', () =&gt; {
+  this.RecordSelected(builder, recIdx));
+  store.selectedRecordIndex = recIdx;
+}</pre>
 <p>In the event handler for the button responsible for create a task note:</p>
 <pre>jQuery(&quot;#createTaskNote&quot;).on('click', () =&gt; {
   let idx = eventRouter.Route(&quot;CreateRecord&quot;, noteStore, 0); // insert at position 0
@@ -1287,10 +1289,80 @@ store.selectedRecordIndex = recIdx;</pre>
 }</pre>
 <p>And there we have it:</p>
 <p><img border="0" src="rel3.png" width="454" height="170"></p>
-<p>Now we just have to select the correct children for the selected parent.</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<p>Now we just have to select the correct children for the selected parent.&nbsp; 
+Having already defined a global variable (ugh) for declaring relationships:</p>
+<pre>var relationships : Relationship = [
+  {
+    parent: &quot;Tasks&quot;,
+    children: [&quot;Notes&quot;]
+  }
+];</pre>
+<p>Where Relationship is defined as:</p>
+<pre>export interface Relationship {
+  parent: string;
+  children: string[];
+}</pre>
+<p>We can now tie in to the same &quot;selected&quot; event handler to acquire the 
+specific child relationships, remove any previous ones, and show just the 
+specific ones for the selected record.&nbsp; We also don't want to go through 
+this process every time a field in the record is selected.</p>
+<pre>jel.on('focus', () =&gt; {
+  if (store.selectedRecordIndex != recIdx) {
+    this.RecordSelected(builder, recIdx);
+    store.selectedRecordIndex = recIdx;
+    this.ShowChildRecords(store, recIdx, relationships);
+  }
+});</pre>
+<p>In the <code>ParentChildStore</code>, we can define:</p>
+<pre>GetChildInfo(parent: string, parentId: number, child: string): ChildRecordInfo {
+  let childRecs = this.FindRecordsOfType&lt;ParentChildRelationshipModel&gt;(rel =&gt; rel.parent == parent &amp;&amp; rel.parentId == parentId &amp;&amp; rel.child == child);
+  let childRecIds = childRecs.map(r =&gt; r.childId);
+  let childStore = this.storeManager.GetStore(child);
+
+  // Annoying. VS2017 doesn't have an option for ECMAScript 7
+  let recs = childStore.FindRecords(r =&gt; childRecIds.indexOf((&lt;any&gt;r).__ID) != -1);
+
+  return { store: childStore, childrenIndices: recs };
+}</pre>
+<p>In the <code>Store</code> class, we implement:</p>
+<pre>public FindRecords(where: ({ }) =&gt; boolean): number[] {
+  let recs = [];
+
+  for (let k of Object.keys(this.data)) {
+    if (where(this.data[k])) {
+      recs.push(k);
+    }
+  }
+
+  return recs;
+}</pre>
+<p>This returns the record indices, which we need to populate the template <code>{idx}</code> 
+value so we know what record is being edited.</p>
+<p>This lovely function has the job of finding the children and populating the 
+templates (some refactoring occurred here, for example, mapping a store to its 
+builder):</p>
+<pre>private ShowChildRecords(parentStore: Store, parentRecIdx: number, relationships: Relationship[]): void {
+  let parentStoreName = parentStore.storeName;
+  let parentId = parentStore.GetProperty(parentRecIdx, &quot;__ID&quot;);
+  let relArray = relationships.filter(r =&gt; r.parent == parentStoreName);
+
+  // Only one record for the parent type should exist.
+  if (relArray.length == 1) {
+    let rel = relArray[0];
+
+    rel.children.forEach(child =&gt; {
+      let builder = builders[child].builder;
+      this.DeleteAllRecordsView(builder);
+      let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
+      let childStore = childRecs.store;
+
+      childRecs.childrenIndices.map(idx =&gt; Number(idx)).forEach(recIdx =&gt; {
+        let rec = childStore.GetRecord(recIdx);
+        this.CreateRecordView(builder, childStore, recIdx, rec, false);
+      });
+    });
+  }
+}</pre>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 
