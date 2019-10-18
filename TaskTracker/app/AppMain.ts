@@ -159,6 +159,8 @@ export class AppMain {
         storeManager.AddInMemoryStore("StatusList", taskStates);
         let parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, "ParentChildRelationships");
         storeManager.RegisterStore(parentChildRelationshipStore);
+        parentChildRelationshipStore.Load();
+
         let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
         let noteStore = storeManager.CreateStore("Notes", StoreType.LocalStorage);
 
@@ -168,13 +170,6 @@ export class AppMain {
 
         let taskBuilder = this.CreateHtmlTemplate("#taskTemplateContainer", taskTemplate, storeManager, taskStore.storeName);
         let noteBuilder = this.CreateHtmlTemplate("#noteTemplateContainer", noteTemplate, storeManager, noteStore.storeName);
-
-        /*
-        let task1 = this.SetStoreIndex(html, 0);
-        let task2 = this.SetStoreIndex(html, 1);
-        let task3 = this.SetStoreIndex(html, 2);
-        jQuery("#template").html(task1 + task2 + task3);
-        */
 
         this.AssignStoreCallbacks(taskStore, taskBuilder);
         this.AssignStoreCallbacks(noteStore, noteBuilder);
@@ -186,8 +181,9 @@ export class AppMain {
                 taskStore.Save();
             });
 
-            jQuery("#createNote").on('click', () => {
+            jQuery("#createTaskNote").on('click', () => {
                 let idx = eventRouter.Route("CreateRecord", noteStore, 0);   // insert at position 0
+                parentChildRelationshipStore.AddRelationship(taskStore, noteStore, idx);
                 noteStore.Save();
             });
 
@@ -248,7 +244,7 @@ export class AppMain {
         jQuery(path).remove();
     }
 
-    private BindElementEvents(builder: TemplateBuilder, onCondition: (recIdx: number) => boolean): void {
+    private BindElementEvents(builder: TemplateBuilder, onCondition: (recIdx: number) => boolean) : void {
         builder.elements.forEach(el => {
             let guid = el.guid.ToString();
             let jels = jQuery(`[bindGuid = '${guid}']`);
@@ -261,6 +257,7 @@ export class AppMain {
 
                 if (onCondition(recIdx)) {
                     jel.on('focus', () => this.RecordSelected(builder, recIdx));
+                    store.selectedRecordIndex = recIdx;
 
                     switch (el.item.control) {
                         case "button":

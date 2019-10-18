@@ -43,7 +43,7 @@ export class StoreManager {
         return this.stores[storeName].GetRawData();
     }
 
-    public GetPrimaryKey(storeName : string): any {
+    public GetPrimaryKey(storeName: string): {} {
         return this.getPrimaryKeyCallback(storeName);
     }
 }

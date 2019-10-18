@@ -123,6 +123,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             storeManager.AddInMemoryStore("StatusList", taskStates);
             let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");
             storeManager.RegisterStore(parentChildRelationshipStore);
+            parentChildRelationshipStore.Load();
             let taskStore = storeManager.CreateStore("Tasks", StoreType_1.StoreType.LocalStorage);
             let noteStore = storeManager.CreateStore("Notes", StoreType_1.StoreType.LocalStorage);
             eventRouter = new EventRouter_1.EventRouter();
@@ -130,12 +131,6 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
             let taskBuilder = this.CreateHtmlTemplate("#taskTemplateContainer", taskTemplate, storeManager, taskStore.storeName);
             let noteBuilder = this.CreateHtmlTemplate("#noteTemplateContainer", noteTemplate, storeManager, noteStore.storeName);
-            /*
-            let task1 = this.SetStoreIndex(html, 0);
-            let task2 = this.SetStoreIndex(html, 1);
-            let task3 = this.SetStoreIndex(html, 2);
-            jQuery("#template").html(task1 + task2 + task3);
-            */
             this.AssignStoreCallbacks(taskStore, taskBuilder);
             this.AssignStoreCallbacks(noteStore, noteBuilder);
             jQuery(document).ready(() => {
@@ -144,8 +139,9 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     taskStore.SetDefault(idx, "Status", taskStates[0].text);
                     taskStore.Save();
                 });
-                jQuery("#createNote").on('click', () => {
+                jQuery("#createTaskNote").on('click', () => {
                     let idx = eventRouter.Route("CreateRecord", noteStore, 0); // insert at position 0
+                    parentChildRelationshipStore.AddRelationship(taskStore, noteStore, idx);
                     noteStore.Save();
                 });
                 this.BindElementEvents(taskBuilder, _ => true);
@@ -207,6 +203,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     let recIdx = Number(jel.attr("storeIdx"));
                     if (onCondition(recIdx)) {
                         jel.on('focus', () => this.RecordSelected(builder, recIdx));
+                        store.selectedRecordIndex = recIdx;
                         switch (el.item.control) {
                             case "button":
                                 jel.on('click', () => {

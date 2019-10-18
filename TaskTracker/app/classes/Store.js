@@ -4,6 +4,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     class Store {
         constructor(storeManager, storeType, storeName) {
             this.data = {};
+            this.selectedRecordIndex = undefined; // multiple selection not allowed at the moment.
             this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
             this.recordDeletedCallback = () => { };
@@ -43,6 +44,11 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             this.data = {};
             records.forEach((record, idx) => this.data[idx] = record);
         }
+        SetRecord(idx, record) {
+            this.CreateRecordIfMissing(idx);
+            this.data[idx] = record;
+            return this;
+        }
         SetProperty(idx, field, value) {
             this.CreateRecordIfMissing(idx);
             this.data[idx][field] = value;
@@ -59,7 +65,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
-            this.data[nextIdx] = this.storeManager.GetPrimaryKey(this.storeName);
+            this.data[nextIdx] = this.GetPrimaryKey();
             this.recordCreatedCallback(nextIdx, {}, insert, this);
             return nextIdx;
         }
@@ -133,6 +139,9 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     break;
             }
             return this;
+        }
+        GetPrimaryKey() {
+            return this.storeManager.GetPrimaryKey(this.storeName);
         }
         CreateRecordIfMissing(idx) {
             if (!this.data[idx]) {

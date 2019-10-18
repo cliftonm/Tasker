@@ -15,6 +15,9 @@ define(["require", "exports", "../classes/Store"], function (require, exports, S
             this.Save();
             return n;
         }
+        GetPrimaryKey() {
+            return {};
+        }
     }
     exports.SequenceStore = SequenceStore;
 });

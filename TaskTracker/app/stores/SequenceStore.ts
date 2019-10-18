@@ -18,4 +18,8 @@ export class SequenceStore extends Store {
 
         return n;
     }
+
+    protected GetPrimaryKey(): {} {
+        return {};
+    }
 }

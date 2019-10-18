@@ -8,6 +8,7 @@ export class Store {
     private data: RowRecordMap = {};
     storeName: string;
     storeManager: StoreManager;
+    selectedRecordIndex: number = undefined;        // multiple selection not allowed at the moment.
     recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store) => void = () => { };         
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
     recordDeletedCallback: (idx: number, store: Store) => void = () => { };         
@@ -59,6 +60,13 @@ export class Store {
         records.forEach((record, idx) => this.data[idx] = record);
     }
 
+    public SetRecord(idx: number, record: {}): Store {
+        this.CreateRecordIfMissing(idx);
+        this.data[idx] = record;
+
+        return this;
+    }
+
     public SetProperty(idx: number, field: string, value: any): Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx][field] = value;
@@ -81,7 +89,7 @@ export class Store {
             nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
         }
 
-        this.data[nextIdx] = this.storeManager.GetPrimaryKey(this.storeName);
+        this.data[nextIdx] = this.GetPrimaryKey();
         this.recordCreatedCallback(nextIdx, {}, insert, this);
 
         return nextIdx;
@@ -175,6 +183,10 @@ export class Store {
         }
 
         return this;
+    }
+
+    protected GetPrimaryKey(): {} {
+        return this.storeManager.GetPrimaryKey(this.storeName);
     }
 
     private CreateRecordIfMissing(idx: number) : void {

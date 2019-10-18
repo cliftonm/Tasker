@@ -1227,6 +1227,67 @@ let n3 = seqStore.GetNext(&quot;c2&quot;);</pre>
 sequence record is trying to get it's own primary key!!!</p>
 <p><img border="0" src="seq2.png" width="620" height="202"></p>
 <p>Oops.</p>
+<p>The simplest way to deal with this is make the method overridable in the base 
+class, first by refactoring the <code>CreateRecord</code> function:</p>
+<pre>public CreateRecord(insert = false): number {
+  let nextIdx = 0;
+
+  if (this.Records() &gt; 0) {
+    nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
+  }
+
+  this.data[nextIdx] = this.GetPrimaryKey();
+  this.recordCreatedCallback(nextIdx, {}, insert, this);
+
+  return nextIdx;
+}</pre>
+<p>Defining the default behavior:</p>
+<pre>protected GetPrimaryKey(): {} {
+  return this.storeManager.GetPrimaryKey(this.storeName);
+}</pre>
+<p>and overriding it in the SequenceStore:</p>
+<pre>protected GetPrimaryKey(): {} {
+  return {};
+}</pre>
+<p>Problem solved!</p>
+<h3>Making the Association</h3>
+<p>To make the association between parent and child record, we'll add a field to 
+hold the selected record index in the store:</p>
+<pre>selectedRecordIndex: number = undefined; // multiple selection not allowed.</pre>
+<p>And in the <code>BindElementEvents</code> function, where we call <code>RecordSelected</code>, we'll 
+add setting this field in the store:</p>
+<pre>jel.on('focus', () =&gt; this.RecordSelected(builder, recIdx));
+store.selectedRecordIndex = recIdx;</pre>
+<p>In the event handler for the button responsible for create a task note:</p>
+<pre>jQuery(&quot;#createTaskNote&quot;).on('click', () =&gt; {
+  let idx = eventRouter.Route(&quot;CreateRecord&quot;, noteStore, 0); // insert at position 0
+  noteStore.Save();
+});</pre>
+<p>We'll add a call to add the parent-child record:</p>
+<pre>jQuery(&quot;#createTaskNote&quot;).on('click', () =&gt; {
+  let idx = eventRouter.Route(&quot;CreateRecord&quot;, noteStore, 0); // insert at position 0
+  parentChildRelationshipStore.AddRelationship(taskStore, noteStore, idx); // &lt;=== Added this
+  noteStore.Save();
+});</pre>
+<p>With the implementation:</p>
+<pre>AddRelationship(parentStore: Store, childStore: Store, childRecIdx: number): void {
+  let parentRecIdx = parentStore.selectedRecordIndex;
+
+  if (parentRecIdx !== undefined) {
+    let recIdx = this.CreateRecord();
+    let parentID = parentStore.GetProperty(parentRecIdx, &quot;__ID&quot;);
+    let childID = childStore.GetProperty(childRecIdx, &quot;__ID&quot;);
+    let rel = new ParentChildRelationshipModel(parentStore.storeName, childStore.storeName, parentID, childID);
+    this.SetRecord(recIdx, rel);
+    this.Save();
+  } else {
+    // callback that parent record needs to be selected?
+    // or throw an exception?
+  }
+}</pre>
+<p>And there we have it:</p>
+<p><img border="0" src="rel3.png" width="454" height="170"></p>
+<p>Now we just have to select the correct children for the selected parent.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
