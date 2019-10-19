@@ -92,8 +92,8 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             return nextIdx;
         }
         DeleteRecord(idx) {
-            delete this.data[idx];
             this.recordDeletedCallback(idx, this);
+            delete this.data[idx];
         }
         Load(createRecordView = true) {
             this.data = {};
@@ -125,6 +125,13 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return this;
         }
+        SetDefault(idx, property, value) {
+            this.CreateRecordIfMissing(idx);
+            if (!this.data[idx][property]) {
+                this.data[idx][property] = value;
+            }
+            return this;
+        }
         Save() {
             switch (this.storeType) {
                 case StoreType_1.StoreType.InMemory:
@@ -137,13 +144,6 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     // Here we just update the whole structure.
                     this.SaveToLocalStorage();
                     break;
-            }
-            return this;
-        }
-        SetDefault(idx, property, value) {
-            this.CreateRecordIfMissing(idx);
-            if (!this.data[idx][property]) {
-                this.data[idx][property] = value;
             }
             return this;
         }

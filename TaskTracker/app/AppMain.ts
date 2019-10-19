@@ -182,7 +182,10 @@ export class AppMain {
         this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createTaskContact", false, taskStore);
 
         eventRouter = new EventRouter();
-        eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
+        eventRouter.AddRoute("DeleteRecord", (store, idx) => {
+            store.DeleteRecord(idx);
+            store.Save();
+        });
         eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
     }
 
@@ -190,8 +193,8 @@ export class AppMain {
         store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, insert);
         store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
         store.recordDeletedCallback = (idx, store) => {
+            parentChildRelationshipStore.DeleteRelationship(store, idx);
             this.DeleteRecordView(builder, idx);
-            store.Save();
         }
     }
 
@@ -344,23 +347,4 @@ export class AppMain {
         return store;
     }
 };
-
-        /*
-        let greeter = new Greeter();
-        greeter.greet();
-
-        // This works:
-        // jQuery(document).ready(($) => {
-        $(document).ready(() => {
-            $('#inputbox').val('Fizbin');
-        });
-        */
-
-        // This doesn't:
-        // $(document).ready(() => {
-        // unless we do:
-        // const $ = jQuery;
-        // and we have:
-        // <script type="text/javascript" src="lib/jquery.js"></script>
-        // in index.html
 

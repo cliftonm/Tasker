@@ -137,15 +137,18 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#noteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
             this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType_1.StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createTaskContact", false, taskStore);
             eventRouter = new EventRouter_1.EventRouter();
-            eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
+            eventRouter.AddRoute("DeleteRecord", (store, idx) => {
+                store.DeleteRecord(idx);
+                store.Save();
+            });
             eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
         }
         AssignStoreCallbacks(store, builder) {
             store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, insert);
             store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
             store.recordDeletedCallback = (idx, store) => {
+                parentChildRelationshipStore.DeleteRelationship(store, idx);
                 this.DeleteRecordView(builder, idx);
-                store.Save();
             };
         }
         CreateRecordView(builder, store, idx, insert) {
@@ -268,21 +271,4 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
     exports.AppMain = AppMain;
     ;
 });
-/*
-let greeter = new Greeter();
-greeter.greet();
-
-// This works:
-// jQuery(document).ready(($) => {
-$(document).ready(() => {
-    $('#inputbox').val('Fizbin');
-});
-*/
-// This doesn't:
-// $(document).ready(() => {
-// unless we do:
-// const $ = jQuery;
-// and we have:
-// <script type="text/javascript" src="lib/jquery.js"></script>
-// in index.html
 //# sourceMappingURL=AppMain.js.map

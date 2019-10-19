@@ -1499,6 +1499,31 @@ this.CreateStoreViewFromTemplate(
   false, 
   taskStore);</pre>
 <p>OK, a lot of parameters, but it's a highly repeatable pattern.</p>
+<p>Next, we want to delete any relationships.&nbsp; The relationship needs to be 
+deleted before the record is deleted because we need access to the <code>__ID</code> field, 
+so we have to reverse the way the callback is handled in the Store to:</p>
+<pre>public DeleteRecord(idx: number) : void {
+  this.recordDeletedCallback(idx, this);
+  delete this.data[idx];
+}</pre>
+<p>which will also allow for recursively deleting the entire hierarchy of an 
+element when the element is deleted.</p>
+<p>Then, in the callback handler:</p>
+<pre>store.recordDeletedCallback = (idx, store) =&gt; {
+  parentChildRelationshipStore.DeleteRelationship(store, idx);
+  this.DeleteRecordView(builder, idx);
+}</pre>
+<p>But we also have to save the store now in the route handler because the 
+callback, which was performing the save, is being called <i>before</i> the 
+record is deleted:</p>
+<pre>eventRouter.AddRoute(&quot;DeleteRecord&quot;, (store, idx) =&gt; {
+  store.DeleteRecord(idx);
+  store.Save();
+});</pre>
+<p>and the implementation in the <code>ParentChildStore</code>:</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 
 </body>

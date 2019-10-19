@@ -125,8 +125,8 @@ export class Store {
     }
 
     public DeleteRecord(idx: number) : void {
-        delete this.data[idx];
         this.recordDeletedCallback(idx, this);
+        delete this.data[idx];
     }
 
     public Load(createRecordView : boolean = true): Store {
@@ -165,6 +165,16 @@ export class Store {
         return this;
     }
 
+    public SetDefault(idx: number, property: string, value: any): Store {
+        this.CreateRecordIfMissing(idx);
+
+        if (!this.data[idx][property]) {
+            this.data[idx][property] = value;
+        }
+
+        return this;
+    }
+
     public Save(): Store {
         switch (this.storeType) {
             case StoreType.InMemory:
@@ -179,16 +189,6 @@ export class Store {
                 // Here we just update the whole structure.
                 this.SaveToLocalStorage();
                 break;
-        }
-
-        return this;
-    }
-
-    public SetDefault(idx: number, property: string, value: any): Store {
-        this.CreateRecordIfMissing(idx);
-
-        if (!this.data[idx][property]) {
-            this.data[idx][property] = value;
         }
 
         return this;
