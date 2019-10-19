@@ -177,55 +177,13 @@ export class AppMain {
         storeManager.RegisterStore(parentChildRelationshipStore);
         parentChildRelationshipStore.Load();
 
-        let taskStore = storeManager.CreateStore("Tasks", StoreType.LocalStorage);
-        let noteStore = storeManager.CreateStore("Notes", StoreType.LocalStorage);
-        let contactStore = storeManager.CreateStore("Contacts", StoreType.LocalStorage);
+        let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", true, undefined, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
+        this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType.LocalStorage, "#noteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
+        this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createTaskContact", false, taskStore);
 
         eventRouter = new EventRouter();
         eventRouter.AddRoute("DeleteRecord", (store, idx) => store.DeleteRecord(idx));
         eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
-
-        let taskBuilder = this.CreateHtmlTemplate("#taskTemplateContainer", taskTemplate, storeManager, taskStore.storeName);
-        let noteBuilder = this.CreateHtmlTemplate("#noteTemplateContainer", noteTemplate, storeManager, noteStore.storeName);
-        let contactBuilder = this.CreateHtmlTemplate("#contactTemplateContainer", contactTemplate, storeManager, contactStore.storeName);
-
-        this.AssignStoreCallbacks(taskStore, taskBuilder);
-        this.AssignStoreCallbacks(noteStore, noteBuilder);
-        this.AssignStoreCallbacks(contactStore, contactBuilder);
-
-        jQuery(document).ready(() => {
-            jQuery("#createTask").on('click', () => {
-                let idx = eventRouter.Route("CreateRecord", taskStore, 0);   // insert at position 0
-                taskStore.SetDefault(idx, "Status", taskStates[0].text);
-                taskStore.Save();
-            });
-
-            jQuery("#createTaskNote").on('click', () => {
-                let idx = eventRouter.Route("CreateRecord", noteStore, 0);   // insert at position 0
-                parentChildRelationshipStore.AddRelationship(taskStore, noteStore, idx);
-                noteStore.Save();
-            });
-
-            jQuery("#createTaskContact").on('click', () => {
-                let idx = eventRouter.Route("CreateRecord", contactStore, 0);   // insert at position 0
-                parentChildRelationshipStore.AddRelationship(taskStore, contactStore, idx);
-                contactStore.Save();
-            });
-
-            this.BindElementEvents(taskBuilder, _ => true);
-        });
-
-        taskStore.Load();
-        noteStore.Load(false);
-        contactStore.Load(false);
-        /*
-            .SetDefault(0, "Status", taskStates[0].text)
-            .SetDefault(1, "Status", taskStates[0].text)
-            .SetDefault(2, "Status", taskStates[0].text)
-            .Save();
-        */
-
-        // taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);
     }
 
     private AssignStoreCallbacks(store: Store, builder: TemplateBuilder): void {
@@ -347,6 +305,43 @@ export class AppMain {
                 });
             });
         }
+    }
+
+    private CreateStoreViewFromTemplate(
+        storeManager: StoreManager,
+        storeName: string,
+        storeType: StoreType,
+        containerName: string,
+        template: Items,
+        createButtonId: string,
+        updateView: boolean = true,
+        parentStore: Store = undefined,
+        createCallback: (idx: number, store: Store) => void = _ => { }
+        ): Store {
+        let store = storeManager.CreateStore(storeName, storeType);
+        let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName);
+        this.AssignStoreCallbacks(store, builder);
+
+        jQuery(document).ready(() => {
+            if (updateView) {
+                this.BindElementEvents(builder, _ => true);
+            }
+
+            jQuery(createButtonId).on('click', () => {
+                let idx = eventRouter.Route("CreateRecord", store, 0);   // insert at position 0
+                createCallback(idx, store);
+
+                if (parentStore) {
+                    parentChildRelationshipStore.AddRelationship(parentStore, store, idx);
+                }
+
+                store.Save();
+            });
+        });
+
+        store.Load(updateView);
+
+        return store;
     }
 };
 

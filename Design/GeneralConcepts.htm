@@ -1422,6 +1422,83 @@ manually did can be handled with a function call, which will be Day 8.&nbsp; We
 also have to deal with deleting the relationship entry when a child is deleted, 
 and deleting all the child relationships when a parent is deleted. Goodnight!</p>
 <h2>Day 8</h2>
+<p>First, let's create a function that takes all those discrete setup steps and 
+rolls them into one call with a lot of parameters:</p>
+<pre>private CreateStoreViewFromTemplate(
+  storeManager: StoreManager,
+  storeName: string,
+  storeType: StoreType,
+  containerName: string,
+  template: Items,
+  createButtonId: string,
+  updateView: boolean = true,
+  parentStore: Store = undefined,
+  createCallback: (idx: number, store: Store) =&gt; void = _ =&gt; { }
+): Store {
+  let store = storeManager.CreateStore(storeName, storeType);
+  let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName);
+  this.AssignStoreCallbacks(store, builder);
+
+  jQuery(document).ready(() =&gt; {
+    if (updateView) {
+      this.BindElementEvents(builder, _ =&gt; true);
+    }
+
+    jQuery(createButtonId).on('click', () =&gt; {
+      let idx = eventRouter.Route(&quot;CreateRecord&quot;, store, 0); // insert at position 0
+      createCallback(idx, store);
+
+      if (parentStore) {
+        parentChildRelationshipStore.AddRelationship(parentStore, store, idx);
+      }
+
+      store.Save();
+    });
+  });
+
+  store.Load(updateView);
+
+  return store;
+}</pre>
+<p>This &quot;simplifies&quot; the creation process to four steps:</p>
+<ol>
+	<li>Define the template.</li>
+<li>Define the container.</li>
+<li>Update the relationship map.</li>
+<li>Create the store view.</li>
+</ol>
+<p>Step 4 is now written as:</p>
+<pre>let taskStore = this.CreateStoreViewFromTemplate(
+  storeManager, 
+  &quot;Tasks&quot;, 
+  StoreType.LocalStorage, 
+  &quot;#taskTemplateContainer&quot;, 
+  taskTemplate, 
+  &quot;#createTask&quot;, 
+  true, 
+  undefined, 
+  (idx, store) =&gt; store.SetDefault(idx, &quot;Status&quot;, taskStates[0].text));
+
+this.CreateStoreViewFromTemplate(
+  storeManager, 
+  &quot;Notes&quot;, 
+  StoreType.LocalStorage, 
+  &quot;#noteTemplateContainer&quot;, 
+  noteTemplate, 
+  &quot;#createTaskNote&quot;, 
+  false, 
+  taskStore);
+
+this.CreateStoreViewFromTemplate(
+  storeManager, 
+  &quot;Contacts&quot;, 
+  StoreType.LocalStorage, 
+  &quot;#contactTemplateContainer&quot;, 
+  contactTemplate, 
+  &quot;#createTaskContact&quot;, 
+  false, 
+  taskStore);</pre>
+<p>OK, a lot of parameters, but it's a highly repeatable pattern.</p>
 <p>&nbsp;</p>
 
 </body>
