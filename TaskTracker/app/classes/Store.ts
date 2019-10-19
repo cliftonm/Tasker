@@ -126,6 +126,10 @@ export class Store {
     public DeleteRecord(idx: number) : void {
         this.recordDeletedCallback(idx, this);
         delete this.data[idx];
+
+        if (this.selectedRecordIndex == idx) {
+            this.selectedRecordIndex = -1;
+        }
     }
 
     public Load(createRecordView : boolean = true): Store {

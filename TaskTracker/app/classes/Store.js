@@ -93,6 +93,9 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
         DeleteRecord(idx) {
             this.recordDeletedCallback(idx, this);
             delete this.data[idx];
+            if (this.selectedRecordIndex == idx) {
+                this.selectedRecordIndex = -1;
+            }
         }
         Load(createRecordView = true) {
             this.data = {};
