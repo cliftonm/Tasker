@@ -3,12 +3,10 @@ import { ParentChildRelationshipModel } from "../models/ParentChildRelationshipM
 import { ChildRecordInfo } from "../interfaces/ChildRecordInfo"
 
 export class ParentChildStore extends Store {
-    // let relationships = <ParentChildRelationshipModel[]>(this.GetRawData() as unknown);
-
     public AddRelationship(parentStore: Store, childStore: Store, childRecIdx: number): void {
         let parentRecIdx = parentStore.selectedRecordIndex;
 
-        if (parentRecIdx !== undefined) {
+        if (parentRecIdx != -1) {
             let recIdx = this.CreateRecord();
             let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
             let childId = childStore.GetProperty(childRecIdx, "__ID");

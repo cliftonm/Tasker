@@ -4,11 +4,10 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     class Store {
         constructor(storeManager, storeType, storeName) {
             this.data = {};
-            this.selectedRecordIndex = undefined; // multiple selection not allowed at the moment.
+            this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
             this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
             this.recordDeletedCallback = () => { };
-            this.storeType = StoreType_1.StoreType.Undefined;
             this.storeManager = storeManager;
             this.storeType = storeType;
             this.storeName = storeName;

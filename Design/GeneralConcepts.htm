@@ -1521,6 +1521,67 @@ record is deleted:</p>
   store.Save();
 });</pre>
 <p>and the implementation in the <code>ParentChildStore</code>:</p>
+<pre>public DeleteRelationship(store: Store, recIdx: number) {
+  let storeName = store.storeName;
+  let id = store.GetProperty(recIdx, &quot;__ID&quot;);
+  let touchedStores : string[] = []; // So we save the store only once after this process.
+
+  // safety check.
+  if (id) {
+    let parents = this.FindRecordsOfType&lt;ParentChildRelationshipModel&gt;(rel =&gt; rel.parent == storeName &amp;&amp; rel.parentId == id);
+    let children = this.FindRecordsOfType&lt;ParentChildRelationshipModel&gt;(rel =&gt; rel.child == storeName &amp;&amp; rel.childId == id);
+
+    // All children of the parent are deleted.
+    parents.forEach(p =&gt; {
+      this.DeleteChildrenOfParent(p, touchedStores);
+    });
+
+    // All child relationships are deleted.
+    children.forEach(c =&gt; {
+      let relRecIdx = this.FindRecordOfType&lt;ParentChildRelationshipModel&gt;((r: ParentChildRelationshipModel) =&gt;
+      r.parent == c.parent &amp;&amp;
+      r.parentId == c.parentId &amp;&amp;
+      r.child == c.child &amp;&amp;
+      r.childId == c.childId);
+    this.DeleteRecord(relRecIdx);
+    });
+  } else {
+    console.log(`Expected to have an __ID value in store ${storeName} record index: ${recIdx}`);
+  }
+
+  // Save all touched stores.
+  touchedStores.forEach(s =&gt; this.storeManager.GetStore(s).Save());
+
+  this.Save();
+}</pre>
+<p>with a helper function:</p>
+<pre>private DeleteChildrenOfParent(p: ParentChildRelationshipModel, touchedStores: string[]): void {
+  let childStoreName = p.child;
+  let childId = p.childId;
+  let childStore = this.storeManager.GetStore(childStoreName);
+  let recIdx = childStore.FindRecord(r =&gt; (&lt;any&gt;r).__ID == childId);
+
+  // safety check.
+  if (recIdx != -1) {
+    // Recursive deletion of child's children will occur (I think - untested!)
+    childStore.DeleteRecord(recIdx);
+
+    if (touchedStores.indexOf(childStoreName) == -1) {
+      touchedStores.push(childStoreName);
+    }
+  } else {
+    console.log(`Expected to find record in store ${childStoreName} with __ID = ${childId}`);
+  }
+
+  // Delete the parent-child relationship.
+  let relRecIdx = this.FindRecordOfType&lt;ParentChildRelationshipModel&gt;((r: ParentChildRelationshipModel) =&gt;
+    r.parent == p.parent &amp;&amp;
+    r.parentId == p.parentId &amp;&amp;
+    r.child == p.child &amp;&amp;
+    r.childId == childId);
+
+  this.DeleteRecord(relRecIdx);
+}</pre>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

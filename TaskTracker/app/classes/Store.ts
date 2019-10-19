@@ -8,13 +8,12 @@ export class Store {
     private data: RowRecordMap = {};
     storeName: string;
     storeManager: StoreManager;
-    selectedRecordIndex: number = undefined;        // multiple selection not allowed at the moment.
+    selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
     recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store) => void = () => { };         
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
     recordDeletedCallback: (idx: number, store: Store) => void = () => { };         
 
     constructor(storeManager: StoreManager, storeType: StoreType, storeName: string) {
-        this.storeType = StoreType.Undefined;
         this.storeManager = storeManager;
         this.storeType = storeType;
         this.storeName = storeName;
