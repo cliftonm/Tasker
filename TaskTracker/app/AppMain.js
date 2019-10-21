@@ -9,15 +9,23 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
     var parentChildRelationshipStore;
     var relationships = [
         {
+            parent: "Projects",
+            children: ["Tasks", "Contacts", "Notes"]
+        },
+        {
             parent: "Tasks",
-            children: ["Contacts", "Notes"]
+            children: ["Notes"]
         }
     ];
     var builders = {};
     class AppMain {
-        CreateHtmlTemplate(templateContainerID, template, storeManager, storeName) {
+        GetBuilderName(parentStoreName, childStoreName) {
+            return (parentStoreName || "") + "-" + childStoreName;
+        }
+        CreateHtmlTemplate(templateContainerID, template, storeManager, storeName, parentStoreName) {
             let builder = new TemplateBuilder_1.TemplateBuilder(templateContainerID);
-            builders[storeName] = { builder, template: templateContainerID };
+            let builderName = this.GetBuilderName(parentStoreName, storeName);
+            builders[builderName] = { builder, template: templateContainerID };
             let line = -1;
             let firstLine = true;
             builder.TemplateDivBegin();
@@ -59,6 +67,35 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             return newHtml;
         }
         run() {
+            let projectTemplate = [
+                {
+                    field: "Project",
+                    line: 0,
+                    width: "80%",
+                    control: "textbox",
+                },
+                {
+                    field: "Status",
+                    storeName: "ProjectStatusList",
+                    orderBy: "StatusOrder",
+                    line: 0,
+                    width: "20%",
+                    control: "combobox",
+                },
+                {
+                    field: "Description",
+                    line: 1,
+                    width: "80%",
+                    control: "textbox",
+                },
+                {
+                    text: "Delete",
+                    line: 1,
+                    width: "20%",
+                    control: "button",
+                    route: "DeleteRecord",
+                }
+            ];
             let taskTemplate = [
                 {
                     field: "Task",
@@ -68,7 +105,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 },
                 {
                     field: "Status",
-                    storeName: "StatusList",
+                    storeName: "TaskStatusList",
                     orderBy: "StatusOrder",
                     line: 0,
                     width: "20%",
@@ -110,6 +147,19 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 { field: "Comment", line: 1, width: "80%", control: "textbox" },
                 { text: "Delete", line: 1, width: "20%", control: "button", route: "DeleteRecord" }
             ];
+            let projectStates = [
+                { text: 'Ongoing' },
+                { text: 'TODO' },
+                { text: 'Working On' },
+                { text: 'Testing' },
+                { text: 'QA' },
+                { text: 'Done' },
+                { text: 'On Production' },
+                { text: 'Waiting on 3rd Party' },
+                { text: 'Waiting on Coworker' },
+                { text: 'Waiting on Management' },
+                { text: 'Stuck' },
+            ];
             let taskStates = [
                 { text: 'TODO' },
                 { text: 'Working On' },
@@ -129,13 +179,17 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             storeManager.getPrimaryKeyCallback = (storeName) => {
                 return { __ID: seqStore.GetNext(storeName) };
             };
-            storeManager.AddInMemoryStore("StatusList", taskStates);
+            storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
+            storeManager.AddInMemoryStore("TaskStatusList", taskStates);
             parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
-            let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType_1.StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", true, undefined, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-            this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#noteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
-            this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType_1.StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createTaskContact", false, taskStore);
+            let projectStore = this.CreateStoreViewFromTemplate(storeManager, "Projects", StoreType_1.StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
+            let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType_1.StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", true, projectStore, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
+            this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType_1.StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createProjectContact", false, projectStore);
+            // We're creating 2 identical stores!
+            this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, projectStore);
+            this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
             eventRouter = new EventRouter_1.EventRouter();
             eventRouter.AddRoute("DeleteRecord", (store, idx) => {
                 store.DeleteRecord(idx);
@@ -236,7 +290,8 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             if (relArray.length == 1) {
                 let rel = relArray[0];
                 rel.children.forEach(child => {
-                    let builder = builders[child].builder;
+                    let builderName = this.GetBuilderName(parentStoreName, child);
+                    let builder = builders[builderName].builder;
                     this.DeleteAllRecordsView(builder);
                     let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
                     let childStore = childRecs.store;
@@ -249,7 +304,10 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
         }
         CreateStoreViewFromTemplate(storeManager, storeName, storeType, containerName, template, createButtonId, updateView = true, parentStore = undefined, createCallback = _ => { }) {
             let store = storeManager.CreateStore(storeName, storeType);
-            let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName);
+            // ?. operator.  
+            // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
+            let parentStoreName = parentStore && parentStore.storeName || undefined;
+            let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName, parentStoreName);
             this.AssignStoreCallbacks(store, builder);
             jQuery(document).ready(() => {
                 if (updateView) {

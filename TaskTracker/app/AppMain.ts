@@ -24,8 +24,12 @@ var parentChildRelationshipStore: ParentChildStore;
 
 var relationships : Relationship[] = [
     {
+        parent: "Projects",
+        children: ["Tasks", "Contacts", "Notes"]
+    },
+    {
         parent: "Tasks",
-        children: ["Contacts", "Notes"]
+        children: ["Notes"]
     }
 ];
 
@@ -36,9 +40,14 @@ interface StoreTemplateBuilder {
 var builders: StoreTemplateBuilder = {};
 
 export class AppMain {
-    private CreateHtmlTemplate(templateContainerID: string, template: Items, storeManager: StoreManager, storeName: string): TemplateBuilder {
+    private GetBuilderName(parentStoreName: string, childStoreName: string): string {
+        return (parentStoreName || "") + "-" + childStoreName;
+    }
+
+    private CreateHtmlTemplate(templateContainerID: string, template: Items, storeManager: StoreManager, storeName: string, parentStoreName: string): TemplateBuilder {
         let builder = new TemplateBuilder(templateContainerID);
-        builders[storeName] = { builder, template: templateContainerID };
+        let builderName = this.GetBuilderName(parentStoreName, storeName);
+        builders[builderName] = { builder, template: templateContainerID };
         let line = -1;
         let firstLine = true;
 
@@ -96,6 +105,36 @@ export class AppMain {
     }
 
     public run() {
+        let projectTemplate = [
+            {
+                field: "Project",
+                line: 0,
+                width: "80%",
+                control: "textbox",
+            },
+            {
+                field: "Status",
+                storeName: "ProjectStatusList",
+                orderBy: "StatusOrder",
+                line: 0,
+                width: "20%",
+                control: "combobox",
+            },
+            {
+                field: "Description",
+                line: 1,
+                width: "80%",
+                control: "textbox",
+            },
+            {
+                text: "Delete",
+                line: 1,
+                width: "20%",
+                control: "button",
+                route: "DeleteRecord",
+            }
+        ];
+
         let taskTemplate = [
             {
                 field: "Task",
@@ -105,7 +144,7 @@ export class AppMain {
             },
             {
                 field: "Status",
-                storeName: "StatusList",
+                storeName: "TaskStatusList",
                 orderBy: "StatusOrder",
                 line: 0,
                 width: "20%",
@@ -150,6 +189,20 @@ export class AppMain {
             { text: "Delete", line: 1, width: "20%", control: "button", route: "DeleteRecord" }
         ];
 
+        let projectStates = [
+            { text: 'Ongoing' },
+            { text: 'TODO' },
+            { text: 'Working On' },
+            { text: 'Testing' },
+            { text: 'QA' },
+            { text: 'Done' },
+            { text: 'On Production' },
+            { text: 'Waiting on 3rd Party' },
+            { text: 'Waiting on Coworker' },
+            { text: 'Waiting on Management' },
+            { text: 'Stuck' },
+        ];
+
         let taskStates = [
             { text: 'TODO'},
             { text: 'Working On' },
@@ -172,14 +225,19 @@ export class AppMain {
             return { __ID: seqStore.GetNext(storeName) };
         }
 
-        storeManager.AddInMemoryStore("StatusList", taskStates);
+        storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
+        storeManager.AddInMemoryStore("TaskStatusList", taskStates);
         parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, "ParentChildRelationships");
         storeManager.RegisterStore(parentChildRelationshipStore);
         parentChildRelationshipStore.Load();
 
-        let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", true, undefined, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-        this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType.LocalStorage, "#noteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
-        this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createTaskContact", false, taskStore);
+        let projectStore = this.CreateStoreViewFromTemplate(storeManager, "Projects", StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
+        let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", true, projectStore, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
+        this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createProjectContact", false, projectStore);
+
+        // We're creating 2 identical stores!
+        this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, projectStore);
+        this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
 
         eventRouter = new EventRouter();
         eventRouter.AddRoute("DeleteRecord", (store, idx) => {
@@ -297,7 +355,8 @@ export class AppMain {
             let rel = relArray[0];
 
             rel.children.forEach(child => {
-                let builder = builders[child].builder;
+                let builderName = this.GetBuilderName(parentStoreName, child);
+                let builder = builders[builderName].builder;
                 this.DeleteAllRecordsView(builder);
                 let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
                 let childStore = childRecs.store;
@@ -322,7 +381,10 @@ export class AppMain {
         createCallback: (idx: number, store: Store) => void = _ => { }
         ): Store {
         let store = storeManager.CreateStore(storeName, storeType);
-        let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName);
+        // ?. operator.  
+        // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
+        let parentStoreName = parentStore && parentStore.storeName || undefined;        
+        let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName, parentStoreName);
         this.AssignStoreCallbacks(store, builder);
 
         jQuery(document).ready(() => {
