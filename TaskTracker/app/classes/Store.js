@@ -70,10 +70,10 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             this.data[idx] = record;
             return this;
         }
-        SetProperty(idx, field, value) {
+        SetProperty(idx, field, value, builder) {
             this.CreateRecordIfMissing(idx);
             this.data[idx][field] = value;
-            this.propertyChangedCallback(idx, field, value, this);
+            this.propertyChangedCallback(idx, field, value, this, builder);
             return this;
         }
         GetProperty(idx, property) {
@@ -81,23 +81,23 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             let value = this.data[idx][property];
             return value;
         }
-        CreateRecord(insert = false) {
+        CreateRecord(builder, insert = false) {
             let nextIdx = 0;
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
             this.data[nextIdx] = this.GetPrimaryKey();
-            this.recordCreatedCallback(nextIdx, {}, insert, this);
+            this.recordCreatedCallback(nextIdx, {}, insert, this, builder);
             return nextIdx;
         }
-        DeleteRecord(idx) {
-            this.recordDeletedCallback(idx, this);
+        DeleteRecord(idx, builder) {
+            this.recordDeletedCallback(idx, this, builder);
             delete this.data[idx];
             if (this.selectedRecordIndex == idx) {
                 this.selectedRecordIndex = -1;
             }
         }
-        Load(createRecordView = true) {
+        Load(createRecordView = true, builder) {
             this.data = {};
             switch (this.storeType) {
                 case StoreType_1.StoreType.InMemory:
@@ -123,7 +123,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     break;
             }
             if (createRecordView) {
-                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
+                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, builder));
             }
             return this;
         }

@@ -8,8 +8,8 @@ define(["require", "exports"], function (require, exports) {
         AddRoute(routeName, fnc) {
             this.routes[routeName] = fnc;
         }
-        Route(routeName, store, idx) {
-            return this.routes[routeName](store, idx);
+        Route(routeName, store, idx, builder) {
+            return this.routes[routeName](store, idx, builder);
         }
     }
     exports.EventRouter = EventRouter;

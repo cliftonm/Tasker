@@ -1582,6 +1582,157 @@ record is deleted:</p>
 
   this.DeleteRecord(relRecIdx);
 }</pre>
+<h2>Day 9: Bugs</h2>
+<p>So in creating a more rich relationship model:</p>
+<pre>var relationships : Relationship[] = [
+{
+  parent: &quot;Projects&quot;,
+  children: [&quot;Tasks&quot;, &quot;Contacts&quot;, &quot;Notes&quot;]
+},
+{
+  parent: &quot;Tasks&quot;,
+  children: [&quot;Notes&quot;]
+}
+];</pre>
+<p>in which Notes are children of both Projects and Tasks, a couple bugs came 
+up.&nbsp; </p>
+<h3>Bug: Create a Store Only Once</h3>
+<p>First is the issue that I was creating the Notes store twice, which is 
+fixed checking if the store exists:</p>
+<pre>private CreateStoreViewFromTemplate(
+...
+): Store {
+
+// ?. operator. 
+// Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017. VS2019?
+let parentStoreName = parentStore &amp;&amp; parentStore.storeName || undefined;
+let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName, parentStoreName);
+let store = undefined;
+
+if (storeManager.HasStore(storeName)) {
+  store = storeManager.GetStore(storeName);
+} else {
+  store = storeManager.CreateStore(storeName, storeType);
+  this.AssignStoreCallbacks(store, builder);
+}</pre>
+<h3>Bug: Associate the Builder with the correct Parent-Child Context</h3>
+<p>Second, the builder has to be parent-child aware so that &quot;Create Task Note&quot; 
+uses the Task-Note builder, not the Project-Note builder.&nbsp; This was easy 
+enough (though sort of kludgy) to fix:</p>
+<pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
+  return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
+}</pre>
+<p>And...</p>
+<pre>private CreateHtmlTemplate(templateContainerID: string, template: Items, storeManager: StoreManager, storeName: string, parentStoreName: string): TemplateBuilder {
+  let builder = new TemplateBuilder(templateContainerID);
+  let builderName = this.GetBuilderName(parentStoreName, storeName);
+  builders[builderName] = { builder, template: templateContainerID };
+  ...</pre>
+<h3>Bug: Associate the CRUD Operations with the Correct Builder Context</h3>
+<p>The third problem is more insidious, in the call to <code>AssignStoreCallbacks</code>:</p>
+<pre>private AssignStoreCallbacks(store: Store, builder: TemplateBuilder): void {
+  store.recordCreatedCallback = (idx, record, insert, store) =&gt; this.CreateRecordView(builder, store, idx, insert);
+  store.propertyChangedCallback = (idx, field, value, store) =&gt; this.UpdatePropertyView(builder, store, idx, field, value);
+  store.recordDeletedCallback = (idx, store) =&gt; {
+    parentChildRelationshipStore.DeleteRelationship(store, idx);
+    this.DeleteRecordView(builder, idx);
+  }
+}</pre>
+<p>The problem here is that the builder is the one associated with the store 
+when the store is first created.&nbsp; The bug is that because this is the Notes 
+store for the Project-Notes builder, adding a Task-Note adds the note to the 
+Project-Notes instead!&nbsp; Two things need to happen:</p>
+<ol>
+	<li>There should only be one callback for the store.</li>
+	<li>But the builder must be specific to the &quot;context&quot; of the CRUD operation.</li>
+</ol>
+<p>The fix for this is to pass into the store the &quot;context&quot; for the CRUD 
+operations.&nbsp; At the moment I'm just passing in the <code>TemplateBuilder</code> instance 
+because I'm too lazy to create a <code>Context</code> class and I'm not sure it's needed:</p>
+<p>The upshot of it is that the CRUD callbacks now get the builder context which 
+they pass along to the handler:</p>
+<pre>private AssignStoreCallbacks(store: Store): void {
+  store.recordCreatedCallback = (idx, record, insert, store, builder) =&gt; this.CreateRecordView(builder, store, idx, insert);
+  store.propertyChangedCallback = (idx, field, value, store, builder) =&gt; this.UpdatePropertyView(builder, store, idx, field, value);
+  store.recordDeletedCallback = (idx, store, builder) =&gt; {
+    parentChildRelationshipStore.DeleteRelationship(store, idx);
+    this.DeleteRecordView(builder, idx);
+  }
+}</pre>
+<h3>Bug: Grandchild Views Need to be Removed When Child List Changes</h3>
+<p>If I create a two projects with different tasks and task notes, where the 
+task note is the grandchild, when I select a different project, the project 
+children update (the project tasks) but the task notes remain on-screen, which 
+leads to a lot of confusion.&nbsp; The function ShowChildRecords is great, but 
+we need to remove grandchild records as the child context has changed.&nbsp; So 
+this piece of code:</p>
+<pre>jel.on('focus', () =&gt; {
+  if (store.selectedRecordIndex != recIdx) {
+    this.RecordSelected(builder, recIdx);
+    store.selectedRecordIndex = recIdx;
+    this.ShowChildRecords(store, recIdx, relationships);
+  }
+});</pre>
+<p>Gets an additional function call:</p>
+<pre>jel.on('focus', () =&gt; {
+  if (store.selectedRecordIndex != recIdx) {
+    this.RecordSelected(builder, recIdx);
+    store.selectedRecordIndex = recIdx;
+    this.ShowChildRecords(store, recIdx, relationships);
+    this.RemoveGrandchildRecordsView(store, recIdx, relationships);
+  }
+});</pre>
+<p>which is implemented as:</p>
+<pre>private RemoveGrandchildRecordsView(parentStore: Store, parentRecIdx: number, relationships: Relationship[]) : void {
+  let parentStoreName = parentStore.storeName;
+  let parentId = parentStore.GetProperty(parentRecIdx, &quot;__ID&quot;);
+  let relArray = relationships.filter(r =&gt; r.parent == parentStoreName);
+
+  // Only one record for the parent type should exist.
+  if (relArray.length == 1) {
+    let rel = relArray[0];
+
+    rel.children.forEach(child =&gt; {
+      let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
+      let childStore = childRecs.store;
+      let grandchildRelArray = relationships.filter(r =&gt; r.parent == child);
+
+      if (grandchildRelArray.length == 1) {
+        let relChild = grandchildRelArray[0];
+
+        relChild.children.forEach(grandchild =&gt; {
+          let builderName = this.GetBuilderName(child, grandchild);
+          let builder = builders[builderName].builder;
+          this.DeleteAllRecordsView(builder);
+        });
+      }
+    });
+  }
+}</pre>
+<p>And of course this needs to be done recursively!</p>
+<h3>Bug: Deleting a Parent Should Remove Child Template Views</h3>
+<p>This is great to remove the template view of the record being deleted:</p>
+<pre>store.recordDeletedCallback = (idx, store, builder) =&gt; {
+  parentChildRelationshipStore.DeleteRelationship(store, idx);
+  this.DeleteRecordView(builder, idx);</pre>
+<p>but 
+the child, grandchild, etc., template views need to be removed as well:</p>
+<p>&nbsp;</p>
+<h3>Nicety: Focus on First Field when Adding a Record</h3>
+<p>Trying to avoid unnecessary clicks, this:</p>
+<pre>private FocusOnFirstField(builder: TemplateBuilder, idx: number) {
+  let tel = builder.elements[0];
+  let guid = tel.guid.ToString();
+  jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`).focus();
+}</pre>
+<p>when called here:</p>
+<pre>store.recordCreatedCallback = (idx, record, insert, store, builder) =&gt; {
+  this.CreateRecordView(builder, store, idx, insert);
+  this.FocusOnFirstField(builder, idx);
+};</pre>
+<p>Makes life a lot nicer.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

@@ -7,6 +7,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
     var storeManager;
     var eventRouter;
     var parentChildRelationshipStore;
+    // Add bugs and meetings
     var relationships = [
         {
             parent: "Projects",
@@ -185,22 +186,27 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
             let projectStore = this.CreateStoreViewFromTemplate(storeManager, "Projects", StoreType_1.StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
-            let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType_1.StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", true, projectStore, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
+            let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType_1.StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", false, projectStore, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
             this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType_1.StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createProjectContact", false, projectStore);
             // We're creating 2 identical stores!
             this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, projectStore);
             this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
             eventRouter = new EventRouter_1.EventRouter();
-            eventRouter.AddRoute("DeleteRecord", (store, idx) => {
-                store.DeleteRecord(idx);
+            eventRouter.AddRoute("DeleteRecord", (store, idx, builder) => {
+                store.DeleteRecord(idx, builder);
                 store.Save();
             });
-            eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
+            eventRouter.AddRoute("CreateRecord", (store, idx, builder) => store.CreateRecord(builder, true));
         }
-        AssignStoreCallbacks(store, builder) {
-            store.recordCreatedCallback = (idx, record, insert, store) => this.CreateRecordView(builder, store, idx, insert);
-            store.propertyChangedCallback = (idx, field, value, store) => this.UpdatePropertyView(builder, store, idx, field, value);
-            store.recordDeletedCallback = (idx, store) => {
+        AssignStoreCallbacks(store) {
+            store.recordCreatedCallback = (idx, record, insert, store, builder) => {
+                this.CreateRecordView(builder, store, idx, insert);
+                this.FocusOnFirstField(builder, idx);
+            };
+            store.propertyChangedCallback = (idx, field, value, store, builder) => this.UpdatePropertyView(builder, store, idx, field, value);
+            store.recordDeletedCallback = (idx, store, builder) => {
+                // Remove child template views before we start deleting relationships!
+                this.RemoveChildRecordsView(store, idx);
                 parentChildRelationshipStore.DeleteRelationship(store, idx);
                 this.DeleteRecordView(builder, idx);
             };
@@ -224,6 +230,11 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 jel.val(val);
             }
         }
+        FocusOnFirstField(builder, idx) {
+            let tel = builder.elements[0];
+            let guid = tel.guid.ToString();
+            jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`).focus();
+        }
         UpdatePropertyView(builder, store, idx, field, value) {
             let tel = builder.elements.find(e => e.item.field == field);
             let guid = tel.guid.ToString();
@@ -231,8 +242,12 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             jel.val(value);
         }
         DeleteRecordView(builder, idx) {
-            let path = `${builder.templateContainerID} > [templateIdx='${idx}']`;
-            jQuery(path).remove();
+            // Not all stores have views.
+            if (builder) {
+                console.log(`Removing template view: ${builder.templateContainerID} > [templateIdx='${idx}']`);
+                let path = `${builder.templateContainerID} > [templateIdx='${idx}']`;
+                jQuery(path).remove();
+            }
         }
         DeleteAllRecordsView(builder) {
             let path = `${builder.templateContainerID}`;
@@ -250,16 +265,17 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     if (onCondition(recIdx)) {
                         jel.on('focus', () => {
                             if (store.selectedRecordIndex != recIdx) {
+                                this.RemoveChildRecordsView(store, store.selectedRecordIndex);
                                 this.RecordSelected(builder, recIdx);
                                 store.selectedRecordIndex = recIdx;
-                                this.ShowChildRecords(store, recIdx, relationships);
+                                this.ShowChildRecords(store, recIdx);
                             }
                         });
                         switch (el.item.control) {
                             case "button":
                                 jel.on('click', () => {
                                     console.log(`click for ${guid} at index ${recIdx}`);
-                                    eventRouter.Route(el.item.route, store, recIdx);
+                                    eventRouter.Route(el.item.route, store, recIdx, builder);
                                 });
                                 break;
                             case "textarea":
@@ -269,7 +285,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                                     let field = el.item.field;
                                     let val = jel.val();
                                     console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
-                                    storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+                                    storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
                                 });
                                 break;
                         }
@@ -282,7 +298,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             let path = `${builder.templateContainerID} > [templateIdx='${recIdx}']`;
             jQuery(path).addClass("recordSelected");
         }
-        ShowChildRecords(parentStore, parentRecIdx, relationships) {
+        ShowChildRecords(parentStore, parentRecIdx) {
             let parentStoreName = parentStore.storeName;
             let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
             let relArray = relationships.filter(r => r.parent == parentStoreName);
@@ -291,16 +307,57 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 let rel = relArray[0];
                 rel.children.forEach(child => {
                     let builderName = this.GetBuilderName(parentStoreName, child);
-                    let builder = builders[builderName].builder;
-                    this.DeleteAllRecordsView(builder);
-                    let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
-                    let childStore = childRecs.store;
-                    childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
-                        let rec = childStore.GetRecord(recIdx);
-                        this.CreateRecordView(builder, childStore, recIdx, false);
-                    });
+                    if (builders[builderName]) {
+                        let builder = builders[builderName].builder;
+                        let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
+                        let childStore = childRecs.store;
+                        childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
+                            this.CreateRecordView(builder, childStore, recIdx, false);
+                        });
+                    }
+                    else {
+                        console.log(`Builders collection does not have an entry for the builder: ${builderName}`);
+                    }
                 });
             }
+        }
+        // Recursively remove all child view records.
+        RemoveChildRecordsView(store, recIdx) {
+            let storeName = store.storeName;
+            let id = store.GetProperty(recIdx, "__ID");
+            let rels = relationships.filter(r => r.parent == storeName);
+            if (rels.length == 1) {
+                let childEntities = rels[0].children;
+                childEntities.forEach(childEntity => {
+                    if (storeManager.HasStore(childEntity)) {
+                        var info = parentChildRelationshipStore.GetChildInfo(storeName, id, childEntity);
+                        info.childrenIndices.forEach(childRecIdx => {
+                            let builderName = this.GetBuilderName(storeName, childEntity);
+                            let builder = builders[builderName].builder;
+                            this.DeleteRecordView(builder, childRecIdx);
+                            this.RemoveChildRecordsView(storeManager.GetStore(childEntity), childRecIdx);
+                        });
+                    }
+                });
+            }
+            /*
+            relChild.children.forEach(grandchild => {
+                let builderName = this.GetBuilderName(child, grandchild);
+    
+                if (builders[builderName]) {
+                    let builder = builders[builderName].builder;
+                    this.DeleteAllRecordsView(builder);
+    
+                    let relArray = relationships.filter(r => r.parent == grandchild);
+                    if (relArray.length == 1) {
+                        let rel = relArray[0];
+                        this.RemoveChildRecordsView(grandchild, rel);
+                    }
+                } else {
+                    console.log(`Builders collection does not have an entry for the builder: ${builderName}`);
+                }
+            });
+            */
         }
         CreateStoreViewFromTemplate(storeManager, storeName, storeType, containerName, template, createButtonId, updateView = true, parentStore = undefined, createCallback = _ => { }) {
             // ?. operator.  
@@ -313,14 +370,14 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             }
             else {
                 store = storeManager.CreateStore(storeName, storeType);
-                this.AssignStoreCallbacks(store, builder);
+                this.AssignStoreCallbacks(store);
             }
             jQuery(document).ready(() => {
                 if (updateView) {
                     this.BindElementEvents(builder, _ => true);
                 }
                 jQuery(createButtonId).on('click', () => {
-                    let idx = eventRouter.Route("CreateRecord", store, 0); // insert at position 0
+                    let idx = eventRouter.Route("CreateRecord", store, 0, builder); // insert at position 0
                     createCallback(idx, store);
                     if (parentStore) {
                         parentChildRelationshipStore.AddRelationship(parentStore, store, idx);
@@ -328,7 +385,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     store.Save();
                 });
             });
-            store.Load(updateView);
+            store.Load(updateView, builder);
             return store;
         }
     }

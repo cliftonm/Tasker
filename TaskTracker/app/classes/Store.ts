@@ -1,4 +1,5 @@
-﻿import { StoreType } from "../enums/StoreType"
+﻿import { TemplateBuilder } from "./TemplateBuilder";
+import { StoreType } from "../enums/StoreType"
 import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { StoreManager } from "./StoreManager";
 
@@ -9,9 +10,9 @@ export class Store {
     storeName: string;
     storeManager: StoreManager;
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
-    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store) => void = () => { };         
-    propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
-    recordDeletedCallback: (idx: number, store: Store) => void = () => { };         
+    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, builder: TemplateBuilder) => void = () => { };
+    propertyChangedCallback: (idx: number, field: string, value: any, store: Store, builder: TemplateBuilder) => void = () => { };
+    recordDeletedCallback: (idx: number, store: Store, builder: TemplateBuilder) => void = () => { };         
 
     constructor(storeManager: StoreManager, storeType: StoreType, storeName: string) {
         this.storeManager = storeManager;
@@ -95,10 +96,10 @@ export class Store {
         return this;
     }
 
-    public SetProperty(idx: number, field: string, value: any): Store {
+    public SetProperty(idx: number, field: string, value: any, builder?: TemplateBuilder): Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx][field] = value;
-        this.propertyChangedCallback(idx, field, value, this);
+        this.propertyChangedCallback(idx, field, value, this, builder);
 
         return this;
     }
@@ -110,7 +111,7 @@ export class Store {
         return value;
     }
 
-    public CreateRecord(insert = false): number {
+    public CreateRecord(builder?: TemplateBuilder, insert = false): number {
         let nextIdx = 0;
 
         if (this.Records() > 0) {
@@ -118,13 +119,13 @@ export class Store {
         }
 
         this.data[nextIdx] = this.GetPrimaryKey();
-        this.recordCreatedCallback(nextIdx, {}, insert, this);
+        this.recordCreatedCallback(nextIdx, {}, insert, this, builder);
 
         return nextIdx;
     }
 
-    public DeleteRecord(idx: number) : void {
-        this.recordDeletedCallback(idx, this);
+    public DeleteRecord(idx: number, builder?: TemplateBuilder) : void {
+        this.recordDeletedCallback(idx, this, builder);
         delete this.data[idx];
 
         if (this.selectedRecordIndex == idx) {
@@ -132,7 +133,7 @@ export class Store {
         }
     }
 
-    public Load(createRecordView : boolean = true): Store {
+    public Load(createRecordView: boolean = true, builder?: TemplateBuilder): Store {
         this.data = {};
 
         switch (this.storeType) {
@@ -162,7 +163,7 @@ export class Store {
         }
 
         if (createRecordView) {
-            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this));
+            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, builder));
         }
 
         return this;
