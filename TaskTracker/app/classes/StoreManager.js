@@ -6,6 +6,9 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
             this.stores = {};
             this.getPrimaryKeyCallback = () => { };
         }
+        HasStore(storeName) {
+            return this.stores[storeName] !== undefined;
+        }
         CreateStore(storeName, storeType) {
             let store = new Store_1.Store(this, storeType, storeName);
             this.stores[storeName] = store;

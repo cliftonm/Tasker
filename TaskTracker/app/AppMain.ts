@@ -379,13 +379,20 @@ export class AppMain {
         updateView: boolean = true,
         parentStore: Store = undefined,
         createCallback: (idx: number, store: Store) => void = _ => { }
-        ): Store {
-        let store = storeManager.CreateStore(storeName, storeType);
+    ): Store {
+
         // ?. operator.  
         // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
-        let parentStoreName = parentStore && parentStore.storeName || undefined;        
+        let parentStoreName = parentStore && parentStore.storeName || undefined;
         let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName, parentStoreName);
-        this.AssignStoreCallbacks(store, builder);
+
+        let store = undefined;
+        if (storeManager.HasStore(storeName)) {
+            store = storeManager.GetStore(storeName);
+        } else {
+            store = storeManager.CreateStore(storeName, storeType);
+            this.AssignStoreCallbacks(store, builder);
+        }
 
         jQuery(document).ready(() => {
             if (updateView) {

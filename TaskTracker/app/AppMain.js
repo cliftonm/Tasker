@@ -303,12 +303,18 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             }
         }
         CreateStoreViewFromTemplate(storeManager, storeName, storeType, containerName, template, createButtonId, updateView = true, parentStore = undefined, createCallback = _ => { }) {
-            let store = storeManager.CreateStore(storeName, storeType);
             // ?. operator.  
             // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
             let parentStoreName = parentStore && parentStore.storeName || undefined;
             let builder = this.CreateHtmlTemplate(containerName, template, storeManager, storeName, parentStoreName);
-            this.AssignStoreCallbacks(store, builder);
+            let store = undefined;
+            if (storeManager.HasStore(storeName)) {
+                store = storeManager.GetStore(storeName);
+            }
+            else {
+                store = storeManager.CreateStore(storeName, storeType);
+                this.AssignStoreCallbacks(store, builder);
+            }
             jQuery(document).ready(() => {
                 if (updateView) {
                     this.BindElementEvents(builder, _ => true);

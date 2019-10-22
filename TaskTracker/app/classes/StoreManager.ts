@@ -4,7 +4,11 @@ import { KeyStoreMap } from "../interfaces/KeyStoreMap"
 
 export class StoreManager {
     stores: KeyStoreMap = {};
-    getPrimaryKeyCallback: (storeName: string) => any = () => {};
+    getPrimaryKeyCallback: (storeName: string) => any = () => { };
+
+    public HasStore(storeName: string): boolean {
+        return this.stores[storeName] !== undefined;
+    }
 
     public CreateStore(storeName: string, storeType: StoreType): Store {
         let store = new Store(this, storeType, storeName);
