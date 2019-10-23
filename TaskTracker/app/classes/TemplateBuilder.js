@@ -51,16 +51,16 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             return this;
         }
         Combobox(item, storeManager) {
-            this.SelectBegin(item);
+            this.SelectBegin(item, item.storeName);
             storeManager.GetStoreData(item.storeName).forEach(kv => {
                 this.Option(kv.text);
             });
             this.SelectEnd();
             return this;
         }
-        SelectBegin(item) {
+        SelectBegin(item, listStore) {
             let guid = Guid_1.Guid.NewGuid();
-            this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
+            this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;

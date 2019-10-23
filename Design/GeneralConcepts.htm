@@ -1659,7 +1659,11 @@ they pass along to the handler:</p>
     this.DeleteRecordView(builder, idx);
   }
 }</pre>
-<h3>Bug: Grandchild Views Need to be Removed When Child List Changes</h3>
+<h3>Two Bugs, Same Solution</h3>
+<ul>
+	<li>Grandchild Views Need to be Removed When Child List Changes</li>
+<li>Deleting a Parent Should Remove Child Template Views</li>
+</ul>
 <p>If I create a two projects with different tasks and task notes, where the 
 task note is the grandchild, when I select a different project, the project 
 children update (the project tasks) but the task notes remain on-screen, which 
@@ -1676,48 +1680,62 @@ this piece of code:</p>
 <p>Gets an additional function call:</p>
 <pre>jel.on('focus', () =&gt; {
   if (store.selectedRecordIndex != recIdx) {
+    this.RemoveChildRecordsView(store, store.selectedRecordIndex);
     this.RecordSelected(builder, recIdx);
     store.selectedRecordIndex = recIdx;
     this.ShowChildRecords(store, recIdx, relationships);
-    this.RemoveGrandchildRecordsView(store, recIdx, relationships);
   }
 });</pre>
 <p>which is implemented as:</p>
-<pre>private RemoveGrandchildRecordsView(parentStore: Store, parentRecIdx: number, relationships: Relationship[]) : void {
-  let parentStoreName = parentStore.storeName;
-  let parentId = parentStore.GetProperty(parentRecIdx, &quot;__ID&quot;);
-  let relArray = relationships.filter(r =&gt; r.parent == parentStoreName);
+<pre>// Recursively remove all child view records.
+private RemoveChildRecordsView(store: Store, recIdx: number): void {
+  let storeName = store.storeName;
+  let id = store.GetProperty(recIdx, &quot;__ID&quot;);
+  let rels = relationships.filter(r =&gt; r.parent == storeName);
 
-  // Only one record for the parent type should exist.
-  if (relArray.length == 1) {
-    let rel = relArray[0];
+  if (rels.length == 1) {
+    let childEntities = rels[0].children;
 
-    rel.children.forEach(child =&gt; {
-      let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);
-      let childStore = childRecs.store;
-      let grandchildRelArray = relationships.filter(r =&gt; r.parent == child);
-
-      if (grandchildRelArray.length == 1) {
-        let relChild = grandchildRelArray[0];
-
-        relChild.children.forEach(grandchild =&gt; {
-          let builderName = this.GetBuilderName(child, grandchild);
+    childEntities.forEach(childEntity =&gt; {
+      if (storeManager.HasStore(childEntity)) {
+        var info = parentChildRelationshipStore.GetChildInfo(storeName, id, childEntity);
+        info.childrenIndices.forEach(childRecIdx =&gt; {
+          let builderName = this.GetBuilderName(storeName, childEntity);
           let builder = builders[builderName].builder;
-          this.DeleteAllRecordsView(builder);
+          this.DeleteRecordView(builder, childRecIdx);
+          this.RemoveChildRecordsView(storeManager.GetStore(childEntity), childRecIdx);
         });
       }
     });
   }
 }</pre>
-<p>And of course this needs to be done recursively!</p>
-<h3>Bug: Deleting a Parent Should Remove Child Template Views</h3>
-<p>This is great to remove the template view of the record being deleted:</p>
-<pre>store.recordDeletedCallback = (idx, store, builder) =&gt; {
-  parentChildRelationshipStore.DeleteRelationship(store, idx);
-  this.DeleteRecordView(builder, idx);</pre>
-<p>but 
-the child, grandchild, etc., template views need to be removed as well:</p>
-<p>&nbsp;</p>
+<h3>Bug: The Selected Record is Parent-Child Dependent</h3>
+<p>When a store is shared between two different parents, the selected record is 
+specific to the parent-child relationship, not the store!&nbsp; </p>
+<h4>Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</h4>
+<p>No.&nbsp; For example, if I have a parent-child relationship B-C, and a 
+hierarchy of A-B-C and D-B-C, the specific context of the records in C is 
+associated with its relationship to B's records.&nbsp; And while B's context is 
+in relationship to A's records, the selected record for the store depends on 
+whether the entity path is A-B-C or D-B-C.&nbsp; Please realize that &quot;A&quot; and &quot;D&quot; 
+different <i>entity types</i>, not different records of the same entity.</p>
+<p>Even the template builder name is not a 2-level parent-child relationship.&nbsp; 
+This works so far because the relationships are all uniquely defined with two 
+levels of hierarchy.&nbsp; But insert another top level to the hierarchy and the 
+template builder name's relationship to the builder (and the specific <code>templateContainerID</code> 
+with which the builder is associated) fails.</p>
+<h4>Solution</h4>
+<p>This means that if we don't want to keep fixing up the code, we have to have 
+a general purpose solution to the issue of identifying:</p>
+<ol>
+	<li>The correct builder;</li>
+	<li>The selected record;</li>
+</ol>
+<p>as they are associated with the <i>entity type</i> hierarchy, no matter how 
+deep.&nbsp; Keep in mind that the parent-child relationship model is still valid 
+because it is associating relationships between parent and child entity <i>
+instances</i> whereas the builder and UI management is working often with the <i>
+entity type</i> hierarchy.</p>
 <h3>Nicety: Focus on First Field when Adding a Record</h3>
 <p>Trying to avoid unnecessary clicks, this:</p>
 <pre>private FocusOnFirstField(builder: TemplateBuilder, idx: number) {
@@ -1731,9 +1749,32 @@ the child, grandchild, etc., template views need to be removed as well:</p>
   this.FocusOnFirstField(builder, idx);
 };</pre>
 <p>Makes life a lot nicer.</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<h2>Day 10: A Few More Niceties</h2>
+<p>So I've also added links at the project and task level so I can reference internal and 
+online links that are related to the project:</p>
+<pre>var relationships : Relationship[] = [
+  {
+    parent: &quot;Projects&quot;,
+    children: [&quot;Tasks&quot;, &quot;Contacts&quot;, &quot;Links&quot;, &quot;Notes&quot;]
+  },
+  {
+    parent: &quot;Tasks&quot;,
+    children: [&quot;Links&quot;, &quot;Notes&quot;]
+  }
+];</pre>
+<p>And the related HTML and template were created as well.</p>
+<h3>This is How Life Should Work</h3>
+<p>Just now I also decided I wanted to add &quot;Title&quot; to the Contact.&nbsp; So all 
+I did was add this line to the <code>contactTemplate</code>:</p>
+<pre>{ field: &quot;Title&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },</pre>
+<p>Done.&nbsp; What didn't have to happen was that I didn't have to change some 
+model definition of the client-side.&nbsp; And of course I didn't have to 
+implement a DB-schema migration, and I didn't have change some EntityFramework 
+or Linq2SQL entity model in C#.&nbsp; Frankly, when I add server-side database 
+support, I still don't want to do any of that stuff!&nbsp; I should be able to 
+touch one place and one place only: the template that describes what fields I 
+want to see and where they are.&nbsp; Everything else should just figure out how 
+to adjust.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

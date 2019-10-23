@@ -76,7 +76,7 @@ export class TemplateBuilder
     }
 
     public Combobox(item: Item, storeManager: StoreManager) : TemplateBuilder {
-        this.SelectBegin(item);
+        this.SelectBegin(item, item.storeName);
 
         storeManager.GetStoreData(item.storeName).forEach(kv => {
             this.Option(kv.text);
@@ -87,9 +87,9 @@ export class TemplateBuilder
         return this;
     }
 
-    public SelectBegin(item: Item) : TemplateBuilder {
+    public SelectBegin(item: Item, listStore: string) : TemplateBuilder {
         let guid = Guid.NewGuid();
-        this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
+        this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 

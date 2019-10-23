@@ -11,11 +11,11 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
     var relationships = [
         {
             parent: "Projects",
-            children: ["Tasks", "Contacts", "Notes"]
+            children: ["Tasks", "Contacts", "Links", "Notes"]
         },
         {
             parent: "Tasks",
-            children: ["Notes"]
+            children: ["Links", "Notes"]
         }
     ];
     var builders = {};
@@ -92,7 +92,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 {
                     text: "Delete",
                     line: 1,
-                    width: "20%",
+                    width: "80px",
                     control: "button",
                     route: "DeleteRecord",
                 }
@@ -121,7 +121,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 {
                     text: "Delete",
                     line: 1,
-                    width: "20%",
+                    width: "80px",
                     control: "button",
                     route: "DeleteRecord",
                 }
@@ -137,41 +137,47 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 {
                     text: "Delete",
                     line: 0,
-                    width: "20%",
+                    width: "80px",
                     control: "button",
                     route: "DeleteRecord",
                 }
             ];
             let contactTemplate = [
-                { field: "Name", line: 0, width: "50%", control: "textbox" },
-                { field: "Email", line: 0, width: "50%", control: "textbox" },
+                { field: "Name", line: 0, width: "30%", control: "textbox" },
+                { field: "Email", line: 0, width: "30%", control: "textbox" },
+                { field: "Title", line: 0, width: "30%", control: "textbox" },
                 { field: "Comment", line: 1, width: "80%", control: "textbox" },
-                { text: "Delete", line: 1, width: "20%", control: "button", route: "DeleteRecord" }
+                { text: "Delete", line: 1, width: "80px", control: "button", route: "DeleteRecord" }
+            ];
+            let linkTemplate = [
+                { field: "Description", line: 0, width: "30%", control: "textbox" },
+                { field: "URL", line: 0, width: "30%", control: "textbox" },
+                { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
             let projectStates = [
-                { text: 'Ongoing' },
-                { text: 'TODO' },
-                { text: 'Working On' },
-                { text: 'Testing' },
-                { text: 'QA' },
-                { text: 'Done' },
-                { text: 'On Production' },
-                { text: 'Waiting on 3rd Party' },
-                { text: 'Waiting on Coworker' },
-                { text: 'Waiting on Management' },
-                { text: 'Stuck' },
+                { text: 'Ongoing', bcolor: 'blue' },
+                { text: 'TODO', bcolor: 'purple' },
+                { text: 'Working On', bcolor: 'lightblue' },
+                { text: 'Testing', bcolor: 'lightblue' },
+                { text: 'QA', bcolor: 'lightblue' },
+                { text: 'Done', bcolor: 'lightgreen' },
+                { text: 'On Production', bcolor: 'green' },
+                { text: 'Waiting on 3rd Party', bcolor: 'orange' },
+                { text: 'Waiting on Coworker', bcolor: 'orange' },
+                { text: 'Waiting on Management', bcolor: 'orange' },
+                { text: 'Stuck', bcolor: 'red' },
             ];
             let taskStates = [
-                { text: 'TODO' },
-                { text: 'Working On' },
-                { text: 'Testing' },
-                { text: 'QA' },
-                { text: 'Done' },
-                { text: 'On Production' },
-                { text: 'Waiting on 3rd Party' },
-                { text: 'Waiting on Coworker' },
-                { text: 'Waiting on Management' },
-                { text: 'Stuck' },
+                { text: 'TODO', bcolor: 'purple' },
+                { text: 'Working On', bcolor: 'lightblue' },
+                { text: 'Testing', bcolor: 'lightblue' },
+                { text: 'QA', bcolor: 'lightblue' },
+                { text: 'Done', bcolor: 'lightgreen' },
+                { text: 'On Production', bcolor: 'green' },
+                { text: 'Waiting on 3rd Party', bcolor: 'orange' },
+                { text: 'Waiting on Coworker', bcolor: 'orange' },
+                { text: 'Waiting on Management', bcolor: 'orange' },
+                { text: 'Stuck', bcolor: 'red' },
             ];
             storeManager = new StoreManager_1.StoreManager();
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, StoreType_1.StoreType.LocalStorage, "Sequences");
@@ -187,8 +193,9 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
             parentChildRelationshipStore.Load();
             let projectStore = this.CreateStoreViewFromTemplate(storeManager, "Projects", StoreType_1.StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
             let taskStore = this.CreateStoreViewFromTemplate(storeManager, "Tasks", StoreType_1.StoreType.LocalStorage, "#taskTemplateContainer", taskTemplate, "#createTask", false, projectStore, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-            this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType_1.StoreType.LocalStorage, "#contactTemplateContainer", contactTemplate, "#createProjectContact", false, projectStore);
-            // We're creating 2 identical stores!
+            this.CreateStoreViewFromTemplate(storeManager, "Contacts", StoreType_1.StoreType.LocalStorage, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, projectStore);
+            this.CreateStoreViewFromTemplate(storeManager, "Links", StoreType_1.StoreType.LocalStorage, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, projectStore);
+            this.CreateStoreViewFromTemplate(storeManager, "Links", StoreType_1.StoreType.LocalStorage, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, taskStore);
             this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, projectStore);
             this.CreateStoreViewFromTemplate(storeManager, "Notes", StoreType_1.StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, taskStore);
             eventRouter = new EventRouter_1.EventRouter();
@@ -286,6 +293,16 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                                     let val = jel.val();
                                     console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
                                     storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
+                                    // TODO: Move this very custom behavior out into a view handler
+                                    let listStoreName = jel.attr('listStore');
+                                    let listStore = storeManager.GetStore(listStoreName);
+                                    if (listStore) {
+                                        let selectedIdx = listStore.FindRecord(r => r.text == val);
+                                        if (selectedIdx != -1) {
+                                            let bcolor = listStore.GetProperty(selectedIdx, "bcolor");
+                                            jel.css("background-color", bcolor);
+                                        }
+                                    }
                                 });
                                 break;
                         }
@@ -340,24 +357,6 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     }
                 });
             }
-            /*
-            relChild.children.forEach(grandchild => {
-                let builderName = this.GetBuilderName(child, grandchild);
-    
-                if (builders[builderName]) {
-                    let builder = builders[builderName].builder;
-                    this.DeleteAllRecordsView(builder);
-    
-                    let relArray = relationships.filter(r => r.parent == grandchild);
-                    if (relArray.length == 1) {
-                        let rel = relArray[0];
-                        this.RemoveChildRecordsView(grandchild, rel);
-                    }
-                } else {
-                    console.log(`Builders collection does not have an entry for the builder: ${builderName}`);
-                }
-            });
-            */
         }
         CreateStoreViewFromTemplate(storeManager, storeName, storeType, containerName, template, createButtonId, updateView = true, parentStore = undefined, createCallback = _ => { }) {
             // ?. operator.  

@@ -1,14 +1,19 @@
 ﻿.createButton {
+    margin-left: 3px;
     margin-bottom: 3px;
 }
 
 .templateContainer {
-    width: 40%;
+    /*width: 40%;*/
 }
 
 .entitySeparator {
     margin-bottom: 10px;
     clear:both;
+}
+
+.reset {
+    clear: both;
 }
 
 .recordSeparator {
@@ -25,4 +30,17 @@
     border-left-style: solid;
     border-left-width: 3px;
     border-left-color: green;
+}
+
+.row {
+    float:left;
+}
+
+.col1 {
+    width: 45%;
+}
+
+.col2 {
+    margin-left: 10px;
+    width: 45%;
 }

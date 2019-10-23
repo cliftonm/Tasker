@@ -25,7 +25,7 @@ export class Store {
         return Object.keys(this.data).length;
     }
 
-    public FindRecord(where: ({ }) => boolean): number {
+    public FindRecord(where: (any) => boolean): number {
         let idx = -1;
 
         for (let k of Object.keys(this.data)) {
@@ -38,7 +38,7 @@ export class Store {
         return idx;
     }
 
-    public FindRecords(where: ({ }) => boolean): number[] {
+    public FindRecords(where: (any) => boolean): number[] {
         let recs = [];
 
         for (let k of Object.keys(this.data)) {
