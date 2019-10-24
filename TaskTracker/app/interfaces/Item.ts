@@ -2,6 +2,7 @@
     line: number;
     width: string;
     control: string;
+    style?: string;
     height?: string;
     text?: string;
     field?: string;

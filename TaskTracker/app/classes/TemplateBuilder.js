@@ -37,7 +37,11 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
         TextInput(item) {
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
-            this.html += `<input type='text' placeholder='${placeholder}' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
+            let classStyle = "";
+            if (item.style) {
+                classStyle = `class="${item.style}"`;
+            }
+            this.html += `<input ${classStyle} type='text' placeholder='${placeholder}' style='width:100%;' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;
@@ -45,7 +49,11 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
         TextArea(item) {
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
-            this.html += `<textarea placeholder='${placeholder}' style='width:100%; height:${item.height}' storeIdx='{idx}' bindGuid='${guid.ToString()}'></textarea>`;
+            let classStyle = "";
+            if (item.style) {
+                classStyle = `class="${item.style}"`;
+            }
+            this.html += `<textarea ${classStyle} placeholder='${placeholder}' style='width:100%; height:${item.height}' storeIdx='{idx}' bindGuid='${guid.ToString()}'></textarea>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;

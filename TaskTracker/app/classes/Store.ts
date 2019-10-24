@@ -3,6 +3,8 @@ import { StoreType } from "../enums/StoreType"
 import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { StoreManager } from "./StoreManager";
 
+type EmptyRecordResult = [boolean, {}[]];
+
 export class Store {
     storeType: StoreType;
     cached: boolean;
@@ -105,8 +107,11 @@ export class Store {
     }
 
     public GetProperty(idx: number, property: string): any {
-        this.CreateRecordIfMissing(idx);
-        let value = this.data[idx][property];
+        let value = undefined;
+
+        if (this.data[idx]) {
+            value = this.data[idx][property];
+        }
 
         return value;
     }
@@ -151,7 +156,23 @@ export class Store {
                     try {
                         // Create indices that map records to a "key", in this case simply the initial row number.
                         let records: {}[] = JSON.parse(json);
+
+                        /*
+                        let result = this.RemoveEmptyRecords(records);
+
+                        if (result[0]) {
+                            records = result[1];
+                        }
+                        */
+
                         records.forEach((record, idx) => this.data[idx] = record);
+
+                        /*
+                        if (result[0]) {
+                            this.Save();
+                        }
+                        */
+
                     } catch (ex) {
                         console.log(ex);
                         // Storage is corrupt, eek, we're going to remove it!
@@ -233,6 +254,23 @@ export class Store {
     private SaveToLocalStorage() {
         let json = JSON.stringify(this.GetRawData());
         window.localStorage.setItem(this.storeName, json);
+    }
+
+    // This is temporary fix because I was accidentally creating empty records
+    private RemoveEmptyRecords(records: {}[]): EmptyRecordResult {
+        let found = false;
+        let recs: number[] = [];
+
+        for (let i = 0; i < records.length; i++) {
+            if (Object.keys(records[i]).length) {
+                recs.push(i);
+                found = true;
+            }
+        }
+
+        recs.reverse().forEach(n => records = records.splice(n, 1));
+
+        return [found, records];
     }
 }
 

@@ -74,6 +74,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     line: 0,
                     width: "80%",
                     control: "textbox",
+                    style: "bold"
                 },
                 {
                     field: "Status",
@@ -103,6 +104,7 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                     line: 0,
                     width: "80%",
                     control: "textbox",
+                    style: "bold"
                 },
                 {
                     field: "Status",
@@ -150,34 +152,36 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 { text: "Delete", line: 1, width: "80px", control: "button", route: "DeleteRecord" }
             ];
             let linkTemplate = [
-                { field: "Description", line: 0, width: "30%", control: "textbox" },
-                { field: "URL", line: 0, width: "30%", control: "textbox" },
+                { field: "Description", line: 0, width: "20%", control: "textbox" },
+                { field: "URL", line: 0, width: "40%", control: "textbox" },
                 { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
             let projectStates = [
-                { text: 'Ongoing', bcolor: 'blue' },
-                { text: 'TODO', bcolor: 'purple' },
-                { text: 'Working On', bcolor: 'lightblue' },
-                { text: 'Testing', bcolor: 'lightblue' },
-                { text: 'QA', bcolor: 'lightblue' },
-                { text: 'Done', bcolor: 'lightgreen' },
-                { text: 'On Production', bcolor: 'green' },
-                { text: 'Waiting on 3rd Party', bcolor: 'orange' },
-                { text: 'Waiting on Coworker', bcolor: 'orange' },
-                { text: 'Waiting on Management', bcolor: 'orange' },
+                { text: 'Ongoing', bcolor: '#B0B0FF' },
+                { text: 'TODO', bcolor: '#FFB0B0' },
+                { text: 'Working On', bcolor: '#D0D0FF' },
+                { text: 'Testing', bcolor: '#D0D0FF' },
+                { text: 'QA', bcolor: '#D0D0FF' },
+                { text: 'Done', bcolor: '#D0FFD0' },
+                { text: 'On Production', bcolor: '#60FF60' },
+                { text: 'Waiting on 3rd Party', bcolor: '#FFA540' },
+                { text: 'Waiting on Coworker', bcolor: '#FFA540' },
+                { text: 'Waiting on Management', bcolor: '#FFA540' },
                 { text: 'Stuck', bcolor: 'red' },
+                { text: 'Discuss', bcolor: 'red' },
             ];
             let taskStates = [
-                { text: 'TODO', bcolor: 'purple' },
-                { text: 'Working On', bcolor: 'lightblue' },
-                { text: 'Testing', bcolor: 'lightblue' },
-                { text: 'QA', bcolor: 'lightblue' },
-                { text: 'Done', bcolor: 'lightgreen' },
-                { text: 'On Production', bcolor: 'green' },
-                { text: 'Waiting on 3rd Party', bcolor: 'orange' },
-                { text: 'Waiting on Coworker', bcolor: 'orange' },
-                { text: 'Waiting on Management', bcolor: 'orange' },
+                { text: 'TODO', bcolor: '#FFB0B0' },
+                { text: 'Working On', bcolor: '#D0D0FF' },
+                { text: 'Testing', bcolor: '#D0D0FF' },
+                { text: 'QA', bcolor: '#D0D0FF' },
+                { text: 'Done', bcolor: '#D0FFD0' },
+                { text: 'On Production', bcolor: '#60FF60' },
+                { text: 'Waiting on 3rd Party', bcolor: '#FFA540' },
+                { text: 'Waiting on Coworker', bcolor: '#FFA540' },
+                { text: 'Waiting on Management', bcolor: '#FFA540' },
                 { text: 'Stuck', bcolor: 'red' },
+                { text: 'Discuss', bcolor: 'red' },
             ];
             storeManager = new StoreManager_1.StoreManager();
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, StoreType_1.StoreType.LocalStorage, "Sequences");
@@ -235,6 +239,10 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
                 let val = record[tel.item.field];
                 jel.val(val);
+                // Hack!
+                if (tel.item.control == "combobox") {
+                    this.SetComboboxColor(jel, val);
+                }
             }
         }
         FocusOnFirstField(builder, idx) {
@@ -256,10 +264,12 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                 jQuery(path).remove();
             }
         }
-        DeleteAllRecordsView(builder) {
+        /*
+        private DeleteAllRecordsView(builder: TemplateBuilder) : void {
             let path = `${builder.templateContainerID}`;
             jQuery(path).children().remove();
         }
+        */
         BindElementEvents(builder, onCondition) {
             builder.elements.forEach(el => {
                 let guid = el.guid.ToString();
@@ -287,28 +297,46 @@ define(["require", "exports", "./classes/TemplateBuilder", "./enums/StoreType", 
                                 break;
                             case "textarea":
                             case "textbox":
+                                jel.on('change', () => {
+                                    this.SetPropertyValue(builder, jel, el, recIdx);
+                                });
+                                break;
                             case "combobox":
                                 jel.on('change', () => {
-                                    let field = el.item.field;
-                                    let val = jel.val();
-                                    console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
-                                    storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
                                     // TODO: Move this very custom behavior out into a view handler
-                                    let listStoreName = jel.attr('listStore');
-                                    let listStore = storeManager.GetStore(listStoreName);
-                                    if (listStore) {
-                                        let selectedIdx = listStore.FindRecord(r => r.text == val);
-                                        if (selectedIdx != -1) {
-                                            let bcolor = listStore.GetProperty(selectedIdx, "bcolor");
-                                            jel.css("background-color", bcolor);
-                                        }
-                                    }
+                                    let val = this.SetPropertyValue(builder, jel, el, recIdx);
+                                    this.SetComboboxColor(jel, val);
+                                });
+                                // I can't find an event for when the option list is actually shown, so for now 
+                                // we reset the background color on focus and restore it on lose focus.
+                                jel.on('focus', () => {
+                                    jel.css("background-color", "white");
+                                });
+                                jel.on('blur', () => {
+                                    let val = jel.val();
+                                    this.SetComboboxColor(jel, val);
                                 });
                                 break;
                         }
                     }
                 });
             });
+        }
+        SetPropertyValue(builder, jel, el, recIdx) {
+            let field = el.item.field;
+            let val = jel.val();
+            console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
+            storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
+            return val;
+        }
+        SetComboboxColor(jel, val) {
+            let listStoreName = jel.attr('listStore');
+            let listStore = storeManager.GetStore(listStoreName);
+            let selectedIdx = listStore.FindRecord(r => r.text == val);
+            if (selectedIdx != -1) {
+                let bcolor = listStore.GetProperty(selectedIdx, "bcolor");
+                jel.css("background-color", bcolor);
+            }
         }
         RecordSelected(builder, recIdx) {
             jQuery(builder.templateContainerID).children().removeClass("recordSelected");
