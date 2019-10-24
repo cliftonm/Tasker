@@ -1777,7 +1777,39 @@ want to see and where they are.&nbsp; Everything else should just figure out how
 to adjust.</p>
 <h2>Day 11: Colorizing Status</h2>
 <p>This is a bit of a hack, but I want to visually indicate the status of a 
-project and task by colorizing the dropdown.&nbsp; </p>
+project and task by colorizing the dropdown:</p>
+<p><img border="0" src="statuscolor1.png" width="180" height="211"></p>
+<p>This didn't take all day, it's just the time I had available.</p>
+<p>Implemented by handling the <code>change</code>, <code>focus</code>, and <code>blur</code> events -- when the 
+dropdown gets focus, it goes back to white so the entire selection list doesn't 
+have the background color of the current status:</p>
+<pre>case &quot;combobox&quot;:
+  jel.on('change', () =&gt; {
+    // TODO: Move this very custom behavior out into a view handler
+    let val = this.SetPropertyValue(builder, jel, el, recIdx);
+    this.SetComboboxColor(jel, val);
+  });
+
+  // I can't find an event for when the option list is actually shown, so for now 
+  // we reset the background color on focus and restore it on lose focus.
+  jel.on('focus', () =&gt; {
+    jel.css(&quot;background-color&quot;, &quot;white&quot;);
+  });
+
+  jel.on('blur', () =&gt; {
+    let val = jel.val();
+    this.SetComboboxColor(jel, val);
+  });
+  break;</pre>
+<p>and when the record view is created:</p>
+<pre>private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, insert: boolean): void {
+  ...
+ // Hack!
+  if (tel.item.control == &quot;combobox&quot;) {
+    this.SetComboboxColor(jel, val);
+  }
+}</pre>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
