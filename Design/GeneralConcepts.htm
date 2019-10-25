@@ -1710,6 +1710,11 @@ private RemoveChildRecordsView(store: Store, recIdx: number): void {
   }
 }</pre>
 <h3>Bug: The Selected Record is Parent-Child Dependent</h3>
+<p><b>Note: the following thought process is WRONG!</b>&nbsp; I'm keeping this 
+in here because it was something I thought was wrong and only on further 
+reflection did I realize it was not wrong.&nbsp; Unit tests would validate my 
+belief that the writeup here is incorrect!</p>
+<p>So here goes in the wrong thinking:</p>
 <p>When a store is shared between two different parents, the selected record is 
 specific to the parent-child relationship, not the store!&nbsp; </p>
 <h4>Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</h4>
@@ -1736,6 +1741,29 @@ deep.&nbsp; Keep in mind that the parent-child relationship model is still valid
 because it is associating relationships between parent and child entity <i>
 instances</i> whereas the builder and UI management is working often with the <i>
 entity type</i> hierarchy.</p>
+<h4>Why This is Not a Bug</h4>
+<p>First, when we load the records of parent-child relationship, it is qualified 
+by the parent ID, which is unique:</p>
+<pre>let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);</pre>
+<p>and in the <code>GetChildInfo</code> function:</p>
+<pre>let childRecs = this.FindRecordsOfType&lt;ParentChildRelationshipModel&gt;(rel =&gt; rel.parent == parent &amp;&amp; rel.parentId == parentId &amp;&amp; rel.child == child);</pre>
+<h4>But What is a Bug is This</h4>
+<p>In the above two items, &quot;the correct builder&quot; and &quot;the selected record&quot;, the 
+correct builder must be determined by the <i>entity type</i> hierarchy which 
+needs the full path to determine the template container, but the selected record 
+is associated with the <i>instance</i> and so is not actually the issue.</p>
+<p>The code identifies the appropriate builder, which includes the HTML 
+container template name, using:</p>
+<pre>let builderName = this.GetBuilderName(parentStoreName, child);</pre>
+<p>which is determined by:</p>
+<pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
+  return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
+}</pre>
+<p>So here we see that the builder associated with B-C does not have enough 
+information to determine the template container for A-B-C vs. D-B-C.&nbsp; And 
+that's where the real bug is.&nbsp; The upshot of this is that it's very 
+important to distinguish between <i>type</i> and <i>instance</i>.</p>
+<p>&nbsp;</p>
 <h3>Nicety: Focus on First Field when Adding a Record</h3>
 <p>Trying to avoid unnecessary clicks, this:</p>
 <pre>private FocusOnFirstField(builder: TemplateBuilder, idx: number) {
