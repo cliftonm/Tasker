@@ -1763,7 +1763,7 @@ container template name, using:</p>
 information to determine the template container for A-B-C vs. D-B-C.&nbsp; And 
 that's where the real bug is.&nbsp; The upshot of this is that it's very 
 important to distinguish between <i>type</i> and <i>instance</i>.</p>
-<p>&nbsp;</p>
+<p>This will be addressed in Day 12, The Parent-Child Template Problem.</p>
 <h3>Nicety: Focus on First Field when Adding a Record</h3>
 <p>Trying to avoid unnecessary clicks, this:</p>
 <pre>private FocusOnFirstField(builder: TemplateBuilder, idx: number) {
@@ -1837,6 +1837,19 @@ have the background color of the current status:</p>
     this.SetComboboxColor(jel, val);
   }
 }</pre>
+<h2>Day 12 - The Parent-Child Template Problem</h2>
+<p>So this:</p>
+<pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
+  return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
+}</pre>
+<p>is a hack.&nbsp; Hacks should be revisited or not even implemented in the 
+first place!&nbsp; The whole problem here is that the element events are not 
+coupled with an object that retains information about the &quot;event trigger&quot;, if 
+you will, and therefore determining the builder associated with the event became 
+a hack.&nbsp; What's needed here is a container for the binder, template ID, 
+etc., that is bound to the specific UI events for that builder - in other words, 
+a view controller.</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

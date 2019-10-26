@@ -24,6 +24,10 @@ export class ParentChildStore extends Store {
         let childRecIds = childRecs.map(r => r.childId);
         let childStore = this.storeManager.GetStore(child);
 
+        if (!childStore) {
+            console.log(`Child store ${child} doesn't exist!`);
+        }
+
         // Annoying.  VS2017 doesn't have an option for ECMAScript 7
         let recs = childStore.FindRecords(r => childRecIds.indexOf((<any>r).__ID) != -1);
 

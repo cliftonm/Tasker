@@ -21,6 +21,9 @@ define(["require", "exports", "../classes/Store", "../models/ParentChildRelation
             let childRecs = this.FindRecordsOfType(rel => rel.parent == parent && rel.parentId == parentId && rel.child == child);
             let childRecIds = childRecs.map(r => r.childId);
             let childStore = this.storeManager.GetStore(child);
+            if (!childStore) {
+                console.log(`Child store ${child} doesn't exist!`);
+            }
             // Annoying.  VS2017 doesn't have an option for ECMAScript 7
             let recs = childStore.FindRecords(r => childRecIds.indexOf(r.__ID) != -1);
             return { store: childStore, childrenIndices: recs };

@@ -70,6 +70,7 @@
     <TypeScriptSourceRoot />
   </PropertyGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="app\classes\ViewController.ts" />
     <TypeScriptCompile Include="app\interfaces\ChildRecordInfo.ts" />
     <TypeScriptCompile Include="app\interfaces\Relationship.ts" />
     <TypeScriptCompile Include="app\models\ParentChildRelationshipModel.ts" />
