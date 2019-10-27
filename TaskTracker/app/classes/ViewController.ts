@@ -154,7 +154,6 @@ export class ViewController {
 
                 childRecs.childrenIndices.map(idx => Number(idx)).forEach(recIdx => {
                     let vc = this.childControllers.find(c => c.store.storeName == child);
-                    console.log(`Store: ${vc.store.storeName}  Child Store: ${childRecs.store.storeName}   parent:${parentStoreName}   child:${child}`);
                     console.log(`Creating template view: ${vc.builder.templateContainerID} > [recIdx='${recIdx}']`);
                     vc.CreateRecordView(childStore, recIdx, false);
                 });

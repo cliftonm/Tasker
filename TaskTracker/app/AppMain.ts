@@ -176,13 +176,6 @@ export class AppMain {
 
         new ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
         new ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
-
-        /*        
-        jQuery(document).ready(() => {
-            vcProjects.ready = true;
-            vcTasks.ready = true;
-        });
-        */        
     }
 };
 

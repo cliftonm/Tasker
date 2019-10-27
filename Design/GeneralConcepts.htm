@@ -8,44 +8,85 @@
 
 <body>
 
+<h2>Introduction</h2>
+<p>I thought it would be fun and hopefully interested to document the creation 
+of a client-side TypeScript application from conception to implementation.&nbsp; 
+So I chose something that I've been wanting to do for a while - a project-task 
+manager that is tailored to my very specific requirements.&nbsp; But I also 
+wanted this implementation to be highly abstract, which means metadata for the 
+UI layout and parent-child entity relationships.&nbsp; In other words, at the 
+end of the day the physical index.html page looks like this (a snippet):</p>
+<pre>&lt;div class=&quot;row col1&quot;&gt;
+  &lt;div class=&quot;entitySeparator&quot;&gt;
+    &lt;button type=&quot;button&quot; id=&quot;createProject&quot; class=&quot;createButton&quot;&gt;Create Project&lt;/button&gt;
+    &lt;div id=&quot;projectTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;div class=&quot;row col2&quot;&gt;
+  &lt;div class=&quot;entitySeparator&quot;&gt;
+    &lt;button type=&quot;button&quot; id=&quot;createProjectContact&quot; class=&quot;createButton&quot;&gt;Create Contact&lt;/button&gt;
+    &lt;div id=&quot;projectContactTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+    &lt;div class=&quot;entitySeparator&quot;&gt;
+    &lt;button type=&quot;button&quot; id=&quot;createProjectNote&quot; class=&quot;createButton&quot;&gt;Create Project Note&lt;/button&gt;
+    &lt;div id=&quot;projectNoteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+    &lt;div class=&quot;entitySeparator&quot;&gt;
+    &lt;button type=&quot;button&quot; id=&quot;createProjectLink&quot; class=&quot;createButton&quot;&gt;Create Link&lt;/button&gt;
+    &lt;div id=&quot;projectLinkTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+<p>Where the real work is done client-side in creating the container content.&nbsp; 
+So what this article covers is one way to go about creating such an 
+implementation as a general purpose parent-child entity editor but in the 
+context of a specific project-task manager.</p>
+<p>By the way, days are not contiguous -- while each day documents the work I 
+did, it does not mean that I worked on this each and every day.&nbsp; 
+Particularly Day 12 encompasses a physical timespan of 3 days (and no, not 8 
+hours days!)</p>
 <h2>Day 1</h2>
-<p>General Concepts</p>
-<p>It becomes clear looking at the layout that it is really more of a template 
+<h3>General Concepts</h3>
+<p>Some rough sketches:</p>
+<p><img border="0" src="sketch1.png" width="617" height="411"></p>
+<p><img border="0" src="sketch2.png" width="633" height="141"></p>
+<ul>
+	<li>It becomes clear looking at the layout that it is really more of a template 
 for my own requirements and that the actual &quot;task item bar&quot; on the left as well 
 as the specific fields for each task item should be completely user definable in 
-terms of label, content, and control.&nbsp; </p>
-<p>This pretty much means that we're looking at a NoSQL database structure with 
+terms of label, content, and control.&nbsp; </li>
+	<li>This pretty much means that we're looking at a NoSQL database structure with 
 loose linkages between tasks and task items.&nbsp; The &quot;root&quot; of everything 
 still remains the task, but the task items and their fields is really quite 
-arbitrary.</p>
-<p>So we need to be able to define the structure and its field content as one 
-&quot;database&quot; of how the user wants to organize the information.</p>
-<p>Certain fields end up being arrays (like URL links) that are represented 
+arbitrary.</li>
+	<li>So we need to be able to define the structure and its field content as one 
+&quot;database&quot; of how the user wants to organize the information.</li>
+	<li>Certain fields end up being arrays (like URL links) that are represented 
 discretely, while other fields (like notes) may be shows discretely as a 
 scrollable collection of distinct textarea entries or more as a &quot;document&quot; where 
-the user simply scrolls through a single textarea.</p>
-<p>Searching - the user should be able to search on any field or a specific 
-area, such as &quot;notes.&quot;&nbsp; </p>
-<p>Any field can be either a singleton (like a date/time on a communication) or 
-a collection, like a list of contacts for that communication.</p>
-<p>So what we end up doing first is defining an arbitrary schema with enough 
+the user simply scrolls through a single textarea.</li>
+	<li>Searching - the user should be able to search on any field or a specific 
+area, such as &quot;notes.&quot;&nbsp; </li>
+	<li>Any field can be either a singleton (like a date/time on a communication) or 
+a collection, like a list of contacts for that communication.</li>
+	<li>So what we end up doing first is defining an arbitrary schema with enough 
 metadata to describe the layout and controls of the fields in the schema as well 
 as actions on schema elements, for example the task item bar can be represented 
-as schema elements but they are buttons, not user input controls.</p>
-<p>We don't want to go overboard with this!&nbsp; The complexity with this 
+as schema elements but they are buttons, not user input controls.</li>
+	<li>We don't want to go overboard with this!&nbsp; The complexity with this 
 approach is that the page is not static -- the entire layout has to be generated 
-from the metadata, so the question is, server-side generation or client-side?</p>
-<p>Personally I prefer client-side.&nbsp; The server should be minimally 
+from the metadata, so the question is, server-side generation or client-side?</li>
+	<li>Personally I prefer client-side.&nbsp; The server should be minimally 
 involved with layout -- the server should serve content, as in data, not layout.&nbsp; 
 This approach also facilitates development of the UI without needing a server 
 and keeps all the UI code on the client rather than spreading it across both 
 JavaScript and C# on the back-end.&nbsp; And no, I'm not interested in using 
-node.js on the back-end.</p>
+node.js on the back-end.</li>
+</ul>
 <h2>Day 2</h2>
 <p>We should be able to have a fairly simple structures.&nbsp; Let's define a 
 few, all of which are of course customizable but we'll define some useful 
 defaults.</p>
-<p>Status</p>
+<h3>Status</h3>
 <p>I like to have a fairly specific status and get frustrated when I can't put 
 that information in a simple dropdown that lets me see at a glance what's going 
 on with the task.&nbsp; So, I like things like:</p>
@@ -1851,6 +1892,102 @@ you will, and therefore determining the builder associated with the event became
 a hack.&nbsp; What's needed here is a container for the binder, template ID, 
 etc., that is bound to the specific UI events for that builder - in other words, 
 a view controller.</p>
+<pre>export class ViewController {
+  storeManager: StoreManager;
+  parentChildRelationshipStore: ParentChildStore;
+  builder: TemplateBuilder;
+  eventRouter: EventRouter;
+  store: Store;
+  childControllers: ViewController[] = [];
+  selectedRecordIndex: number = -1; // multiple selection not allowed at the moment.
+
+  constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter) {
+    this.storeManager = storeManager;
+    this.parentChildRelationshipStore = parentChildRelationshipStore;
+    this.eventRouter = eventRouter;
+}</pre>
+<p>Note a couple things here:</p>
+<ol>
+	<li>The selected record index is associated with the view controller.</li>
+	<li>A view controller manages its list of child controllers.&nbsp; This 
+	ensures that in scenarious like A-B-C and D-B-C, the controllers for B and C 
+	are distinct with regards to the roots A and D.</li>
+</ol>
+<p>Now, when a &quot;Create...&quot; button is clicked, the view controller passes in to 
+the store the view controller instance:</p>
+<pre>jQuery(createButtonId).on('click', () =&gt; {
+  let idx = this.eventRouter.Route(&quot;CreateRecord&quot;, this.store, 0, this); // insert at position 0</pre>
+<p>which has the correct builder and therefore template container for entity 
+that is being created, and while the callback is created only once per store:</p>
+<pre>if (this.storeManager.HasStore(storeName)) {
+  this.store = this.storeManager.GetStore(storeName);
+} else {
+  this.store = this.storeManager.CreateStore(storeName, storeType);
+  this.AssignStoreCallbacks();
+}</pre>
+<p>passing &quot;through&quot; the view controller ensures that the correct template 
+container is used:</p>
+<pre>private AssignStoreCallbacks(): void {
+  this.store.recordCreatedCallback = (idx, record, insert, store, onLoad, viewController) =&gt; {
+
+    viewController.CreateRecordView(this.store, idx, insert, onLoad);
+
+    // Don't select the first field when called from Store.Load, as this will select the 
+    // first field for every record, leaving the last record selected. Plus we're not
+    // necessarily ready to load up child records yet since the necessary view controllers
+    // haven't been created.
+    if (!onLoad) {
+      viewController.FocusOnFirstField(idx);
+    }
+  };
+
+  this.store.propertyChangedCallback = (idx, field, value) =&gt; this.UpdatePropertyView(idx, field, value);
+  this.store.recordDeletedCallback = (idx, store, viewController) =&gt; {
+    // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C
+    viewController.RemoveChildRecordsView(store, idx);
+    viewController.parentChildRelationshipStore.DeleteRelationship(store, idx);
+    viewController.DeleteRecordView(idx);
+  }
+}
+</pre>
+<p>Now to create the page, we do this instead:</p>
+<pre>let vcProjects = new ViewController(storeManager, parentChildRelationshipStore, eventRouter);
+vcProjects.CreateStoreViewFromTemplate(
+  &quot;Projects&quot;, 
+  StoreType.LocalStorage, 
+  &quot;#projectTemplateContainer&quot;, 
+  projectTemplate, &quot;#createProject&quot;, 
+  true, 
+  undefined, 
+  (idx, store) =&gt; store.SetDefault(idx, &quot;Status&quot;, projectStates[0].text));
+
+new ViewController(storeManager, parentChildRelationshipStore, eventRouter).
+  CreateStoreViewFromTemplate(
+    &quot;Contacts&quot;, 
+    StoreType.LocalStorage, 
+    &quot;#projectContactTemplateContainer&quot;, 
+    contactTemplate, 
+    &quot;#createProjectContact&quot;, 
+    false, 
+    vcProjects);</pre>
+<p>etc.&nbsp; Notice how when we create the Contacts view controller, which is a 
+child of Projects, we pass in the parent controller, which registers the child 
+with its parent:</p>
+<pre>if (parentViewController) {
+  parentViewController.RegisterChildController(this);
+}</pre>
+<p>The child collection is used to create and remove views using the correct 
+view controller:</p>
+<pre>childRecs.childrenIndices.map(idx =&gt; Number(idx)).forEach(recIdx =&gt; {
+  let vc = this.childControllers.find(c =&gt; c.store.storeName == child);
+  vc.CreateRecordView(childStore, recIdx, false);
+});</pre>
+<p>The global variables are eliminated because they are contained now in the 
+view controller.&nbsp; If at runtime a new view controller needs to be 
+instantiated, this would be done by the parent view controller and it can pass 
+in singletons such as the store manager and event router, and parent-child 
+relationship store.</p>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

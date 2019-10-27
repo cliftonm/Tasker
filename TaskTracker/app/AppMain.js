@@ -148,12 +148,6 @@ define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", StoreType_1.StoreType.LocalStorage, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType_1.StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType_1.StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
-            /*
-            jQuery(document).ready(() => {
-                vcProjects.ready = true;
-                vcTasks.ready = true;
-            });
-            */
         }
     }
     exports.AppMain = AppMain;
