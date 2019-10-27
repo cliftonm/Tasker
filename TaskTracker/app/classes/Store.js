@@ -70,7 +70,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             this.data[idx] = record;
             return this;
         }
-        SetProperty(idx, field, value, builder) {
+        SetProperty(idx, field, value) {
             this.CreateRecordIfMissing(idx);
             this.data[idx][field] = value;
             this.propertyChangedCallback(idx, field, value, this);
@@ -83,23 +83,23 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return value;
         }
-        CreateRecord(insert = false) {
+        CreateRecord(insert = false, viewController = undefined) {
             let nextIdx = 0;
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
             this.data[nextIdx] = this.GetPrimaryKey();
-            this.recordCreatedCallback(nextIdx, {}, insert, this, false);
+            this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
             return nextIdx;
         }
-        DeleteRecord(idx) {
-            this.recordDeletedCallback(idx, this);
+        DeleteRecord(idx, viewController) {
+            this.recordDeletedCallback(idx, this, viewController);
             delete this.data[idx];
             if (this.selectedRecordIndex == idx) {
                 this.selectedRecordIndex = -1;
             }
         }
-        Load(createRecordView = true) {
+        Load(createRecordView = true, viewController = undefined) {
             this.data = {};
             switch (this.storeType) {
                 case StoreType_1.StoreType.InMemory:
@@ -137,7 +137,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     break;
             }
             if (createRecordView) {
-                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true));
+                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
             }
             return this;
         }

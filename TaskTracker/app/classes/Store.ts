@@ -1,4 +1,4 @@
-﻿import { TemplateBuilder } from "./TemplateBuilder";
+﻿import { ViewController } from "./ViewController";
 import { StoreType } from "../enums/StoreType"
 import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { StoreManager } from "./StoreManager";
@@ -12,9 +12,9 @@ export class Store {
     storeName: string;
     storeManager: StoreManager;
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
-    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean) => void = () => { };
+    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean, viewController: ViewController) => void = () => { };
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
-    recordDeletedCallback: (idx: number, store: Store) => void = () => { };         
+    recordDeletedCallback: (idx: number, store: Store, viewController: ViewController) => void = () => { };         
 
     constructor(storeManager: StoreManager, storeType: StoreType, storeName: string) {
         this.storeManager = storeManager;
@@ -98,7 +98,7 @@ export class Store {
         return this;
     }
 
-    public SetProperty(idx: number, field: string, value: any, builder?: TemplateBuilder): Store {
+    public SetProperty(idx: number, field: string, value: any): Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx][field] = value;
         this.propertyChangedCallback(idx, field, value, this);
@@ -116,7 +116,7 @@ export class Store {
         return value;
     }
 
-    public CreateRecord(insert = false): number {
+    public CreateRecord(insert = false, viewController: ViewController = undefined): number {
         let nextIdx = 0;
 
         if (this.Records() > 0) {
@@ -124,13 +124,13 @@ export class Store {
         }
 
         this.data[nextIdx] = this.GetPrimaryKey();
-        this.recordCreatedCallback(nextIdx, {}, insert, this, false);
+        this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
 
         return nextIdx;
     }
 
-    public DeleteRecord(idx: number) : void {
-        this.recordDeletedCallback(idx, this);
+    public DeleteRecord(idx: number, viewController?: ViewController) : void {
+        this.recordDeletedCallback(idx, this, viewController);
         delete this.data[idx];
 
         if (this.selectedRecordIndex == idx) {
@@ -138,7 +138,7 @@ export class Store {
         }
     }
 
-    public Load(createRecordView: boolean = true): Store {
+    public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {
         this.data = {};
 
         switch (this.storeType) {
@@ -184,7 +184,7 @@ export class Store {
         }
 
         if (createRecordView) {
-            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true));
+            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
         }
 
         return this;

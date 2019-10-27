@@ -4,7 +4,6 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
     class ViewController {
         constructor(storeManager, parentChildRelationshipStore, eventRouter) {
             this.childControllers = [];
-            // ready: boolean = false;
             this.relationships = [
                 {
                     parent: "Projects",
@@ -33,9 +32,10 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                 this.store = this.storeManager.CreateStore(storeName, storeType);
                 this.AssignStoreCallbacks();
             }
+            // TODO: Wiring up the click even here precludes the ability to create view controllers from the UI after the document is ready.
             jQuery(document).ready(() => {
                 jQuery(createButtonId).on('click', () => {
-                    let idx = this.eventRouter.Route("CreateRecord", this.store, 0); // insert at position 0
+                    let idx = this.eventRouter.Route("CreateRecord", this.store, 0, this); // insert at position 0
                     createCallback(idx, this.store);
                     if (parentViewController) {
                         this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, idx);
@@ -43,7 +43,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                     this.store.Save();
                 });
             });
-            this.store.Load(updateView);
+            this.store.Load(updateView, this);
             return this.store;
         }
         RegisterChildController(childViewController) {
@@ -129,21 +129,22 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             }
         }
         AssignStoreCallbacks() {
-            this.store.recordCreatedCallback = (idx, record, insert, store, onLoad) => {
-                this.CreateRecordView(this.store, idx, insert, onLoad);
+            this.store.recordCreatedCallback = (idx, record, insert, store, onLoad, viewController) => {
+                viewController.CreateRecordView(this.store, idx, insert, onLoad);
+                // Don't select the first field when called from Store.Load, as this will select the 
+                // first field for every record, leaving the last record selected.  Plus we're not
+                // necessarily ready to load up child records yet since the necessary view controllers
+                // haven't been created.
                 if (!onLoad) {
-                    this.FocusOnFirstField(idx);
+                    viewController.FocusOnFirstField(idx);
                 }
             };
             this.store.propertyChangedCallback = (idx, field, value) => this.UpdatePropertyView(idx, field, value);
-            this.store.recordDeletedCallback = (idx, store) => {
+            this.store.recordDeletedCallback = (idx, store, viewController) => {
                 // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C
-                // While this callback occurs for the first view controller that created the store,
-                // It works because the idx in store C is unique for the relationship A-B-C and A-D-C.
-                // Remove child template views before we start deleting relationships!
-                this.RemoveChildRecordsView(store, idx);
-                this.parentChildRelationshipStore.DeleteRelationship(store, idx);
-                this.DeleteRecordView(idx);
+                viewController.RemoveChildRecordsView(store, idx);
+                viewController.parentChildRelationshipStore.DeleteRelationship(store, idx);
+                viewController.DeleteRecordView(idx);
             };
         }
         SetStoreIndex(html, idx) {
@@ -225,7 +226,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                             case "button":
                                 jel.on('click', () => {
                                     // console.log(`click for ${guid} at index ${recIdx}`);
-                                    this.eventRouter.Route(el.item.route, me.store, recIdx);
+                                    me.eventRouter.Route(el.item.route, me.store, recIdx, me);
                                 });
                                 break;
                             case "textarea":
@@ -259,7 +260,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             let val = jel.val();
             console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
             // this.storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
-            this.store.SetProperty(recIdx, field, val, this.builder).UpdatePhysicalStorage(recIdx, field, val);
+            this.store.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
             return val;
         }
         SetComboboxColor(jel, val) {

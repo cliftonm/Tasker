@@ -157,11 +157,11 @@ export class AppMain {
         parentChildRelationshipStore.Load();
 
         let eventRouter = new EventRouter();
-        eventRouter.AddRoute("DeleteRecord", (store, idx) => {
-            store.DeleteRecord(idx);
+        eventRouter.AddRoute("DeleteRecord", (store, idx, viewController) => {
+            store.DeleteRecord(idx, viewController);
             store.Save();
         });
-        eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
+        eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
 
         let vcProjects = new ViewController(storeManager, parentChildRelationshipStore, eventRouter);
         vcProjects.CreateStoreViewFromTemplate("Projects", StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
