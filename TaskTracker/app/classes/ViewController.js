@@ -4,6 +4,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
     class ViewController {
         constructor(storeManager, parentChildRelationshipStore, eventRouter) {
             this.childControllers = [];
+            this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
             this.relationships = [
                 {
                     parent: "Projects",
@@ -38,7 +39,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                     let idx = this.eventRouter.Route("CreateRecord", this.store, 0, this); // insert at position 0
                     createCallback(idx, this.store);
                     if (parentViewController) {
-                        this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, idx);
+                        this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, this.selectedRecordIndex, idx);
                     }
                     this.store.Save();
                 });
@@ -195,6 +196,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             console.log(`Removing template view: ${this.builder.templateContainerID} > [templateIdx='${idx}']`);
             let path = `${this.builder.templateContainerID} > [templateIdx='${idx}']`;
             jQuery(path).remove();
+            this.selectedRecordIndex = -1;
         }
         /*
         private DeleteAllRecordsView(builder: TemplateBuilder) : void {
@@ -215,10 +217,10 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                         // console.log(`Binding guid:${guid} with recIdx:${recIdx}`);
                         jel.on('focus', () => {
                             console.log(`focus: recIdx: ${recIdx}  store:${me.store.storeName}`);
-                            if (me.store.selectedRecordIndex != recIdx) {
-                                me.RemoveChildRecordsView(me.store, me.store.selectedRecordIndex);
+                            if (me.selectedRecordIndex != recIdx) {
+                                me.RemoveChildRecordsView(me.store, me.selectedRecordIndex);
                                 me.RecordSelected(recIdx);
-                                me.store.selectedRecordIndex = recIdx;
+                                me.selectedRecordIndex = recIdx;
                                 me.ShowChildRecords(me.store, recIdx);
                             }
                         });

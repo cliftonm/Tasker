@@ -3,9 +3,7 @@ import { ParentChildRelationshipModel } from "../models/ParentChildRelationshipM
 import { ChildRecordInfo } from "../interfaces/ChildRecordInfo"
 
 export class ParentChildStore extends Store {
-    public AddRelationship(parentStore: Store, childStore: Store, childRecIdx: number): void {
-        let parentRecIdx = parentStore.selectedRecordIndex;
-
+    public AddRelationship(parentStore: Store, childStore: Store, parentRecIdx: number, childRecIdx: number): void {
         if (parentRecIdx != -1) {
             let recIdx = this.CreateRecord();
             let parentId = parentStore.GetProperty(parentRecIdx, "__ID");

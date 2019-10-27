@@ -15,6 +15,7 @@ export class ViewController {
     eventRouter: EventRouter;
     store: Store;
     childControllers: ViewController[] = [];
+    selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
 
     relationships: Relationship[] = [
         {
@@ -66,7 +67,7 @@ export class ViewController {
                 createCallback(idx, this.store);
 
                 if (parentViewController) {
-                    this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, idx);
+                    this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, this.selectedRecordIndex, idx);
                 }
 
                 this.store.Save();
@@ -261,6 +262,7 @@ export class ViewController {
         console.log(`Removing template view: ${this.builder.templateContainerID} > [templateIdx='${idx}']`);
         let path = `${this.builder.templateContainerID} > [templateIdx='${idx}']`;
         jQuery(path).remove();
+        this.selectedRecordIndex = -1;
     }
 
     /*
@@ -286,10 +288,10 @@ export class ViewController {
                     jel.on('focus', () => {
                         console.log(`focus: recIdx: ${recIdx}  store:${me.store.storeName}`);
 
-                        if (me.store.selectedRecordIndex != recIdx) {
-                            me.RemoveChildRecordsView(me.store, me.store.selectedRecordIndex);
+                        if (me.selectedRecordIndex != recIdx) {
+                            me.RemoveChildRecordsView(me.store, me.selectedRecordIndex);
                             me.RecordSelected(recIdx);
-                            me.store.selectedRecordIndex = recIdx;
+                            me.selectedRecordIndex = recIdx;
                             me.ShowChildRecords(me.store, recIdx);
                         }
                     });

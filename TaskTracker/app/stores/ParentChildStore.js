@@ -2,8 +2,7 @@ define(["require", "exports", "../classes/Store", "../models/ParentChildRelation
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ParentChildStore extends Store_1.Store {
-        AddRelationship(parentStore, childStore, childRecIdx) {
-            let parentRecIdx = parentStore.selectedRecordIndex;
+        AddRelationship(parentStore, childStore, parentRecIdx, childRecIdx) {
             if (parentRecIdx != -1) {
                 let recIdx = this.CreateRecord();
                 let parentId = parentStore.GetProperty(parentRecIdx, "__ID");

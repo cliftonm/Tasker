@@ -4,7 +4,6 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
     class Store {
         constructor(storeManager, storeType, storeName) {
             this.data = {};
-            this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
             this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
             this.recordDeletedCallback = () => { };
@@ -95,9 +94,6 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
         DeleteRecord(idx, viewController) {
             this.recordDeletedCallback(idx, this, viewController);
             delete this.data[idx];
-            if (this.selectedRecordIndex == idx) {
-                this.selectedRecordIndex = -1;
-            }
         }
         Load(createRecordView = true, viewController = undefined) {
             this.data = {};

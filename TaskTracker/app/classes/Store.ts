@@ -11,7 +11,6 @@ export class Store {
     private data: RowRecordMap = {};
     storeName: string;
     storeManager: StoreManager;
-    selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
     recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean, viewController: ViewController) => void = () => { };
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
     recordDeletedCallback: (idx: number, store: Store, viewController: ViewController) => void = () => { };         
@@ -132,10 +131,6 @@ export class Store {
     public DeleteRecord(idx: number, viewController?: ViewController) : void {
         this.recordDeletedCallback(idx, this, viewController);
         delete this.data[idx];
-
-        if (this.selectedRecordIndex == idx) {
-            this.selectedRecordIndex = -1;
-        }
     }
 
     public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {

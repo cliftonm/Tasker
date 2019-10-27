@@ -1842,7 +1842,9 @@ have the background color of the current status:</p>
 <pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
   return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
 }</pre>
-<p>is a hack.&nbsp; Hacks should be revisited or not even implemented in the 
+<p>is a hack.&nbsp; The global variables are also a hack, as is storing the 
+selected record index in the store -- it should be associated with the view 
+controller <i>for that store</i>, not the store! Hacks should be revisited or not even implemented in the 
 first place!&nbsp; The whole problem here is that the element events are not 
 coupled with an object that retains information about the &quot;event trigger&quot;, if 
 you will, and therefore determining the builder associated with the event became 
