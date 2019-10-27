@@ -16,6 +16,7 @@ export class ViewController {
     store: Store;
     childControllers: ViewController[] = [];
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
+    parentViewController: ViewController;
 
     // TODO: This should be passed in, not created for every view controller.
     relationships: Relationship[] = [
@@ -49,6 +50,7 @@ export class ViewController {
         // ?. operator.  
         // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
         this.builder = this.CreateHtmlTemplate(containerName, template);
+        this.parentViewController = parentViewController;
 
         if (parentViewController) {
             parentViewController.RegisterChildController(this);
@@ -201,7 +203,7 @@ export class ViewController {
         this.store.recordDeletedCallback = (idx, store, viewController) => {
             // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C
             viewController.RemoveChildRecordsView(store, idx);
-            viewController.parentChildRelationshipStore.DeleteRelationship(store, idx);
+            viewController.parentChildRelationshipStore.DeleteRelationship(store, idx, viewController);
             viewController.DeleteRecordView(idx);
         }
     }
@@ -285,8 +287,6 @@ export class ViewController {
                 if (onCondition(recIdx)) {
                     // console.log(`Binding guid:${guid} with recIdx:${recIdx}`);
                     jel.on('focus', () => {
-                        console.log(`focus: recIdx: ${recIdx}  store:${this.store.storeName}`);
-
                         if (this.selectedRecordIndex != recIdx) {
                             this.RemoveChildRecordsView(this.store, this.selectedRecordIndex);
                             this.RecordSelected(recIdx);

@@ -1,6 +1,7 @@
 ﻿import { Store } from "../classes/Store"
 import { ParentChildRelationshipModel } from "../models/ParentChildRelationshipModel"
 import { ChildRecordInfo } from "../interfaces/ChildRecordInfo"
+import { ViewController } from "../classes/ViewController";
 
 export class ParentChildStore extends Store {
     public AddRelationship(parentStore: Store, childStore: Store, parentRecIdx: number, childRecIdx: number): void {
@@ -32,7 +33,7 @@ export class ParentChildStore extends Store {
         return { store: childStore, childrenIndices: recs };
     }
 
-    public DeleteRelationship(store: Store, recIdx: number) {
+    public DeleteRelationship(store: Store, recIdx: number, viewController: ViewController) {
         let storeName = store.storeName;
         let id = store.GetProperty(recIdx, "__ID");
         let touchedStores : string[] = [];     // So we save the store only once after this process.
@@ -42,12 +43,17 @@ export class ParentChildStore extends Store {
             let parents = this.FindRecordsOfType<ParentChildRelationshipModel>(rel => rel.parent == storeName && rel.parentId == id);
             let children = this.FindRecordsOfType<ParentChildRelationshipModel>(rel => rel.child == storeName && rel.childId == id);
 
-            // All children of the parent are deleted.
+            console.log(`Num parents: ${parents.length}`);
+            console.log(`Num children: ${children.length}`);
+
+            // All parent relationships having a relationship to this entity as a child are deleted.
             parents.forEach(p => {
-                this.DeleteChildrenOfParent(p, touchedStores);
+                // Get the view controller for this parent-child relationship.
+                let vc = viewController.childControllers.find(pc => pc.store.storeName == p.child);
+                this.DeleteChildrenOfParent(p, touchedStores, vc);
             });
 
-            // All child relationships are deleted.
+            // All child relationships where this parent is this entity are deleted.
             children.forEach(c => {
                 let relRecIdx = this.FindRecordOfType<ParentChildRelationshipModel>((r: ParentChildRelationshipModel) =>
                     r.parent == c.parent &&
@@ -66,7 +72,7 @@ export class ParentChildStore extends Store {
         this.Save();
     }
 
-    private DeleteChildrenOfParent(p: ParentChildRelationshipModel, touchedStores: string[]): void {
+    private DeleteChildrenOfParent(p: ParentChildRelationshipModel, touchedStores: string[], viewController: ViewController): void {
         let childStoreName = p.child;
         let childId = p.childId;
         let childStore = this.storeManager.GetStore(childStoreName);
@@ -75,7 +81,7 @@ export class ParentChildStore extends Store {
         // safety check.
         if (recIdx != -1) {
             // Recursive deletion of child's children will occur (I think - untested!)
-            childStore.DeleteRecord(recIdx);
+            childStore.DeleteRecord(recIdx, viewController);
 
             if (touchedStores.indexOf(childStoreName) == -1) {
                 touchedStores.push(childStoreName);

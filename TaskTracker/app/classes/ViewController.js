@@ -24,6 +24,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             // ?. operator.  
             // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
             this.builder = this.CreateHtmlTemplate(containerName, template);
+            this.parentViewController = parentViewController;
             if (parentViewController) {
                 parentViewController.RegisterChildController(this);
             }
@@ -144,7 +145,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             this.store.recordDeletedCallback = (idx, store, viewController) => {
                 // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C
                 viewController.RemoveChildRecordsView(store, idx);
-                viewController.parentChildRelationshipStore.DeleteRelationship(store, idx);
+                viewController.parentChildRelationshipStore.DeleteRelationship(store, idx, viewController);
                 viewController.DeleteRecordView(idx);
             };
         }
@@ -215,7 +216,6 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                     if (onCondition(recIdx)) {
                         // console.log(`Binding guid:${guid} with recIdx:${recIdx}`);
                         jel.on('focus', () => {
-                            console.log(`focus: recIdx: ${recIdx}  store:${this.store.storeName}`);
                             if (this.selectedRecordIndex != recIdx) {
                                 this.RemoveChildRecordsView(this.store, this.selectedRecordIndex);
                                 this.RecordSelected(recIdx);
