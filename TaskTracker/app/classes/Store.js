@@ -1,14 +1,14 @@
-define(["require", "exports", "../enums/StoreType"], function (require, exports, StoreType_1) {
+define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class Store {
-        constructor(storeManager, storeType, storeName) {
+        constructor(storeManager, persistence, storeName) {
             this.data = {};
             this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
             this.recordDeletedCallback = () => { };
             this.storeManager = storeManager;
-            this.storeType = storeType;
+            this.persistence = persistence;
             this.storeName = storeName;
         }
         Records() {
@@ -54,9 +54,6 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return recs;
         }
-        GetRawData() {
-            return jQuery.map(this.data, value => value);
-        }
         SetData(records) {
             this.data = {};
             records.forEach((record, idx) => this.data[idx] = record);
@@ -96,45 +93,20 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             delete this.data[idx];
         }
         Load(createRecordView = true, viewController = undefined) {
-            this.data = {};
-            switch (this.storeType) {
-                case StoreType_1.StoreType.InMemory:
-                    // TODO: Probably should throw an exception -- how do you load a store that already is in memory???
-                    break;
-                case StoreType_1.StoreType.RestCall:
-                    // TODO: Implement
-                    break;
-                case StoreType_1.StoreType.LocalStorage:
-                    let json = window.localStorage.getItem(this.storeName);
-                    if (json) {
-                        try {
-                            // Create indices that map records to a "key", in this case simply the initial row number.
-                            let records = JSON.parse(json);
-                            /*
-                            let result = this.RemoveEmptyRecords(records);
-    
-                            if (result[0]) {
-                                records = result[1];
-                            }
-                            */
-                            records.forEach((record, idx) => this.data[idx] = record);
-                            /*
-                            if (result[0]) {
-                                this.Save();
-                            }
-                            */
-                        }
-                        catch (ex) {
-                            console.log(ex);
-                            // Storage is corrupt, eek, we're going to remove it!
-                            window.localStorage.removeItem(this.storeName);
-                        }
-                    }
-                    break;
-            }
+            this.data = this.persistence.Load(this.storeName);
             if (createRecordView) {
                 jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
             }
+            return this;
+        }
+        Save() {
+            this.persistence.Save(this.storeName, this.data);
+            return this;
+        }
+        UpdatePhysicalStorage(idx, property, value) {
+            // Parameters and record to be used by other functions.
+            let record = this.data[idx];
+            this.persistence.Update(this.storeName, this.data, record, idx, property, value);
             return this;
         }
         SetDefault(idx, property, value) {
@@ -144,37 +116,9 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return this;
         }
-        Save() {
-            switch (this.storeType) {
-                case StoreType_1.StoreType.InMemory:
-                    // TODO: throw exception?
-                    break;
-                case StoreType_1.StoreType.RestCall:
-                    // Eventually send an update but we probably ought to have a PK with which to associate the change.
-                    break;
-                case StoreType_1.StoreType.LocalStorage:
-                    // Here we just update the whole structure.
-                    this.SaveToLocalStorage();
-                    break;
-            }
-            return this;
-        }
-        UpdatePhysicalStorage(idx, property, value) {
-            // Parameters and record to be used by other functions.
-            let record = this.data[idx];
-            switch (this.storeType) {
-                case StoreType_1.StoreType.InMemory:
-                    // TODO: throw exception?
-                    break;
-                case StoreType_1.StoreType.RestCall:
-                    // Eventually send an update but we probably ought to have a PK with which to associate the change.
-                    break;
-                case StoreType_1.StoreType.LocalStorage:
-                    // Here we just update the whole structure.
-                    this.SaveToLocalStorage();
-                    break;
-            }
-            return this;
+        GetRawData() {
+            let rawData = jQuery.map(this.data, value => value);
+            return rawData;
         }
         GetPrimaryKey() {
             return this.storeManager.GetPrimaryKey(this.storeName);
@@ -183,23 +127,6 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             if (!this.data[idx]) {
                 this.data[idx] = {};
             }
-        }
-        SaveToLocalStorage() {
-            let json = JSON.stringify(this.GetRawData());
-            window.localStorage.setItem(this.storeName, json);
-        }
-        // This is temporary fix because I was accidentally creating empty records
-        RemoveEmptyRecords(records) {
-            let found = false;
-            let recs = [];
-            for (let i = 0; i < records.length; i++) {
-                if (Object.keys(records[i]).length) {
-                    recs.push(i);
-                    found = true;
-                }
-            }
-            recs.reverse().forEach(n => records = records.splice(n, 1));
-            return [found, records];
         }
     }
     exports.Store = Store;

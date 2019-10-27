@@ -1,6 +1,6 @@
 // Sort of works, I get "Cannot read property 'default' of undefined"
 // import * as jQuery from "../lib/jquery"
-define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "./classes/StoreManager", "./stores/ParentChildStore", "./classes/EventRouter", "./stores/SequenceStore"], function (require, exports, ViewController_1, StoreType_1, StoreManager_1, ParentChildStore_1, EventRouter_1, SequenceStore_1) {
+define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/LocalStoragePersistence"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, EventRouter_1, SequenceStore_1, LocalStoragePersistence_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -122,7 +122,8 @@ define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "
                 { text: 'Discuss', bcolor: 'red' },
             ];
             let storeManager = new StoreManager_1.StoreManager();
-            let seqStore = new SequenceStore_1.SequenceStore(storeManager, StoreType_1.StoreType.LocalStorage, "Sequences");
+            let localStoragePersistence = new LocalStoragePersistence_1.LocalStoragePersistence();
+            let seqStore = new SequenceStore_1.SequenceStore(storeManager, localStoragePersistence, "Sequences");
             storeManager.RegisterStore(seqStore);
             seqStore.Load();
             storeManager.getPrimaryKeyCallback = (storeName) => {
@@ -130,7 +131,7 @@ define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "
             };
             storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
             storeManager.AddInMemoryStore("TaskStatusList", taskStates);
-            let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, StoreType_1.StoreType.LocalStorage, "ParentChildRelationships");
+            let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, localStoragePersistence, "ParentChildRelationships");
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
             let eventRouter = new EventRouter_1.EventRouter();
@@ -140,14 +141,15 @@ define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "
             });
             eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
             let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter);
-            vcProjects.CreateStoreViewFromTemplate("Projects", StoreType_1.StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
+            vcProjects.CreateStoreViewFromTemplate("Projects", localStoragePersistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
             let vcTasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter);
-            vcTasks.CreateStoreViewFromTemplate("Tasks", StoreType_1.StoreType.LocalStorage, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Contacts", StoreType_1.StoreType.LocalStorage, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", StoreType_1.StoreType.LocalStorage, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", StoreType_1.StoreType.LocalStorage, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType_1.StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType_1.StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
+            vcTasks.CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcTasks);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Contacts", localStoragePersistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
         }
     }
     exports.AppMain = AppMain;

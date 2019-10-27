@@ -2,11 +2,12 @@
 import { StoreType } from "../enums/StoreType"
 import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { StoreManager } from "./StoreManager";
+import { IStorePersistence } from "../interfaces/IStorePersistence";
 
 type EmptyRecordResult = [boolean, {}[]];
 
 export class Store {
-    storeType: StoreType;
+    persistence: IStorePersistence;
     cached: boolean;
     private data: RowRecordMap = {};
     storeName: string;
@@ -15,9 +16,9 @@ export class Store {
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
     recordDeletedCallback: (idx: number, store: Store, viewController: ViewController) => void = () => { };         
 
-    constructor(storeManager: StoreManager, storeType: StoreType, storeName: string) {
+    constructor(storeManager: StoreManager, persistence: IStorePersistence, storeName: string) {
         this.storeManager = storeManager;
-        this.storeType = storeType;
+        this.persistence = persistence;
         this.storeName = storeName;
     }
 
@@ -77,10 +78,6 @@ export class Store {
         return recs;
     }
 
-    public GetRawData(): {}[] {
-        return jQuery.map(this.data, value => value);
-    }
-
     public SetData(records: {}[]): void {
         this.data = {};
         records.forEach((record, idx) => this.data[idx] = record);
@@ -134,53 +131,25 @@ export class Store {
     }
 
     public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {
-        this.data = {};
-
-        switch (this.storeType) {
-            case StoreType.InMemory:
-                // TODO: Probably should throw an exception -- how do you load a store that already is in memory???
-                break;
-            case StoreType.RestCall:
-                // TODO: Implement
-                break;
-
-            case StoreType.LocalStorage:
-                let json = window.localStorage.getItem(this.storeName);
-
-                if (json) {
-                    try {
-                        // Create indices that map records to a "key", in this case simply the initial row number.
-                        let records: {}[] = JSON.parse(json);
-
-                        /*
-                        let result = this.RemoveEmptyRecords(records);
-
-                        if (result[0]) {
-                            records = result[1];
-                        }
-                        */
-
-                        records.forEach((record, idx) => this.data[idx] = record);
-
-                        /*
-                        if (result[0]) {
-                            this.Save();
-                        }
-                        */
-
-                    } catch (ex) {
-                        console.log(ex);
-                        // Storage is corrupt, eek, we're going to remove it!
-                        window.localStorage.removeItem(this.storeName);
-                    }
-                }
-
-                break;
-        }
+        this.data = this.persistence.Load(this.storeName);
 
         if (createRecordView) {
             jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
         }
+
+        return this;
+    }
+
+    public Save(): Store {
+        this.persistence.Save(this.storeName, this.data);
+
+        return this;
+    }
+
+    public UpdatePhysicalStorage(idx: number, property: string, value: string): Store {
+        // Parameters and record to be used by other functions.
+        let record = this.data[idx];
+        this.persistence.Update(this.storeName, this.data, record, idx, property, value);
 
         return this;
     }
@@ -195,45 +164,10 @@ export class Store {
         return this;
     }
 
-    public Save(): Store {
-        switch (this.storeType) {
-            case StoreType.InMemory:
-                // TODO: throw exception?
-                break;
+    public GetRawData(): any {
+        let rawData = jQuery.map(this.data, value => value);
 
-            case StoreType.RestCall:
-                // Eventually send an update but we probably ought to have a PK with which to associate the change.
-                break;
-
-            case StoreType.LocalStorage:
-                // Here we just update the whole structure.
-                this.SaveToLocalStorage();
-                break;
-        }
-
-        return this;
-    }
-
-    public UpdatePhysicalStorage(idx: number, property: string, value: string) : Store {
-        // Parameters and record to be used by other functions.
-        let record = this.data[idx];
-
-        switch (this.storeType) {
-            case StoreType.InMemory:
-                // TODO: throw exception?
-                break;
-
-            case StoreType.RestCall:
-                // Eventually send an update but we probably ought to have a PK with which to associate the change.
-                break;
-
-            case StoreType.LocalStorage:
-                // Here we just update the whole structure.
-                this.SaveToLocalStorage();
-                break;
-        }
-
-        return this;
+        return rawData;
     }
 
     protected GetPrimaryKey(): {} {
@@ -246,11 +180,7 @@ export class Store {
         }
     }
 
-    private SaveToLocalStorage() {
-        let json = JSON.stringify(this.GetRawData());
-        window.localStorage.setItem(this.storeName, json);
-    }
-
+    /*
     // This is temporary fix because I was accidentally creating empty records
     private RemoveEmptyRecords(records: {}[]): EmptyRecordResult {
         let found = false;
@@ -267,5 +197,6 @@ export class Store {
 
         return [found, records];
     }
+    */
 }
 

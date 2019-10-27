@@ -1,5 +1,5 @@
-﻿import { Store } from "./Store"
-import { StoreType } from "../enums/StoreType"
+﻿import { IStorePersistence } from "../interfaces/IStorePersistence";
+import { Store } from "./Store"
 import { KeyStoreMap } from "../interfaces/KeyStoreMap"
 
 export class StoreManager {
@@ -10,8 +10,8 @@ export class StoreManager {
         return this.stores[storeName] !== undefined;
     }
 
-    public CreateStore(storeName: string, storeType: StoreType): Store {
-        let store = new Store(this, storeType, storeName);
+    public CreateStore(storeName: string, persistence: IStorePersistence): Store {
+        let store = new Store(this, persistence, storeName);
         this.stores[storeName] = store;
 
         return store;
@@ -22,7 +22,8 @@ export class StoreManager {
     }
 
     public AddInMemoryStore(storeName: string, data: {}[]): Store {
-        let store = new Store(this, StoreType.InMemory, storeName);
+        // In-memory store should never call persistence functions, thus undefined.
+        let store = new Store(this, undefined, storeName);
         store.SetData(data);
         this.stores[storeName] = store;
 

@@ -1,12 +1,12 @@
 ﻿import { TemplateBuilder } from "./TemplateBuilder"
 import { TemplateElement } from "./TemplateElement"
 import { Store } from "./Store"
-import { StoreType } from "../enums/StoreType"
 import { StoreManager } from "./StoreManager"
 import { ParentChildStore } from "../stores/ParentChildStore"
 import { Items } from "../interfaces/Items"
 import { Relationship } from "../interfaces/Relationship"
 import { EventRouter } from "./EventRouter"
+import { IStorePersistence } from "../interfaces/IStorePersistence";
 
 export class ViewController {
     storeManager: StoreManager;
@@ -26,7 +26,7 @@ export class ViewController {
         },
         {
             parent: "Tasks",
-            children: ["Links", "Notes"]
+            children: ["Links", "Notes", "Tasks"]
         }
     ];
 
@@ -38,7 +38,7 @@ export class ViewController {
 
     public CreateStoreViewFromTemplate(
         storeName: string,
-        storeType: StoreType,
+        persistence: IStorePersistence,
         containerName: string,
         template: Items,
         createButtonId: string,
@@ -59,7 +59,7 @@ export class ViewController {
         if (this.storeManager.HasStore(storeName)) {
             this.store = this.storeManager.GetStore(storeName);
         } else {
-            this.store = this.storeManager.CreateStore(storeName, storeType);
+            this.store = this.storeManager.CreateStore(storeName, persistence);
             this.AssignStoreCallbacks();
         }
 

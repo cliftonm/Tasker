@@ -1,4 +1,4 @@
-define(["require", "exports", "./Store", "../enums/StoreType"], function (require, exports, Store_1, StoreType_1) {
+define(["require", "exports", "./Store"], function (require, exports, Store_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class StoreManager {
@@ -9,8 +9,8 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
         HasStore(storeName) {
             return this.stores[storeName] !== undefined;
         }
-        CreateStore(storeName, storeType) {
-            let store = new Store_1.Store(this, storeType, storeName);
+        CreateStore(storeName, persistence) {
+            let store = new Store_1.Store(this, persistence, storeName);
             this.stores[storeName] = store;
             return store;
         }
@@ -18,7 +18,8 @@ define(["require", "exports", "./Store", "../enums/StoreType"], function (requir
             this.stores[store.storeName] = store;
         }
         AddInMemoryStore(storeName, data) {
-            let store = new Store_1.Store(this, StoreType_1.StoreType.InMemory, storeName);
+            // In-memory store should never call persistence functions, thus undefined.
+            let store = new Store_1.Store(this, undefined, storeName);
             store.SetData(data);
             this.stores[storeName] = store;
             return store;

@@ -13,14 +13,14 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                 },
                 {
                     parent: "Tasks",
-                    children: ["Links", "Notes"]
+                    children: ["Links", "Notes", "Tasks"]
                 }
             ];
             this.storeManager = storeManager;
             this.parentChildRelationshipStore = parentChildRelationshipStore;
             this.eventRouter = eventRouter;
         }
-        CreateStoreViewFromTemplate(storeName, storeType, containerName, template, createButtonId, updateView = true, parentViewController, createCallback = _ => { }) {
+        CreateStoreViewFromTemplate(storeName, persistence, containerName, template, createButtonId, updateView = true, parentViewController, createCallback = _ => { }) {
             // ?. operator.  
             // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
             this.builder = this.CreateHtmlTemplate(containerName, template);
@@ -32,7 +32,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                 this.store = this.storeManager.GetStore(storeName);
             }
             else {
-                this.store = this.storeManager.CreateStore(storeName, storeType);
+                this.store = this.storeManager.CreateStore(storeName, persistence);
                 this.AssignStoreCallbacks();
             }
             // TODO: Wiring up the click even here precludes the ability to create view controllers from the UI after the document is ready.

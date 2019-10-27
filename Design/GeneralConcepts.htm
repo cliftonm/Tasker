@@ -44,8 +44,7 @@ context of a specific project-task manager.</p>
 did, it does not mean that I worked on this each and every day.&nbsp; 
 Particularly Day 12 encompasses a physical timespan of 3 days (and no, not 8 
 hours days!)</p>
-<h2>Day 1</h2>
-<h3>General Concepts</h3>
+<h2>Day 1 - General Concepts</h2>
 <p>Some rough sketches:</p>
 <p><img border="0" src="sketch1.png" width="617" height="411"></p>
 <p><img border="0" src="sketch2.png" width="633" height="141"></p>
@@ -82,7 +81,7 @@ and keeps all the UI code on the client rather than spreading it across both
 JavaScript and C# on the back-end.&nbsp; And no, I'm not interested in using 
 node.js on the back-end.</li>
 </ul>
-<h2>Day 2</h2>
+<h2>Day 2 - Some Structure Concepts for the Metadata</h2>
 <p>We should be able to have a fairly simple structures.&nbsp; Let's define a 
 few, all of which are of course customizable but we'll define some useful 
 defaults.</p>
@@ -174,7 +173,7 @@ Where they render is determined by other layout information.</p>
 	<li>Sub-tasks (easy to do)</li>
 	<li>Task dependencies</li>
 </ul>
-<h2>Day 3</h2>
+<h2>Day 3 - Templates</h2>
 <p>So, the more I think about this, the more I realize that this is really a 
 very generalized entity creator/editor with not quite dynamic relationships, 
 much as I've written about in my
@@ -499,7 +498,7 @@ for the attribute value.&nbsp; Who knows what that will do to performance if
 there's hundreds of elements that must be bound, but honestly, I'm not going to 
 worry about that!</p>
 <p>It's 10:30 PM, I'm calling it a night!</p>
-<h2>Day 4</h2>
+<h2>Day 4 - Late Binding</h2>
 <p>So here we are with the task of implementing late binding.&nbsp; First, a 
 couple refactorings to the template builder to set up the <code>bindGuid</code> attribute 
 with a unique identifier which we'll use to determine the binding, again using 
@@ -705,7 +704,7 @@ way as well!&nbsp; A brute force implementation looks like this:</p>
 <p>Cool, I can now create and save three tasks!&nbsp; Calling it quits for Day 4, back 
 soon to work on reverse binding and better handling of defaults as well as 
 getting rid of this silly &quot;3 tasks&quot; thing and making tasks more dynamic.</p>
-<h2>Day 5</h2>
+<h2>Day 5 - Store Callbacks</h2>
 <p>So that brute force approach above needs to be fixed, but I don't want the 
 store to know anything about how the records fields map to UI elements, so I 
 think what I'd like to do is provide callbacks for record and property level 
@@ -1017,7 +1016,7 @@ days to accomplish here is probably a 30 minute exercise in Vue.&nbsp; However,
 the point here is that I'm actually building the framework and the application 
 together, and quite frankly, having a lot of fun doing it!&nbsp; So that's all 
 that counts! End of Day 5, and I can finally create, edit, and delete tasks!</p>
-<h2>Day 6</h2>
+<h2>Day 6 - Basic Relationships</h2>
 <p>So this is one of those &quot;rubber meets the road&quot; moments.&nbsp; I'm going to 
 add a couple relationships.&nbsp; Software is not monogamous!&nbsp; I'd like to 
 add contacts and notes that are child entities of the task.&nbsp; My &quot;tasks&quot; are 
@@ -1204,7 +1203,7 @@ So this is the end of Day 6.&nbsp; I still need to persist the sequence,
 probably a &quot;Sequence&quot; store that allows me to define different sequences, and of 
 course create the parent-child records and the UI behavior.&nbsp; Getting there!</p>
 <h2>
-Day 7</h2>
+Day 7 - Sequence Store and the Parent-Child Relationship Store</h2>
 <p>
 So a sequence store seems like a good idea.&nbsp; Again, this can be a concrete 
 model and store.&nbsp; The model:</p>
@@ -1462,7 +1461,7 @@ hold the contacts and the contact template itself, all the rest of the stuff we
 manually did can be handled with a function call, which will be Day 8.&nbsp; We 
 also have to deal with deleting the relationship entry when a child is deleted, 
 and deleting all the child relationships when a parent is deleted. Goodnight!</p>
-<h2>Day 8</h2>
+<h2>Day 8 - Simplifying the Create View Steps</h2>
 <p>First, let's create a function that takes all those discrete setup steps and 
 rolls them into one call with a lot of parameters:</p>
 <pre>private CreateStoreViewFromTemplate(
@@ -1987,7 +1986,73 @@ view controller.&nbsp; If at runtime a new view controller needs to be
 instantiated, this would be done by the parent view controller and it can pass 
 in singletons such as the store manager and event router, and parent-child 
 relationship store.</p>
-<p>&nbsp;</p>
+<h2>Day 13 - Server-Side Persistence</h2>
+<p>Persisting to local storage is not really a viable long-term solution.&nbsp; 
+While it may be useful for off-line work, we need a centralized server for the 
+obvious - so that more than one person can access the data and so that I can 
+access the same data from different machines.&nbsp; This involves a bunch of 
+work:</p>
+<p><img border="0" src="persist1.png" width="621" height="351"></p>
+<p>(Oh look, sub-tasks!!!)</p>
+<h3>Store Persistence Implementations</h3>
+<p>So far we have only local storage persistence, so we'll wrap the functions in 
+this class:</p>
+<pre>export class LocalStoragePersistence implements IStorePersistence {
+  public Load(storeName: string): RowRecordMap {
+    let json = window.localStorage.getItem(storeName);
+    let data = {};
+
+    if (json) {
+      try {
+        // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+        let records: {}[] = JSON.parse(json);
+        records.forEach((record, idx) =&gt; data[idx] = record);
+      } catch (ex) {
+        console.log(ex);
+        // Storage is corrupt, eek, we're going to remove it!
+        window.localStorage.removeItem(storeName);
+      }
+    }
+
+    return data;
+  }
+
+  public Save(storeName: string, data: RowRecordMap): void {
+    let rawData = jQuery.map(data, value =&gt; value);
+    let json = JSON.stringify(rawData);
+    window.localStorage.setItem(storeName, json);
+  }
+
+  public Update(storeName: string, data:RowRecordMap, record: {}, idx: number, property: string, value: string) : void {
+    this.Save(storeName, data);
+  }
+}</pre>
+<p>Load, save, and update are then just calls into the abstracted persistence 
+implementation:</p>
+<pre>public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {
+  this.data = this.persistence.Load(this.storeName);
+
+  if (createRecordView) {
+    jQuery.each(this.data, (k, v) =&gt; this.recordCreatedCallback(k, v, false, this, true, viewController));
+  }
+
+  return this;
+}
+
+public Save(): Store {
+  this.persistence.Save(this.storeName, this.data);
+
+  return this;
+}
+
+public UpdatePhysicalStorage(idx: number, property: string, value: string): Store {
+  let record = this.data[idx];
+  this.persistence.Update(this.storeName, this.data, record, idx, property, value);
+
+  return this;
+}
+
+</pre>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
