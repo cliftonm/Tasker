@@ -5,6 +5,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
         constructor(storeManager, parentChildRelationshipStore, eventRouter) {
             this.childControllers = [];
             this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
+            // TODO: This should be passed in, not created for every view controller.
             this.relationships = [
                 {
                     parent: "Projects",
@@ -39,7 +40,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                     let idx = this.eventRouter.Route("CreateRecord", this.store, 0, this); // insert at position 0
                     createCallback(idx, this.store);
                     if (parentViewController) {
-                        this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, this.selectedRecordIndex, idx);
+                        this.parentChildRelationshipStore.AddRelationship(parentViewController.store, this.store, parentViewController.selectedRecordIndex, idx);
                     }
                     this.store.Save();
                 });
@@ -208,7 +209,6 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             this.builder.elements.forEach(el => {
                 let guid = el.guid.ToString();
                 let jels = jQuery(`[bindGuid = '${guid}']`);
-                let me = this;
                 console.log(`>>> store:${this.store.storeName}  guid:${guid}  el:${el.item.control}  onLoad:${onLoad}`);
                 jels.each((_, elx) => {
                     let jel = jQuery(elx);
@@ -216,31 +216,31 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                     if (onCondition(recIdx)) {
                         // console.log(`Binding guid:${guid} with recIdx:${recIdx}`);
                         jel.on('focus', () => {
-                            console.log(`focus: recIdx: ${recIdx}  store:${me.store.storeName}`);
-                            if (me.selectedRecordIndex != recIdx) {
-                                me.RemoveChildRecordsView(me.store, me.selectedRecordIndex);
-                                me.RecordSelected(recIdx);
-                                me.selectedRecordIndex = recIdx;
-                                me.ShowChildRecords(me.store, recIdx);
+                            console.log(`focus: recIdx: ${recIdx}  store:${this.store.storeName}`);
+                            if (this.selectedRecordIndex != recIdx) {
+                                this.RemoveChildRecordsView(this.store, this.selectedRecordIndex);
+                                this.RecordSelected(recIdx);
+                                this.selectedRecordIndex = recIdx;
+                                this.ShowChildRecords(this.store, recIdx);
                             }
                         });
                         switch (el.item.control) {
                             case "button":
                                 jel.on('click', () => {
                                     // console.log(`click for ${guid} at index ${recIdx}`);
-                                    me.eventRouter.Route(el.item.route, me.store, recIdx, me);
+                                    this.eventRouter.Route(el.item.route, this.store, recIdx, this);
                                 });
                                 break;
                             case "textarea":
                             case "textbox":
                                 jel.on('change', () => {
-                                    me.SetPropertyValue(jel, el, recIdx);
+                                    this.SetPropertyValue(jel, el, recIdx);
                                 });
                                 break;
                             case "combobox":
                                 jel.on('change', () => {
-                                    let val = me.SetPropertyValue(jel, el, recIdx);
-                                    me.SetComboboxColor(jel, val);
+                                    let val = this.SetPropertyValue(jel, el, recIdx);
+                                    this.SetComboboxColor(jel, val);
                                 });
                                 // I can't find an event for when the option list is actually shown, so for now 
                                 // we reset the background color on focus and restore it on lose focus.
@@ -249,7 +249,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                                 });
                                 jel.on('blur', () => {
                                     let val = jel.val();
-                                    me.SetComboboxColor(jel, val);
+                                    this.SetComboboxColor(jel, val);
                                 });
                                 break;
                         }
