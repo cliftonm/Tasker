@@ -134,11 +134,11 @@ define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
             let eventRouter = new EventRouter_1.EventRouter();
-            eventRouter.AddRoute("DeleteRecord", (store, idx, builder) => {
-                store.DeleteRecord(idx, builder);
+            eventRouter.AddRoute("DeleteRecord", (store, idx) => {
+                store.DeleteRecord(idx);
                 store.Save();
             });
-            eventRouter.AddRoute("CreateRecord", (store, idx, builder) => store.CreateRecord(builder, true));
+            eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
             let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter);
             vcProjects.CreateStoreViewFromTemplate("Projects", StoreType_1.StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
             let vcTasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter);
@@ -148,10 +148,12 @@ define(["require", "exports", "./classes/ViewController", "./enums/StoreType", "
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", StoreType_1.StoreType.LocalStorage, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType_1.StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType_1.StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
+            /*
             jQuery(document).ready(() => {
                 vcProjects.ready = true;
                 vcTasks.ready = true;
             });
+            */
         }
     }
     exports.AppMain = AppMain;

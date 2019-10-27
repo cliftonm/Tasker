@@ -12,9 +12,9 @@ export class Store {
     storeName: string;
     storeManager: StoreManager;
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
-    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, builder: TemplateBuilder) => void = () => { };
-    propertyChangedCallback: (idx: number, field: string, value: any, store: Store, builder: TemplateBuilder) => void = () => { };
-    recordDeletedCallback: (idx: number, store: Store, builder: TemplateBuilder) => void = () => { };         
+    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean) => void = () => { };
+    propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
+    recordDeletedCallback: (idx: number, store: Store) => void = () => { };         
 
     constructor(storeManager: StoreManager, storeType: StoreType, storeName: string) {
         this.storeManager = storeManager;
@@ -101,7 +101,7 @@ export class Store {
     public SetProperty(idx: number, field: string, value: any, builder?: TemplateBuilder): Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx][field] = value;
-        this.propertyChangedCallback(idx, field, value, this, builder);
+        this.propertyChangedCallback(idx, field, value, this);
 
         return this;
     }
@@ -116,7 +116,7 @@ export class Store {
         return value;
     }
 
-    public CreateRecord(builder?: TemplateBuilder, insert = false): number {
+    public CreateRecord(insert = false): number {
         let nextIdx = 0;
 
         if (this.Records() > 0) {
@@ -124,13 +124,13 @@ export class Store {
         }
 
         this.data[nextIdx] = this.GetPrimaryKey();
-        this.recordCreatedCallback(nextIdx, {}, insert, this, builder);
+        this.recordCreatedCallback(nextIdx, {}, insert, this, false);
 
         return nextIdx;
     }
 
-    public DeleteRecord(idx: number, builder?: TemplateBuilder) : void {
-        this.recordDeletedCallback(idx, this, builder);
+    public DeleteRecord(idx: number) : void {
+        this.recordDeletedCallback(idx, this);
         delete this.data[idx];
 
         if (this.selectedRecordIndex == idx) {
@@ -138,7 +138,7 @@ export class Store {
         }
     }
 
-    public Load(createRecordView: boolean = true, builder?: TemplateBuilder): Store {
+    public Load(createRecordView: boolean = true): Store {
         this.data = {};
 
         switch (this.storeType) {
@@ -184,7 +184,7 @@ export class Store {
         }
 
         if (createRecordView) {
-            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, builder));
+            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true));
         }
 
         return this;

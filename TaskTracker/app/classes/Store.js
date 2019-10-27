@@ -73,7 +73,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
         SetProperty(idx, field, value, builder) {
             this.CreateRecordIfMissing(idx);
             this.data[idx][field] = value;
-            this.propertyChangedCallback(idx, field, value, this, builder);
+            this.propertyChangedCallback(idx, field, value, this);
             return this;
         }
         GetProperty(idx, property) {
@@ -83,23 +83,23 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
             }
             return value;
         }
-        CreateRecord(builder, insert = false) {
+        CreateRecord(insert = false) {
             let nextIdx = 0;
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
             this.data[nextIdx] = this.GetPrimaryKey();
-            this.recordCreatedCallback(nextIdx, {}, insert, this, builder);
+            this.recordCreatedCallback(nextIdx, {}, insert, this, false);
             return nextIdx;
         }
-        DeleteRecord(idx, builder) {
-            this.recordDeletedCallback(idx, this, builder);
+        DeleteRecord(idx) {
+            this.recordDeletedCallback(idx, this);
             delete this.data[idx];
             if (this.selectedRecordIndex == idx) {
                 this.selectedRecordIndex = -1;
             }
         }
-        Load(createRecordView = true, builder) {
+        Load(createRecordView = true) {
             this.data = {};
             switch (this.storeType) {
                 case StoreType_1.StoreType.InMemory:
@@ -137,7 +137,7 @@ define(["require", "exports", "../enums/StoreType"], function (require, exports,
                     break;
             }
             if (createRecordView) {
-                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, builder));
+                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true));
             }
             return this;
         }

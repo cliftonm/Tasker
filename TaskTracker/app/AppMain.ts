@@ -157,11 +157,11 @@ export class AppMain {
         parentChildRelationshipStore.Load();
 
         let eventRouter = new EventRouter();
-        eventRouter.AddRoute("DeleteRecord", (store, idx, builder) => {
-            store.DeleteRecord(idx, builder);
+        eventRouter.AddRoute("DeleteRecord", (store, idx) => {
+            store.DeleteRecord(idx);
             store.Save();
         });
-        eventRouter.AddRoute("CreateRecord", (store, idx, builder: TemplateBuilder) => store.CreateRecord(builder, true));
+        eventRouter.AddRoute("CreateRecord", (store, idx) => store.CreateRecord(true));
 
         let vcProjects = new ViewController(storeManager, parentChildRelationshipStore, eventRouter);
         vcProjects.CreateStoreViewFromTemplate("Projects", StoreType.LocalStorage, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
@@ -177,12 +177,12 @@ export class AppMain {
         new ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType.LocalStorage, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
         new ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", StoreType.LocalStorage, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
 
-        
+        /*        
         jQuery(document).ready(() => {
             vcProjects.ready = true;
             vcTasks.ready = true;
         });
-        
+        */        
     }
 };
 
