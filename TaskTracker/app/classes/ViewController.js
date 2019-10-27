@@ -2,7 +2,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ViewController {
-        constructor(storeManager, parentChildRelationshipStore, eventRouter) {
+        constructor(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore) {
             this.childControllers = [];
             this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
             // TODO: This should be passed in, not created for every view controller.
@@ -19,6 +19,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             this.storeManager = storeManager;
             this.parentChildRelationshipStore = parentChildRelationshipStore;
             this.eventRouter = eventRouter;
+            this.auditLogStore = auditLogStore;
         }
         CreateStoreViewFromTemplate(storeName, persistence, containerName, template, createButtonId, updateView = true, parentViewController, createCallback = _ => { }) {
             // ?. operator.  
@@ -32,7 +33,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                 this.store = this.storeManager.GetStore(storeName);
             }
             else {
-                this.store = this.storeManager.CreateStore(storeName, persistence);
+                this.store = this.storeManager.CreateStore(storeName, persistence, this.auditLogStore);
                 this.AssignStoreCallbacks();
             }
             // TODO: Wiring up the click even here precludes the ability to create view controllers from the UI after the document is ready.
@@ -261,7 +262,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             let val = jel.val();
             console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
             // this.storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
-            this.store.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+            this.store.SetProperty(recIdx, field, val).Save();
             return val;
         }
         SetComboboxColor(jel, val) {

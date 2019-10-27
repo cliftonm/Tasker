@@ -1986,7 +1986,7 @@ view controller.&nbsp; If at runtime a new view controller needs to be
 instantiated, this would be done by the parent view controller and it can pass 
 in singletons such as the store manager and event router, and parent-child 
 relationship store.</p>
-<h2>Day 13 - Server-Side Persistence</h2>
+<h2>Day 13 - Audit Log</h2>
 <p>Persisting to local storage is not really a viable long-term solution.&nbsp; 
 While it may be useful for off-line work, we need a centralized server for the 
 obvious - so that more than one person can access the data and so that I can 
@@ -1994,7 +1994,7 @@ access the same data from different machines.&nbsp; This involves a bunch of
 work:</p>
 <p><img border="0" src="persist1.png" width="621" height="351"></p>
 <p>(Oh look, sub-tasks!!!)</p>
-<h3>Store Persistence Implementations</h3>
+<h3>Store Persistence Inversion of Control</h3>
 <p>So far we have only local storage persistence, so we'll wrap the functions in 
 this class:</p>
 <pre>export class LocalStoragePersistence implements IStorePersistence {
@@ -2050,9 +2050,69 @@ public UpdatePhysicalStorage(idx: number, property: string, value: string): Stor
   this.persistence.Update(this.storeName, this.data, record, idx, property, value);
 
   return this;
-}
+}</pre>
+<p><img border="0" src="persist2.png" width="617" height="163"></p>
+<p>Woohoo.</p>
+<h3>Audit Log</h3>
+<p>Logging the CRUD operations is actually an audit log, so we might as well 
+call it that.&nbsp; This is a concrete store backed by a concrete model:</p>
+<pre>export class AuditLogModel {
+  storeName: string;
+  action: AuditLogAction;
+  recordIndex: number;
+  property: string;
+  value: string;
 
+  constructor(storeName: string, action: AuditLogAction, recordIndex: number, property: string, value: string) {
+    this.storeName = storeName;
+    this.action = action;
+    this.recordIndex = recordIndex;
+    this.property = property;
+    this.value = value;
+  }
+
+  // Here we override the function because we don't want to log the audit log that calls SetRecord above.
+    public SetRecord(idx: number, record: {}): Store {
+    this.CreateRecordIfMissing(idx);
+    this.data[idx] = record;
+
+    return this;
+  }
+
+  // If we don't override this, calling CreateRecord here causes an infinite loop if the AuditLogStore doesn't exist yet,
+  // because when the audit log store asks for its next sequence number, and the store doesn't exist,
+  // SequenceStore.GetNext is called which calls CreateRecord, recursing into the Log function again.
+  protected GetPrimaryKey(): {} {
+    return {};
+  }
+}</pre>
+<p>where the actions are:</p>
+<pre>export enum AuditLogAction {
+  Create,
+  Update,
+  Delete
+}
 </pre>
+<p>Here's the log where I modified the project name, created a contact, then 
+deleted the contact:</p>
+<p><img border="0" src="audit1.png" width="720" height="144"></p>
+<p>Here's an example of creating a sequence for an entity (in this case &quot;Links&quot;) 
+that doesn't exist yet:</p>
+<pre><img border="0" src="audit2.png" width="603" height="102"></pre>
+<p>This was the result of this code change in the store regarding the function 
+<code>SetRecord</code>, which is why it's overridden in the <code>AuditLogStore</code>.</p>
+<pre>public SetRecord(idx: number, record: {}): Store {
+  this.CreateRecordIfMissing(idx);
+  this.data[idx] = record;
+
+  jQuery.each(record, (k, v) =&gt; this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, k, v)); 
+
+  return this;
+}</pre>
+<p>So this is where we're at now:</p>
+<p><img border="0" src="persist3.png" width="617" height="286"></p>
+<h2>Day 14 - Server-Side Persistence</h2>
+<p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

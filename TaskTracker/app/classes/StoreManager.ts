@@ -1,6 +1,7 @@
 ﻿import { IStorePersistence } from "../interfaces/IStorePersistence";
 import { Store } from "./Store"
 import { KeyStoreMap } from "../interfaces/KeyStoreMap"
+import { AuditLogStore } from "../stores/AuditLogStore";
 
 export class StoreManager {
     stores: KeyStoreMap = {};
@@ -10,8 +11,8 @@ export class StoreManager {
         return this.stores[storeName] !== undefined;
     }
 
-    public CreateStore(storeName: string, persistence: IStorePersistence): Store {
-        let store = new Store(this, persistence, storeName);
+    public CreateStore(storeName: string, persistence: IStorePersistence, auditLogStore: AuditLogStore): Store {
+        let store = new Store(this, persistence, storeName, auditLogStore);
         this.stores[storeName] = store;
 
         return store;
@@ -23,7 +24,8 @@ export class StoreManager {
 
     public AddInMemoryStore(storeName: string, data: {}[]): Store {
         // In-memory store should never call persistence functions, thus undefined.
-        let store = new Store(this, undefined, storeName);
+        // And no audit log for in-memory stores!
+        let store = new Store(this, undefined, storeName, undefined);   
         store.SetData(data);
         this.stores[storeName] = store;
 

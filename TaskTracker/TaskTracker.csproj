@@ -72,9 +72,11 @@
   <ItemGroup>
     <TypeScriptCompile Include="app\classes\LocalStoragePersistence.ts" />
     <TypeScriptCompile Include="app\classes\ViewController.ts" />
+    <TypeScriptCompile Include="app\enums\AuditLogAction.ts" />
     <TypeScriptCompile Include="app\interfaces\ChildRecordInfo.ts" />
     <TypeScriptCompile Include="app\interfaces\IStorePersistence.ts" />
     <TypeScriptCompile Include="app\interfaces\Relationship.ts" />
+    <TypeScriptCompile Include="app\models\AuditLogModel.ts" />
     <TypeScriptCompile Include="app\models\ParentChildRelationshipModel.ts" />
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
@@ -107,6 +109,7 @@
     <TypeScriptCompile Include="app\interfaces\KeyStoreMap.ts" />
     <TypeScriptCompile Include="app\interfaces\RowRecordMap.ts" />
     <TypeScriptCompile Include="app\models\SequenceModel.ts" />
+    <TypeScriptCompile Include="app\stores\AuditLogStore.ts" />
     <TypeScriptCompile Include="app\stores\SequenceStore.ts" />
     <TypeScriptCompile Include="modules\require.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
@@ -115,7 +118,6 @@
     <Service Include="{4A0DDDB5-7A95-4FBF-97CC-616D07737A77}" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="app\enums\" />
     <Folder Include="Properties\" />
   </ItemGroup>
   <ItemGroup>

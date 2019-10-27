@@ -7,6 +7,7 @@ import { Items } from "../interfaces/Items"
 import { Relationship } from "../interfaces/Relationship"
 import { EventRouter } from "./EventRouter"
 import { IStorePersistence } from "../interfaces/IStorePersistence";
+import { AuditLogStore } from "../stores/AuditLogStore";
 
 export class ViewController {
     storeManager: StoreManager;
@@ -14,6 +15,7 @@ export class ViewController {
     builder: TemplateBuilder;
     eventRouter: EventRouter;
     store: Store;
+    auditLogStore: AuditLogStore;
     childControllers: ViewController[] = [];
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
     parentViewController: ViewController;
@@ -30,10 +32,11 @@ export class ViewController {
         }
     ];
 
-    constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter) {
+    constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore) {
         this.storeManager = storeManager;
         this.parentChildRelationshipStore = parentChildRelationshipStore;
         this.eventRouter = eventRouter;
+        this.auditLogStore = auditLogStore;
     }
 
     public CreateStoreViewFromTemplate(
@@ -59,7 +62,7 @@ export class ViewController {
         if (this.storeManager.HasStore(storeName)) {
             this.store = this.storeManager.GetStore(storeName);
         } else {
-            this.store = this.storeManager.CreateStore(storeName, persistence);
+            this.store = this.storeManager.CreateStore(storeName, persistence, this.auditLogStore);
             this.AssignStoreCallbacks();
         }
 
@@ -338,7 +341,7 @@ export class ViewController {
         let val = jel.val();
         console.log(`change for ${el.guid.ToString()} at index ${recIdx} with new value of ${jel.val()}`);
         // this.storeManager.GetStore(el.item.associatedStoreName).SetProperty(recIdx, field, val, builder).UpdatePhysicalStorage(recIdx, field, val);
-        this.store.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
+        this.store.SetProperty(recIdx, field, val).Save();
 
         return val;
     }

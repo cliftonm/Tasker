@@ -1,6 +1,6 @@
 // Sort of works, I get "Cannot read property 'default' of undefined"
 // import * as jQuery from "../lib/jquery"
-define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/LocalStoragePersistence"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, EventRouter_1, SequenceStore_1, LocalStoragePersistence_1) {
+define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/LocalStoragePersistence"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, LocalStoragePersistence_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -123,7 +123,10 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             ];
             let storeManager = new StoreManager_1.StoreManager();
             let localStoragePersistence = new LocalStoragePersistence_1.LocalStoragePersistence();
-            let seqStore = new SequenceStore_1.SequenceStore(storeManager, localStoragePersistence, "Sequences");
+            let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, localStoragePersistence, "AuditLogStore", undefined);
+            storeManager.RegisterStore(auditLogStore);
+            auditLogStore.Load();
+            let seqStore = new SequenceStore_1.SequenceStore(storeManager, localStoragePersistence, "Sequences", auditLogStore);
             storeManager.RegisterStore(seqStore);
             seqStore.Load();
             storeManager.getPrimaryKeyCallback = (storeName) => {
@@ -131,7 +134,7 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             };
             storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
             storeManager.AddInMemoryStore("TaskStatusList", taskStates);
-            let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, localStoragePersistence, "ParentChildRelationships");
+            let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, localStoragePersistence, "ParentChildRelationships", auditLogStore);
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
             let eventRouter = new EventRouter_1.EventRouter();
@@ -140,16 +143,16 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 store.Save();
             });
             eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
-            let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter);
+            let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
             vcProjects.CreateStoreViewFromTemplate("Projects", localStoragePersistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
-            let vcTasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter);
+            let vcTasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
             vcTasks.CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcTasks);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Contacts", localStoragePersistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
-            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcTasks);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Contacts", localStoragePersistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
         }
     }
     exports.AppMain = AppMain;

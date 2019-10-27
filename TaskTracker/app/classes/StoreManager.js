@@ -9,8 +9,8 @@ define(["require", "exports", "./Store"], function (require, exports, Store_1) {
         HasStore(storeName) {
             return this.stores[storeName] !== undefined;
         }
-        CreateStore(storeName, persistence) {
-            let store = new Store_1.Store(this, persistence, storeName);
+        CreateStore(storeName, persistence, auditLogStore) {
+            let store = new Store_1.Store(this, persistence, storeName, auditLogStore);
             this.stores[storeName] = store;
             return store;
         }
@@ -19,7 +19,8 @@ define(["require", "exports", "./Store"], function (require, exports, Store_1) {
         }
         AddInMemoryStore(storeName, data) {
             // In-memory store should never call persistence functions, thus undefined.
-            let store = new Store_1.Store(this, undefined, storeName);
+            // And no audit log for in-memory stores!
+            let store = new Store_1.Store(this, undefined, storeName, undefined);
             store.SetData(data);
             this.stores[storeName] = store;
             return store;

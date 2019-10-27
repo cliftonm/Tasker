@@ -1,25 +1,28 @@
 ﻿import { ViewController } from "./ViewController";
-import { StoreType } from "../enums/StoreType"
 import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { StoreManager } from "./StoreManager";
+import { AuditLogStore } from "../stores/AuditLogStore";
 import { IStorePersistence } from "../interfaces/IStorePersistence";
+import { AuditLogAction } from "../enums/AuditLogAction";
 
 type EmptyRecordResult = [boolean, {}[]];
 
 export class Store {
     persistence: IStorePersistence;
     cached: boolean;
-    private data: RowRecordMap = {};
+    protected data: RowRecordMap = {};
     storeName: string;
     storeManager: StoreManager;
+    auditLogStore: AuditLogStore;
     recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean, viewController: ViewController) => void = () => { };
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
     recordDeletedCallback: (idx: number, store: Store, viewController: ViewController) => void = () => { };         
 
-    constructor(storeManager: StoreManager, persistence: IStorePersistence, storeName: string) {
+    constructor(storeManager: StoreManager, persistence: IStorePersistence, storeName: string, auditLogStore: AuditLogStore) {
         this.storeManager = storeManager;
         this.persistence = persistence;
         this.storeName = storeName;
+        this.auditLogStore = auditLogStore;
     }
 
     public Records(): number {
@@ -78,6 +81,7 @@ export class Store {
         return recs;
     }
 
+    // Should be used for in-memory store only.  This will not create an audit log.
     public SetData(records: {}[]): void {
         this.data = {};
         records.forEach((record, idx) => this.data[idx] = record);
@@ -91,6 +95,8 @@ export class Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx] = record;
 
+        jQuery.each(record, (k, v) => this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, k, v));        
+
         return this;
     }
 
@@ -98,6 +104,7 @@ export class Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx][field] = value;
         this.propertyChangedCallback(idx, field, value, this);
+        this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, field, value);
 
         return this;
     }
@@ -113,6 +120,13 @@ export class Store {
     }
 
     public CreateRecord(insert = false, viewController: ViewController = undefined): number {
+        let nextIdx = this.InternalCreateRecord(insert, viewController);
+        this.auditLogStore.Log(this.storeName, AuditLogAction.Create, nextIdx);
+
+        return nextIdx;
+    }
+
+    protected InternalCreateRecord(insert = false, viewController: ViewController = undefined): number {
         let nextIdx = 0;
 
         if (this.Records() > 0) {
@@ -127,6 +141,7 @@ export class Store {
 
     public DeleteRecord(idx: number, viewController?: ViewController) : void {
         this.recordDeletedCallback(idx, this, viewController);
+        this.auditLogStore.Log(this.storeName, AuditLogAction.Delete, idx);
         delete this.data[idx];
     }
 
@@ -146,6 +161,7 @@ export class Store {
         return this;
     }
 
+    /*
     public UpdatePhysicalStorage(idx: number, property: string, value: string): Store {
         // Parameters and record to be used by other functions.
         let record = this.data[idx];
@@ -153,6 +169,7 @@ export class Store {
 
         return this;
     }
+    */
 
     public SetDefault(idx: number, property: string, value: any): Store {
         this.CreateRecordIfMissing(idx);
@@ -174,9 +191,10 @@ export class Store {
         return this.storeManager.GetPrimaryKey(this.storeName);
     }
 
-    private CreateRecordIfMissing(idx: number) : void {
+    protected CreateRecordIfMissing(idx: number) : void {
         if (!this.data[idx]) {
             this.data[idx] = {};
+            this.auditLogStore.Log(this.storeName, AuditLogAction.Create, idx);
         }
     }
 
