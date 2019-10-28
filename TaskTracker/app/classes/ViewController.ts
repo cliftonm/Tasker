@@ -24,11 +24,15 @@ export class ViewController {
     relationships: Relationship[] = [
         {
             parent: "Projects",
-            children: ["Tasks", "Contacts", "Links", "Notes"]
+            children: ["Bugs", "Tasks", "Contacts", "Links", "Notes"]
         },
         {
             parent: "Tasks",
             children: ["Links", "Notes", "Tasks"]
+        },
+        {
+            parent: "Bugs",
+            children: ["Notes"]
         }
     ];
 
@@ -281,8 +285,7 @@ export class ViewController {
         this.builder.elements.forEach(el => {
             let guid = el.guid.ToString();
             let jels = jQuery(`[bindGuid = '${guid}']`);
-            console.log(`>>> store:${this.store.storeName}  guid:${guid}  el:${el.item.control}  onLoad:${onLoad}`);
-
+    
             jels.each((_, elx) => {
                 let jel = jQuery(elx);
                 let recIdx = Number(jel.attr("storeIdx"));

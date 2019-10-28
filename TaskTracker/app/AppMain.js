@@ -94,6 +94,11 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 { field: "URL", line: 0, width: "40%", control: "textbox" },
                 { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
+            let bugTemplate = [
+                { field: "Description", line: 0, width: "70%", control: "textbox" },
+                { field: "Status", storeName: "BugStatusList", orderBy: "StatusOrder", line: 0, width: "20%", control: "combobox" },
+                { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
+            ];
             let projectStates = [
                 { text: 'Ongoing', bcolor: '#B0B0FF' },
                 { text: 'TODO', bcolor: '#FFB0B0' },
@@ -121,6 +126,19 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
+            let bugStates = [
+                { text: 'TODO', bcolor: '#FFB0B0' },
+                { text: 'Working On', bcolor: '#D0D0FF' },
+                { text: 'Testing', bcolor: '#D0D0FF' },
+                { text: 'QA', bcolor: '#D0D0FF' },
+                { text: 'Done', bcolor: '#D0FFD0' },
+                { text: 'On Production', bcolor: '#60FF60' },
+                { text: 'Waiting on 3rd Party', bcolor: '#FFA540' },
+                { text: 'Waiting on Coworker', bcolor: '#FFA540' },
+                { text: 'Waiting on Management', bcolor: '#FFA540' },
+                { text: 'Stuck', bcolor: 'red' },
+                { text: 'Discuss', bcolor: 'red' },
+            ];
             let storeManager = new StoreManager_1.StoreManager();
             let localStoragePersistence = new LocalStoragePersistence_1.LocalStoragePersistence();
             let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, localStoragePersistence, "AuditLogStore", undefined);
@@ -134,6 +152,7 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             };
             storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
             storeManager.AddInMemoryStore("TaskStatusList", taskStates);
+            storeManager.AddInMemoryStore("BugStatusList", bugStates);
             let parentChildRelationshipStore = new ParentChildStore_1.ParentChildStore(storeManager, localStoragePersistence, "ParentChildRelationships", auditLogStore);
             storeManager.RegisterStore(parentChildRelationshipStore);
             parentChildRelationshipStore.Load();
@@ -145,6 +164,9 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
             let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
             vcProjects.CreateStoreViewFromTemplate("Projects", localStoragePersistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
+            let vcBugs = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
+            vcBugs.CreateStoreViewFromTemplate("Bugs", localStoragePersistence, "#projectBugTemplateContainer", bugTemplate, "#createProjectBug", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", bugStates[0].text));
+            new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#bugNoteTemplateContainer", noteTemplate, "#createBugNote", false, vcBugs);
             let vcTasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
             vcTasks.CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
             new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcTasks);
