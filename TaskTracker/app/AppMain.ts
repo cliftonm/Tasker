@@ -196,8 +196,8 @@ export class AppMain {
         vcProjects.CreateStoreViewFromTemplate("Projects", persistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
 
         let vcBugs = new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
-        vcBugs.CreateStoreViewFromTemplate("Bugs", localStoragePersistence, "#projectBugTemplateContainer", bugTemplate, "#createProjectBug", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", bugStates[0].text));
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#bugNoteTemplateContainer", noteTemplate, "#createBugNote", false, vcBugs);
+        vcBugs.CreateStoreViewFromTemplate("Bugs", persistence, "#projectBugTemplateContainer", bugTemplate, "#createProjectBug", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", bugStates[0].text));
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", persistence, "#bugNoteTemplateContainer", noteTemplate, "#createBugNote", false, vcBugs);
 
         let vcTasks = new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
         vcTasks.CreateStoreViewFromTemplate("Tasks", persistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));

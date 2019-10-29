@@ -25,10 +25,10 @@ define(["require", "exports"], function (require, exports) {
         Save(storeName, data) {
             let rawData = jQuery.map(data, value => value);
             let json = JSON.stringify(rawData);
-            window.localStorage.setItem(storeName, json);
+            jQuery.ajax({ url: this.Url("Save") + `?StoreName=${storeName}`, type: "POST", data: json });
         }
         Update(storeName, data, record, idx, property, value) {
-            this.Save(storeName, data);
+            jQuery.ajax({ url: this.Url("Update") + `?StoreName=${storeName}`, type: "POST", data: { idx: idx, property: property, value: value } });
         }
         Url(path) {
             return this.baseUrl + path;

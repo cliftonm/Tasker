@@ -25,7 +25,7 @@ export class CloudPersistence implements IStorePersistence {
     }
 
     public Update(storeName: string, data: RowRecordMap, record: {}, idx: number, property: string, value: string): void {
-        jQuery.ajax({ url: this.Url("Update") + `?StoreName=${storeName}`, type: "POST", data: {idx: idx, property: property, value: value });
+        jQuery.ajax({ url: this.Url("Update") + `?StoreName=${storeName}`, type: "POST", data: { idx: idx, property: property, value: value } });
     }
 
     private Url(path: string): string {
