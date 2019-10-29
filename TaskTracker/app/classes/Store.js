@@ -103,10 +103,12 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             delete this.data[idx];
         }
         Load(createRecordView = true, viewController = undefined) {
-            this.data = this.persistence.Load(this.storeName);
-            if (createRecordView) {
-                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
-            }
+            this.persistence.Load(this.storeName).then(data => {
+                this.data = data;
+                if (createRecordView) {
+                    jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
+                }
+            });
             return this;
         }
         Save() {

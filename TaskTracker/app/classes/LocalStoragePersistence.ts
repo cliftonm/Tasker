@@ -2,7 +2,7 @@
 import { IStorePersistence } from "../interfaces/IStorePersistence"
 
 export class LocalStoragePersistence implements IStorePersistence {
-    public Load(storeName: string): RowRecordMap {
+    public Load(storeName: string): Promise<RowRecordMap> {
         let json = window.localStorage.getItem(storeName);
         let data = {};
 
@@ -18,7 +18,7 @@ export class LocalStoragePersistence implements IStorePersistence {
             }
         }
 
-        return data;
+        return new Promise((resolve, reject) => resolve(data));
     }
 
     public Save(storeName: string, data: RowRecordMap): void {

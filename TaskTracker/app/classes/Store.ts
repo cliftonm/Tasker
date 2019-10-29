@@ -146,11 +146,14 @@ export class Store {
     }
 
     public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {
-        this.data = this.persistence.Load(this.storeName);
+        this.persistence.Load(this.storeName).then(data => {
 
-        if (createRecordView) {
-            jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
-        }
+            this.data = data;
+
+            if (createRecordView) {
+                jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
+            }
+        });
 
         return this;
     }

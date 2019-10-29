@@ -44,6 +44,11 @@ context of a specific project-task manager.</p>
 did, it does not mean that I worked on this each and every day.&nbsp; 
 Particularly Day 12 encompasses a physical timespan of 3 days (and no, not 8 
 hours days!)</p>
+<p>Also, yes, this could be implemented with grids but the default HTML grid 
+functionality is atrocious and I didn't want to bring in other third party 
+libraries for these articles.&nbsp; My favorite is jqWidgets, pretty much none 
+other will do (even though it's large) so maybe at some point I'll demonstrate 
+how to tie all this stuff in to their library.</p>
 <h2>Day 1 - General Concepts</h2>
 <p>Some rough sketches:</p>
 <p><img border="0" src="sketch1.png" width="617" height="411"></p>
@@ -2112,6 +2117,162 @@ that doesn't exist yet:</p>
 <p>So this is where we're at now:</p>
 <p><img border="0" src="persist3.png" width="617" height="286"></p>
 <h2>Day 14 - Server-Side Persistence</h2>
+<p>I'm implementing the server in .NET Core so I can run it on non-Windows 
+devices as it is really just a proxy for database operations.&nbsp; Plus I'm not 
+going to use EntityFramework or Linq2Sql.&nbsp; And while I considered using a 
+NoSQL database, I wanted the flexibility to create queries on the database that 
+include table joins, and that's sort of a PITA -- not every NoSQL database 
+engine implements the ability and I don't really want to deal with the <code>$lookup</code> 
+syntax in MongoDB that I wrote about
+<a href="https://www.codeproject.com/Articles/1077839/Working-with-MongoDBs-lookup-Aggregator">
+here</a>.</p>
+<h3>Async Client-Side Calls</h3>
+<p>But we have a bigger problem -- AJAX calls are by nature asynchronous and 
+I've not accounted for any asynchronous behaviors in the TypeScript application.&nbsp; 
+If you were thinking about that while reading this article, you are probably 
+giggling.&nbsp; So for the moment (I haven't decided if I want to make <code>Load</code> 
+async as well), I've modified the store's <code>Load</code> function like this:</p>
+<pre>public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {
+  this.persistence.Load(this.storeName).then(data =&gt; {
+    this.data = data;
+
+    if (createRecordView) {
+      jQuery.each(this.data, (k, v) =&gt; this.recordCreatedCallback(k, v, false, this, true, viewController));
+    }
+  });
+
+  return this;
+}</pre>
+<p>The signature of the function in the IStorePersistence interface has to be 
+modified to:</p>
+<pre>Load(storeName: string): Promise&lt;RowRecordMap&gt;;</pre>
+<p>And the <code>LocalStoragePersistence</code> class' Load function now looks like this:</p>
+<pre>public Load(storeName: string): Promise&lt;RowRecordMap&gt; {
+  let json = window.localStorage.getItem(storeName);
+  let data = {};
+
+  if (json) {
+    try {
+      // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+      let records: {}[] = JSON.parse(json);
+      records.forEach((record, idx) =&gt; data[idx] = record);
+    } catch (ex) {
+      console.log(ex);
+      // Storage is corrupt, eek, we're going to remove it!
+      window.localStorage.removeItem(storeName);
+    }
+  }
+
+  return new Promise((resolve, reject) =&gt; resolve(data));
+}</pre>
+<p>All is well with the world.</p>
+<p>The <code>CloudPersistence</code> class then looks like this:</p>
+<pre>export class CloudPersistence implements IStorePersistence {
+  baseUrl: string;
+
+  constructor(url: string) {
+    this.baseUrl = url;
+  }
+
+  public async Load(storeName: string): Promise&lt;RowRecordMap&gt; {
+    let records = await jQuery.ajax({ url: this.Url(&quot;Load&quot;) + `?StoreName=${storeName}` });
+    let data = {};
+
+    // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+    records.forEach((record, idx) =&gt; data[idx] = record);
+
+    return data;
+  }
+
+  public Save(storeName: string, data: RowRecordMap): void {
+    let rawData = jQuery.map(data, value =&gt; value);
+    let json = JSON.stringify(rawData);
+    jQuery.ajax({ url: this.Url(&quot;Save&quot;) + `?StoreName=${storeName}`, type: &quot;POST&quot;, data: json });
+  }
+
+  public Update(storeName: string, data: RowRecordMap, record: {}, idx: number, property: string, value: string): void {
+    jQuery.ajax({ url: this.Url(&quot;Update&quot;) + `?StoreName=${storeName}`, type: &quot;POST&quot;, data: {idx: idx, property: property, value: value });
+  }
+
+  private Url(path: string): string {
+    return this.baseUrl + path;
+  }
+}</pre>
+<p>The concern here is that the Save and Update functions with their 
+asynchronous AJAX calls may be not be received in the same order they are sent.&nbsp; 
+This code needs to be refactored to ensure that the <b>Asynchronous</b> 
+JavasScript and XML (AJAX!) is actually performed in the correct order by 
+queuing the requests and processing them serially, waiting for the response from 
+the server before sending the next one.&nbsp; Another day!</p>
+<h3>Server-Side Handlers</h3>
+<p>On the server side (I'm not going to go into my server implementation at the 
+moment) I register this route:</p>
+<pre>router.AddRoute&lt;LoadStore&gt;(&quot;GET&quot;, &quot;/load&quot;, Load, false);</pre>
+<p>and implement a route handler that returns a dummy empty array:</p>
+<pre>private static IRouteResponse Load(LoadStore store)
+{
+  Console.WriteLine($&quot;Load store {store.StoreName}&quot;);
+
+  return RouteResponse.OK(new string[] {});
+}</pre>
+<p>Somewhat ironically I also had to add:</p>
+<pre>context.Response.AppendHeader(&quot;Access-Control-Allow-Origin&quot;, &quot;*&quot;);</pre>
+<p>because the TypeScript page is being served by one address (localhost with a 
+port that Visual Studio assigns) and my server is sitting on localhost:80.&nbsp; 
+It's interesting watching what happens without this header -- the server gets 
+the request but the browser blocks (throws an exception) processing the 
+response.&nbsp;&nbsp; Sigh.</p>
+<h3>Model-less SQL</h3>
+<p>Now we get to a decision.&nbsp; Typically the database schema is created as a 
+&quot;known schema&quot;, using some sort of model / schema synchronization, or a migrator 
+like <a href="https://github.com/fluentmigrator/fluentmigrator">FluentMigrator</a>, 
+or just hand-coded.&nbsp; Personally, I have come to loathe this whole approach 
+because it usually means:</p>
+<ol>
+	<li>The database has a schema that requires management.</li>
+	<li>The server-side has a model that requires management.</li>
+	<li>The client-side has a model that also requires management.</li>
+</ol>
+<p>My god.&nbsp; What ever happened to the DRY (Don't Repeat Yourself) principle 
+when it comes to schemas and models?&nbsp; So I'm going to conduct an 
+experiment.&nbsp; As you've noticed, there is no real model of anything on the 
+client-side except for the couple concrete types for the audit and sequence 
+&quot;tables.&quot;&nbsp; My so-called model is actually hidden in the view templates, for 
+example:</p>
+<pre>let contactTemplate = [
+  { field: &quot;Name&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },
+  { field: &quot;Email&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },
+  { field: &quot;Title&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },
+  { field: &quot;Comment&quot;, line: 1, width: &quot;80%&quot;, control: &quot;textbox&quot; },
+  { text: &quot;Delete&quot;, line: 1, width: &quot;80px&quot;, control: &quot;button&quot;, route: &quot;DeleteRecord&quot; }
+];</pre>
+<p>Oh look, the template for the view specifies the fields in which the view is 
+interested.&nbsp; In the local storage implementation, that was quite 
+sufficient.&nbsp; This would all be fine and dandy in a SQL database if I 
+basically had a table like this:</p>
+<pre>ID
+StoreName
+PropertyName
+Value</pre>
+<p>Rant on.&nbsp; But I don't want that -- I <i>want</i> concrete tables with 
+concrete columns!&nbsp; So I'm going to do something you are going to kick and 
+scream about - create the tables and necessary columns on the fly, as required, 
+so that the view templates are the &quot;master&quot; for defining the schema.&nbsp; Yes, 
+you read that correctly.&nbsp; Just because the whole world programs in a way 
+that duplicates the schema, code-behind model, and client-side model, doesn't 
+mean I have to.&nbsp; Sure there's a performance hit, but we're not dealing with 
+bulk updates here, we're dealing with asynchronous user-driven updates.&nbsp; 
+The user is never going to notice and more importantly to me, I will never again 
+have to write migrations or create tables and schemas or create C# classes that 
+mirror the DB schema.&nbsp; Unless I'm doing some specific business logic on the 
+server side, in which case the C# classes can generated from the database 
+schema.&nbsp; There was some work in F# ages ago that I encountered where the DB 
+schema could be used to tie in Intellisense to F# objects, but sadly that has 
+never happened in C#, and using dynamic objects has a horrid performance and no 
+Intellisense.&nbsp; So, there is still a major disconnect in programming 
+language support that &quot;knows&quot; the DB schema. Rant off.</p>
+<p>Tomorrow.</p>
+<h2>Day 15 - Creating the Schema on the Fly</h2>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

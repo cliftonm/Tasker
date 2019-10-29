@@ -17,7 +17,7 @@ define(["require", "exports"], function (require, exports) {
                     window.localStorage.removeItem(storeName);
                 }
             }
-            return data;
+            return new Promise((resolve, reject) => resolve(data));
         }
         Save(storeName, data) {
             let rawData = jQuery.map(data, value => value);

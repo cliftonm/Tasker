@@ -12,6 +12,7 @@ import { ParentChildStore } from "./stores/ParentChildStore"
 import { AuditLogStore } from "./stores/AuditLogStore"
 import { EventRouter } from "./classes/EventRouter"
 import { SequenceStore } from "./stores/SequenceStore";
+import { CloudPersistence } from "./classes/CloudPersistence";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
 
 // Add bugs and meetings
@@ -161,13 +162,14 @@ export class AppMain {
         ];
 
         let storeManager = new StoreManager();
-        let localStoragePersistence = new LocalStoragePersistence();
+        let persistence = new LocalStoragePersistence();
+        // let persistence = new CloudPersistence("http://127.0.0.1/");
 
-        let auditLogStore = new AuditLogStore(storeManager, localStoragePersistence, "AuditLogStore", undefined);
+        let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore", undefined);
         storeManager.RegisterStore(auditLogStore);
         auditLogStore.Load();
 
-        let seqStore = new SequenceStore(storeManager, localStoragePersistence, "Sequences", auditLogStore);
+        let seqStore = new SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
         storeManager.RegisterStore(seqStore);
         seqStore.Load();
         storeManager.getPrimaryKeyCallback = (storeName: string) => {
@@ -178,7 +180,7 @@ export class AppMain {
         storeManager.AddInMemoryStore("TaskStatusList", taskStates);
         storeManager.AddInMemoryStore("BugStatusList", bugStates);
 
-        let parentChildRelationshipStore = new ParentChildStore(storeManager, localStoragePersistence, "ParentChildRelationships", auditLogStore);
+        let parentChildRelationshipStore = new ParentChildStore(storeManager, persistence, "ParentChildRelationships", auditLogStore);
         storeManager.RegisterStore(parentChildRelationshipStore);
         parentChildRelationshipStore.Load();
 
@@ -191,24 +193,24 @@ export class AppMain {
         eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
 
         let vcProjects = new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
-        vcProjects.CreateStoreViewFromTemplate("Projects", localStoragePersistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
+        vcProjects.CreateStoreViewFromTemplate("Projects", persistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
 
         let vcBugs = new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
         vcBugs.CreateStoreViewFromTemplate("Bugs", localStoragePersistence, "#projectBugTemplateContainer", bugTemplate, "#createProjectBug", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", bugStates[0].text));
         new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#bugNoteTemplateContainer", noteTemplate, "#createBugNote", false, vcBugs);
 
         let vcTasks = new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore);
-        vcTasks.CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
+        vcTasks.CreateStoreViewFromTemplate("Tasks", persistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
 
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Tasks", localStoragePersistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcTasks);
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Tasks", persistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcTasks);
 
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Contacts", localStoragePersistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Contacts", persistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
 
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Links", localStoragePersistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Links", persistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Links", persistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcTasks);
 
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
-        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", localStoragePersistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", persistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
+        new ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore).CreateStoreViewFromTemplate("Notes", persistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcTasks);
     }
 };
 
