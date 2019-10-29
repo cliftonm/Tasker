@@ -175,6 +175,7 @@ namespace WebServer
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 resp = RouteResponse.ServerError(new { ex.Message, ex.StackTrace });
                 JsonResponder(context, resp);
             }
@@ -247,21 +248,23 @@ namespace WebServer
                     */
                 }
             }
-            else if (verb == "GET")
+
+            // Also parse the query string into the handler's properties.
+            NameValueCollection nvc = context.Request.QueryString;
+
+            if (packet == null)
             {
-                // With a GET, parse the query string into the handler's properties.
-                NameValueCollection nvc = context.Request.QueryString;
                 packet = (IRequestData)Activator.CreateInstance(dataType);
+            }
 
-                foreach (string key in nvc.AllKeys)
+            foreach (string key in nvc.AllKeys)
+            {
+                PropertyInfo pi = dataType.GetProperty(key, BindingFlags.Public | BindingFlags.Instance);
+
+                if (pi != null)
                 {
-                    PropertyInfo pi = dataType.GetProperty(key, BindingFlags.Public | BindingFlags.Instance);
-
-                    if (pi != null)
-                    {
-                        object val = Converter.Convert(nvc[key], pi.PropertyType);
-                        pi.SetValue(packet, val);
-                    }
+                    object val = Converter.Convert(nvc[key], pi.PropertyType);
+                    pi.SetValue(packet, val);
                 }
             }
 

@@ -1,8 +1,9 @@
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -10,12 +11,18 @@ define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class CloudPersistence {
-        constructor(url) {
+        constructor(url, userId) {
             this.baseUrl = url;
+            this.userId = userId;
+        }
+        SetAuditLogStore(auditLogStore) {
+            this.auditLogStore = auditLogStore;
         }
         Load(storeName) {
             return __awaiter(this, void 0, void 0, function* () {
-                let records = yield jQuery.ajax({ url: this.Url("Load") + `?StoreName=${storeName}` });
+                let records = yield jQuery.ajax({
+                    url: this.Url("Load") + this.AddParams({ StoreName: storeName, UserId: this.userId.ToString() })
+                });
                 let data = {};
                 // Create indices that map records to a "key", in this case simply the initial row number.
                 records.forEach((record, idx) => data[idx] = record);
@@ -23,15 +30,24 @@ define(["require", "exports"], function (require, exports) {
             });
         }
         Save(storeName, data) {
-            let rawData = jQuery.map(data, value => value);
+            // For cloud persistence, what we actually want to do here is send over the audit log, not the entire store contents.
+            let rawData = this.auditLogStore.GetRawData();
             let json = JSON.stringify(rawData);
-            jQuery.ajax({ url: this.Url("Save") + `?StoreName=${storeName}`, type: "POST", data: json });
-        }
-        Update(storeName, data, record, idx, property, value) {
-            jQuery.ajax({ url: this.Url("Update") + `?StoreName=${storeName}`, type: "POST", data: { idx: idx, property: property, value: value } });
+            jQuery.post(this.Url("Save") + this.AddParams({ UserId: this.userId.ToString() }), JSON.stringify({ auditLog: json }));
+            this.auditLogStore.Clear();
         }
         Url(path) {
             return this.baseUrl + path;
+        }
+        AddParams(params) {
+            let ret = "";
+            let separator = "?";
+            Object.keys(params).forEach((k, v) => {
+                ret = ret + separator;
+                ret = ret + k + "=" + params[k];
+                separator = "&";
+            });
+            return ret;
         }
     }
     exports.CloudPersistence = CloudPersistence;

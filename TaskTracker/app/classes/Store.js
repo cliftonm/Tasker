@@ -111,6 +111,10 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             });
             return this;
         }
+        Clear() {
+            this.data = {};
+            return this;
+        }
         Save() {
             this.persistence.Save(this.storeName, this.data);
             return this;

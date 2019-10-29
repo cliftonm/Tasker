@@ -1,7 +1,14 @@
 ﻿import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { IStorePersistence } from "../interfaces/IStorePersistence"
+import { AuditLogStore } from "../stores/AuditLogStore"
 
 export class LocalStoragePersistence implements IStorePersistence {
+    auditLogStore: AuditLogStore;
+
+    public SetAuditLogStore(auditLogStore: AuditLogStore): void {
+        this.auditLogStore = auditLogStore;
+    }
+
     public Load(storeName: string): Promise<RowRecordMap> {
         let json = window.localStorage.getItem(storeName);
         let data = {};
@@ -25,9 +32,6 @@ export class LocalStoragePersistence implements IStorePersistence {
         let rawData = jQuery.map(data, value => value);
         let json = JSON.stringify(rawData);
         window.localStorage.setItem(storeName, json);
-    }
-
-    public Update(storeName: string, data:RowRecordMap, record: {}, idx: number, property: string, value: string) : void {
-        this.Save(storeName, data);
+        this.auditLogStore.Clear();
     }
 }

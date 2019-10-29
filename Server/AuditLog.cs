@@ -1,8 +1,6 @@
-﻿using WebServer;
-
-namespace Server
+﻿namespace Server
 {
-    public class AuditLog : IRequestData
+    public class AuditLog
     {
         public enum AuditLogAction
         {

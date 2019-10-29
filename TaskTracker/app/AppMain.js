@@ -1,6 +1,6 @@
 // Sort of works, I get "Cannot read property 'default' of undefined"
 // import * as jQuery from "../lib/jquery"
-define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/LocalStoragePersistence"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, LocalStoragePersistence_1) {
+define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/Guid"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, Guid_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -139,12 +139,14 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
+            let userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000000");
             let storeManager = new StoreManager_1.StoreManager();
-            let persistence = new LocalStoragePersistence_1.LocalStoragePersistence();
-            // let persistence = new CloudPersistence("http://127.0.0.1/");
+            // let persistence = new LocalStoragePersistence();
+            let persistence = new CloudPersistence_1.CloudPersistence("http://127.0.0.1/", userId);
             let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, persistence, "AuditLogStore", undefined);
             storeManager.RegisterStore(auditLogStore);
             auditLogStore.Load();
+            persistence.SetAuditLogStore(auditLogStore);
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
             storeManager.RegisterStore(seqStore);
             seqStore.Load();

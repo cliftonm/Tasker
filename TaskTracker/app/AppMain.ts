@@ -13,6 +13,7 @@ import { AuditLogStore } from "./stores/AuditLogStore"
 import { EventRouter } from "./classes/EventRouter"
 import { SequenceStore } from "./stores/SequenceStore";
 import { CloudPersistence } from "./classes/CloudPersistence";
+import { Guid } from "./classes/Guid";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
 
 // Add bugs and meetings
@@ -161,13 +162,16 @@ export class AppMain {
             { text: 'Discuss', bcolor: 'red' },
         ];
 
+        let userId = new Guid("00000000-0000-0000-0000-000000000000");
         let storeManager = new StoreManager();
-        let persistence = new LocalStoragePersistence();
-        // let persistence = new CloudPersistence("http://127.0.0.1/");
+        // let persistence = new LocalStoragePersistence();
+        let persistence = new CloudPersistence("http://127.0.0.1/", userId);
 
         let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore", undefined);
         storeManager.RegisterStore(auditLogStore);
         auditLogStore.Load();
+
+        persistence.SetAuditLogStore(auditLogStore);
 
         let seqStore = new SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
         storeManager.RegisterStore(seqStore);

@@ -2,6 +2,9 @@ define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class LocalStoragePersistence {
+        SetAuditLogStore(auditLogStore) {
+            this.auditLogStore = auditLogStore;
+        }
         Load(storeName) {
             let json = window.localStorage.getItem(storeName);
             let data = {};
@@ -23,9 +26,7 @@ define(["require", "exports"], function (require, exports) {
             let rawData = jQuery.map(data, value => value);
             let json = JSON.stringify(rawData);
             window.localStorage.setItem(storeName, json);
-        }
-        Update(storeName, data, record, idx, property, value) {
-            this.Save(storeName, data);
+            this.auditLogStore.Clear();
         }
     }
     exports.LocalStoragePersistence = LocalStoragePersistence;

@@ -2190,10 +2190,6 @@ modified to:</p>
     jQuery.ajax({ url: this.Url(&quot;Save&quot;) + `?StoreName=${storeName}`, type: &quot;POST&quot;, data: json });
   }
 
-  public Update(storeName: string, data: RowRecordMap, record: {}, idx: number, property: string, value: string): void {
-    jQuery.ajax({ url: this.Url(&quot;Update&quot;) + `?StoreName=${storeName}`, type: &quot;POST&quot;, data: {idx: idx, property: property, value: value });
-  }
-
   private Url(path: string): string {
     return this.baseUrl + path;
   }
@@ -2273,6 +2269,33 @@ Intellisense.&nbsp; So, there is still a major disconnect in programming
 language support that &quot;knows&quot; the DB schema. Rant off.</p>
 <p>Tomorrow.</p>
 <h2>Day 15 - Creating the Schema on the Fly</h2>
+<p>Before getting into this, one minor detail is needed - a user ID that is 
+associated with the AJAX calls so data can be separated by user.&nbsp; For 
+testing, we'll use:</p>
+<pre>let userID = new Guid(&quot;00000000-0000-0000-0000-000000000000&quot;);
+let persistence = new CloudPersistence(&quot;http://127.0.0.1/&quot;, userId);
+</pre>
+<p>There is no login or authentication right now, but it's useful to put this 
+into the coding now rather than later.</p>
+<p>So now our cloud persistence Load function looks like this:</p>
+<pre>public async Load(storeName: string): Promise&lt;RowRecordMap&gt; {
+  let records = await jQuery.ajax({
+    url: this.Url(&quot;Load&quot;) + this.AddParams({ StoreName: storeName, UserId: this.userId.ToString() }) });
+  let data = {};
+
+  // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+  records.forEach((record, idx) =&gt; data[idx] = record);
+
+  return data;
+}</pre>
+<p>On the server side, we have create the stores on the fly as needed:</p>
+<p>&nbsp;</p>
+<p>As well as the store fields:</p>
+<p>&nbsp;</p>
+<p>And finally, we process the audit log.</p>
+<p>&nbsp;</p>
+<p>On the client-side, the audit log is cleared whenever the audit log is posted 
+to the server.</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>
 <p>&nbsp;</p>

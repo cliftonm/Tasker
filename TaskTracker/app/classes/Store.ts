@@ -158,6 +158,12 @@ export class Store {
         return this;
     }
 
+    public Clear(): Store {
+        this.data = {};
+
+        return this;
+    }
+
     public Save(): Store {
         this.persistence.Save(this.storeName, this.data);
 

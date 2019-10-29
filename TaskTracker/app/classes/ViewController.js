@@ -39,6 +39,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             else {
                 this.store = this.storeManager.CreateStore(storeName, persistence, this.auditLogStore);
                 this.AssignStoreCallbacks();
+                this.store.Load(updateView, this);
             }
             // TODO: Wiring up the click even here precludes the ability to create view controllers from the UI after the document is ready.
             jQuery(document).ready(() => {
@@ -51,7 +52,6 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
                     this.store.Save();
                 });
             });
-            this.store.Load(updateView, this);
             return this.store;
         }
         RegisterChildController(childViewController) {
