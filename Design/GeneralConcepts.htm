@@ -9,6 +9,8 @@
 <body>
 
 <h2>Introduction</h2>
+<p>A metadata driven, view defines the model, schema generated on the fly, 
+bizarre approach to building an application.</p>
 <p>I thought it would be fun and hopefully interested to document the creation 
 of a client-side TypeScript application from conception to implementation.&nbsp; 
 So I chose something that I've been wanting to do for a while - a project-task 
@@ -2277,31 +2279,168 @@ let persistence = new CloudPersistence(&quot;http://127.0.0.1/&quot;, userId);
 </pre>
 <p>There is no login or authentication right now, but it's useful to put this 
 into the coding now rather than later.</p>
-<p>So now our cloud persistence Load function looks like this:</p>
+<p>So now our cloud persistence <code>Load</code> function looks like this:</p>
 <pre>public async Load(storeName: string): Promise&lt;RowRecordMap&gt; {
   let records = await jQuery.ajax({
     url: this.Url(&quot;Load&quot;) + this.AddParams({ StoreName: storeName, UserId: this.userId.ToString() }) });
   let data = {};
 
   // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
-  records.forEach((record, idx) =&gt; data[idx] = record);
+  // Note how we get the record index from record.__ID!!!
+  records.forEach((record, _) =&gt; data[record.__ID] = record);
 
   return data;
 }</pre>
-<p>On the server side, we have create the stores on the fly as needed:</p>
-<p>&nbsp;</p>
-<p>As well as the store fields:</p>
-<p>&nbsp;</p>
-<p>And finally, we process the audit log.</p>
-<p>&nbsp;</p>
-<p>On the client-side, the audit log is cleared whenever the audit log is posted 
-to the server.</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
+<p>The <code>Save</code> function sends the current state of the audit log:</p>
+<pre>public Save(storeName: string, data: RowRecordMap): void {
+  // For cloud persistence, what we actually want to do here is send over the audit log, not the entire store contents.
+  let rawData = this.auditLogStore.GetRawData();
+  let json = JSON.stringify(rawData);
+  jQuery.post(this.Url(&quot;Save&quot;) + this.AddParams({ UserId: this.userId.ToString() }), JSON.stringify({ auditLog: json }));
+  this.auditLogStore.Clear();
+}</pre>
+<p>Note how the log is cleared once we have sent it!</p>
+<p>A special function is required to actually send the audit log itself because 
+it is not in the form &quot;action-property-value&quot;, it is a concrete entity:</p>
+<pre>public SaveAuditLog(logEntry: AuditLogModel): void {
+  let json = JSON.stringify(logEntry);
+  jQuery.post(this.Url(&quot;SaveLogEntry&quot;) + this.AddParams({ UserId: this.userId.ToString() }), json);
+}</pre>
+<p>On the server side, we load what we know about the schema:</p>
+<pre>private static void LoadSchema()
+{
+  const string sqlGetTables = &quot;SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'&quot;;
+  using (var conn = OpenConnection())
+  {
+    var dt = Query(conn, sqlGetTables);
+
+    foreach (DataRow row in dt.Rows)
+    {
+      var tableName = row[&quot;TABLE_NAME&quot;].ToString();
+      schema[tableName] = new List&lt;string&gt;();
+      var fields = LoadTableSchema(conn, tableName);
+      schema[tableName].AddRange(fields);
+    }
+  }
+}
+
+private static IEnumerable&lt;string&gt; LoadTableSchema(SqlConnection conn, string tableName)
+{
+  string sqlGetTableFields = $&quot;SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName&quot;;
+  var dt = Query(conn, sqlGetTableFields, new SqlParameter[] { new SqlParameter(&quot;@tableName&quot;, tableName) });
+  var fields = (dt.AsEnumerable().Select(r =&gt; r[0].ToString()));
+
+  return fields;
+}</pre>
+<p>Then we have create the stores on the fly as needed:</p>
+<pre>private static void CheckForTable(SqlConnection conn, string storeName)
+{
+  if (!schema.ContainsKey(storeName))
+  {
+    CreateTable(conn, storeName);
+    schema[storeName] = new List&lt;string&gt;();
+  }
+}
+
+private static void CheckForField(SqlConnection conn, string storeName, string fieldName)
+{
+  if (!schema[storeName].Contains(fieldName))
+  {
+    CreateField(conn, storeName, fieldName);
+    schema[storeName].Add(fieldName);
+  }
+}
+
+private static void CreateTable(SqlConnection conn, string storeName)
+{
+  // __ID must be a string because in ParentChildStore.GetChildInfo, this Javascript: childRecIds.indexOf((&lt;any&gt;r).__ID)
+  // Does not match on &quot;1&quot; == 1
+  string sql = $&quot;CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)&quot;;
+  Execute(conn, sql);
+}
+
+private static void CreateField(SqlConnection conn, string storeName, string fieldName)
+{
+  // Here we suffer from a loss of fidelity as we don't know the field type nor length/precision.
+  string sql = $&quot;ALTER TABLE [{storeName}] ADD [{fieldName}] NVARCHAR(255) NULL&quot;;
+  Execute(conn, sql);
+}</pre>
+<p>And finally, we process the audit log on save:</p>
+<pre>private static IRouteResponse Save(SaveStore store)
+{
+  var logs = JsonConvert.DeserializeObject&lt;List&lt;AuditLog&gt;&gt;(store.AuditLog);
+
+  using (var conn = OpenConnection())
+  {
+    // Evil!
+    lock (schemaLocker)
+    {
+      UpdateSchema(conn, logs);
+
+      // The CRUD operations have to be in the lock operation so that another request doesn't update the schema while we're updating the record.
+      logs.ForEach(l =&gt; PersistTransaction(conn, l, store.UserId));
+    }
+  }
+
+  return RouteResponse.OK();
+}
+
+private static void PersistTransaction(SqlConnection conn, AuditLog log, Guid userId)
+{
+  switch (log.Action)
+  {
+    case AuditLog.AuditLogAction.Create:
+      CreateRecord(conn, userId, log.StoreName, log.RecordIndex);
+      break;
+
+    case AuditLog.AuditLogAction.Delete:
+      DeleteRecord(conn, userId, log.StoreName, log.RecordIndex);
+      break;
+
+    case AuditLog.AuditLogAction.Update:
+      UpdateRecord(conn, userId, log.StoreName, log.RecordIndex, log.Property, log.Value);
+      break;
+  }
+}</pre>
+<p>Notice the call to <code>UpdateSchema</code>!&nbsp; This is where the magic happens, that 
+if a field in the table hasn't been encountered before, we create it on the fly!</p>
+<pre>private static void UpdateSchema(SqlConnection conn, List&lt;AuditLog&gt; logs)
+{
+  // Create any missing tables.
+  logs.Select(l =&gt; l.StoreName).Distinct().ForEach(sn =&gt; CheckForTable(conn, sn));
+
+  // Create any missing fields.
+  foreach (var log in logs.Where(l =&gt; !String.IsNullOrEmpty(l.Property)).DistinctBy(l =&gt; l, tableFieldComparer))
+  {
+    CheckForField(conn, log.StoreName, log.Property);
+  }
+}</pre>
+<p>Et Voila!</p>
+<p><img border="0" src="schema1.png" width="269" height="109"></p>
+<p>At this point, I haven't entered anything for the TODO and Description 
+fields, so the schema doesn't know they exist:</p>
+<p><img border="0" src="schema2.png" width="617" height="118"></p>
+<p>After I fill in the data:</p>
+<p><img border="0" src="schema3.png" width="613" height="90"></p>
+<p>The schema has been modified because these additional columns were part of 
+the audit log!</p>
+<p><img border="0" src="schema4.png" width="287" height="145"></p>
+<p>And we can see the audit log entries logged as well for the changes I just 
+made:</p>
+<p><img border="0" src="audit3.png" width="636" height="99"></p>
+<h2>Conclusion</h2>
+<p>So this article is huge.&nbsp; You should probably read it one day at a time!&nbsp; 
+And it's also crazy -- this is metadata driven, view defines the model, schema 
+generated on the fly, bizarre approach to building an application.&nbsp; There's 
+a lot to do still to make this more even more interesting such as storing the 
+template view definitions and HTML in the database specific to the user, giving 
+the user the flexibility to customize the entire presentation.&nbsp; The UI is 
+ugly as sin, but it actually does the job quite nicely for what I wanted to 
+accomplish -- organizing projects, tasks, contacts, links, bugs, and notes in a 
+way that is actually useful to, well, me!</p>
+<p>I hope you had fun reading this, maybe some of the ideas here are interesting 
+if not jarring, and I'll expect to follow up with some more interesting features 
+in the future.</p>
 
 </body>
 

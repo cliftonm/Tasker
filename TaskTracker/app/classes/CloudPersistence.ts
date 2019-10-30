@@ -2,6 +2,7 @@
 import { IStorePersistence } from "../interfaces/IStorePersistence"
 import { Guid } from "./Guid"
 import { AuditLogStore } from "../stores/AuditLogStore"
+import { AuditLogModel } from "../models/AuditLogModel";
 
 export class CloudPersistence implements IStorePersistence {
     baseUrl: string;
@@ -23,7 +24,8 @@ export class CloudPersistence implements IStorePersistence {
         let data = {};
 
         // Create indices that map records to a "key", in this case simply the initial row number.
-        records.forEach((record, idx) => data[idx] = record);
+        // Note how we get the record index from record.__ID!!!
+        records.forEach((record, _) => data[record.__ID] = record);
 
         return data;
     }
@@ -34,6 +36,11 @@ export class CloudPersistence implements IStorePersistence {
         let json = JSON.stringify(rawData);
         jQuery.post(this.Url("Save") + this.AddParams({ UserId: this.userId.ToString() }), JSON.stringify({ auditLog: json }));
         this.auditLogStore.Clear();
+    }
+
+    public SaveAuditLog(logEntry: AuditLogModel): void {
+        let json = JSON.stringify(logEntry);
+        jQuery.post(this.Url("SaveLogEntry") + this.AddParams({ UserId: this.userId.ToString() }), json);
     }
 
     private Url(path: string): string {

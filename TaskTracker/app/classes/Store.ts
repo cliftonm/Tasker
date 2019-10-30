@@ -127,7 +127,7 @@ export class Store {
     }
 
     protected InternalCreateRecord(insert = false, viewController: ViewController = undefined): number {
-        let nextIdx = 0;
+        let nextIdx = 1;
 
         if (this.Records() > 0) {
             nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;

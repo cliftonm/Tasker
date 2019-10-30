@@ -89,7 +89,7 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             return nextIdx;
         }
         InternalCreateRecord(insert = false, viewController = undefined) {
-            let nextIdx = 0;
+            let nextIdx = 1;
             if (this.Records() > 0) {
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }

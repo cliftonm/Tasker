@@ -6,6 +6,19 @@
 
 // However, using $, we don't get intellisense, but using jQuery, we do.
 
+
+/*
+delete from AuditLogStore
+delete from Bugs
+delete from Contacts
+delete from Links
+delete from Notes
+delete from ParentChildRelationships
+delete from Projects
+delete from [Sequences]
+delete from Tasks
+*/
+
 import { ViewController } from "./classes/ViewController"
 import { StoreManager } from "./classes/StoreManager"
 import { ParentChildStore } from "./stores/ParentChildStore"
@@ -167,9 +180,8 @@ export class AppMain {
         // let persistence = new LocalStoragePersistence();
         let persistence = new CloudPersistence("http://127.0.0.1/", userId);
 
-        let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore", undefined);
+        let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore");
         storeManager.RegisterStore(auditLogStore);
-        auditLogStore.Load();
 
         persistence.SetAuditLogStore(auditLogStore);
 

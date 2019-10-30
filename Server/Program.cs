@@ -40,12 +40,19 @@ namespace Server
         private static Router router;
         private static Dictionary<string, List<string>> schema = new Dictionary<string, List<string>>();
         private static object schemaLocker = new object();
-        // private static string localIP;
+        private static TableFieldComparer tableFieldComparer = new TableFieldComparer();
+        private static string auditLogTableName = "AuditLogStore";
+
+        private static string connectionString = @"Data Source=MARC-DELL2\SQLEXPRESS2017;Initial Catalog=TaskTracker;Integrated Security=True;";
+        // private static string connectionString = @"Data Source=MCLIFTON-5P5KZN\MSSQL2017;Initial Catalog=TaskTracker;Integrated Security=True;";
+
+            // private static string localIP;
 
         static void Main(string[] args)
         {
             InitializeRouter();
             LoadSchema();
+            CreateAuditLogTable();
 
             // webAppPath = ConfigurationManager.AppSettings["webAppPath"];
             // Console.WriteLine($"WebApp: {webAppPath}");
@@ -69,6 +76,7 @@ namespace Server
             router = new Router();
             router.AddRoute<LoadStore>("GET", "/load", Load, false);
             router.AddRoute<SaveStore>("POST", "/Save", Save, false);
+            router.AddRoute<AuditLog>("POST", "/SaveLogEntry", SaveLogEntry, false);
             router.AddRoute("GET", "/", () => RouteResponse.Page("Hello World", "text/html"), false);
         }
 
@@ -88,21 +96,13 @@ namespace Server
         private static IRouteResponse Save(SaveStore store)
         {
             var logs = JsonConvert.DeserializeObject<List<AuditLog>>(store.AuditLog);
-            var tableFieldComparer = new TableFieldComparer();
 
             using (var conn = OpenConnection())
             {
                 // Evil!
                 lock (schemaLocker)
                 {
-                    // Create any missing tables.
-                    logs.Select(l => l.StoreName).Distinct().ForEach(sn => CheckForTable(conn, sn));
-
-                    // Create any missing fields.
-                    foreach (var log in logs.Where(l => !String.IsNullOrEmpty(l.Property)).DistinctBy(l => l, tableFieldComparer))
-                    {
-                        CheckForField(conn, log.StoreName, log.Property);
-                    }
+                    UpdateSchema(conn, logs);
 
                     // The CRUD operations have to be in the lock operation so that another request doesn't update the schema while we're updating the record.
                     logs.ForEach(l => PersistTransaction(conn, l, store.UserId));
@@ -110,6 +110,28 @@ namespace Server
             }
 
             return RouteResponse.OK();
+        }
+
+        private static IRouteResponse SaveLogEntry(AuditLog entry)
+        {
+            using (var conn = OpenConnection())
+            {
+                CreateLogEntry(conn, entry);
+            }
+
+            return RouteResponse.OK();
+        }
+
+        private static void UpdateSchema(SqlConnection conn, List<AuditLog> logs)
+        {
+            // Create any missing tables.
+            logs.Select(l => l.StoreName).Distinct().ForEach(sn => CheckForTable(conn, sn));
+
+            // Create any missing fields.
+            foreach (var log in logs.Where(l => !String.IsNullOrEmpty(l.Property)).DistinctBy(l => l, tableFieldComparer))
+            {
+                CheckForField(conn, log.StoreName, log.Property);
+            }
         }
 
         private static void InitializeLocalhostWebListener(IRouter router, string webAppPath)
@@ -151,6 +173,28 @@ namespace Server
             }
         }
 
+        private static void CreateAuditLogTable()
+        {
+            if (!schema.ContainsKey(auditLogTableName))
+            {
+                using (var conn = OpenConnection())
+                {
+                    string sql = $@"CREATE TABLE [{auditLogTableName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, 
+                    [StoreName] NVARCHAR(255) NOT NULL,
+                    [Action] INT NOT NULL,
+                    [RecordIndex] INT NOT NULL,
+                    [Property] NVARCHAR(255) NULL,
+                    [Value] NVARCHAR(255) NULL
+                    )";
+
+                    Execute(conn, sql);
+                    var fields = LoadTableSchema(conn, auditLogTableName);
+                    schema[auditLogTableName] = new List<string>();
+                    schema[auditLogTableName].AddRange(fields);
+                }
+            }
+        }
+
         private static IEnumerable<string> LoadTableSchema(SqlConnection conn, string tableName)
         {
             string sqlGetTableFields = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName";
@@ -176,6 +220,20 @@ namespace Server
                     UpdateRecord(conn, userId, log.StoreName, log.RecordIndex, log.Property, log.Value);
                     break;
             }
+        }
+
+        private static void CreateLogEntry(SqlConnection conn, AuditLog logEntry)
+        {
+            string sql = $"INSERT INTO [{auditLogTableName}] (UserID, StoreName, Action, RecordIndex, Property, Value) values (@userId, @storeName, @action, @recordIndex, @property, @value)";
+            Execute(conn, sql, new SqlParameter[] 
+            {
+                new SqlParameter("@userId", logEntry.UserId),
+                new SqlParameter("@storeName", logEntry.StoreName),
+                new SqlParameter("@action", logEntry.Action),
+                new SqlParameter("@recordIndex", logEntry.RecordIndex),
+                new SqlParameter("@property", (object)logEntry.Property ?? DBNull.Value),
+                new SqlParameter("@value", (object)logEntry.Value ?? DBNull.Value),
+            });
         }
 
         private static void CreateRecord(SqlConnection conn, Guid userId, string storeName, int idx)
@@ -223,7 +281,6 @@ namespace Server
 
         private static SqlConnection OpenConnection()
         {
-            string connectionString = @"Data Source=MCLIFTON-5P5KZN\MSSQL2017;Initial Catalog=TaskTracker;Integrated Security=True;";
             var conn = new SqlConnection(connectionString);
             conn.Open();
 
@@ -270,7 +327,9 @@ namespace Server
 
         private static void CreateTable(SqlConnection conn, string storeName)
         {
-            string sql = $"CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID int NULL)";
+            // __ID must be a string because in ParentChildStore.GetChildInfo, this Javascript: childRecIds.indexOf((<any>r).__ID)
+            // Does not match on "1" == 1
+            string sql = $"CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)";
             Execute(conn, sql);
         }
 

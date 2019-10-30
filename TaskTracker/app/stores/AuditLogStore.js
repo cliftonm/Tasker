@@ -2,11 +2,14 @@ define(["require", "exports", "../classes/Store", "../models/AuditLogModel"], fu
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class AuditLogStore extends Store_1.Store {
+        constructor(storeManager, persistence, storeName) {
+            super(storeManager, persistence, storeName, undefined);
+        }
         Log(storeName, action, recordIndex, property, value) {
             let recIdx = this.InternalCreateRecord(); // no audit log for the audit log!
             let log = new AuditLogModel_1.AuditLogModel(storeName, action, recordIndex, property, value);
             this.SetRecord(recIdx, log);
-            this.Save();
+            this.persistence.SaveAuditLog(log);
         }
         // Here we override the function because we don't want to log the audit log that calls SetRecord above.
         SetRecord(idx, record) {

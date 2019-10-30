@@ -1,6 +1,7 @@
 ﻿import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { IStorePersistence } from "../interfaces/IStorePersistence"
 import { AuditLogStore } from "../stores/AuditLogStore"
+import { AuditLogModel } from "../models/AuditLogModel";
 
 export class LocalStoragePersistence implements IStorePersistence {
     auditLogStore: AuditLogStore;
@@ -34,4 +35,10 @@ export class LocalStoragePersistence implements IStorePersistence {
         window.localStorage.setItem(storeName, json);
         this.auditLogStore.Clear();
     }
+
+    // Does nothing at the moment when using local storage.
+    // TODO: This needs to append the entry to the running log, but we can
+    // only do that by loading the entire AuditLog from local storage, appending the entry,
+    // and saving it again, as the AuditLog gets cleared whenever a Save operation takes place.
+    public SaveAuditLog(logEntry: AuditLogModel): void { }
 }

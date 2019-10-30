@@ -1,6 +1,6 @@
 ﻿namespace Server
 {
-    public class AuditLog
+    public class AuditLog : RequestCommon
     {
         public enum AuditLogAction
         {
@@ -9,7 +9,6 @@
             Delete
         }
 
-        public string StoreName { get; set; }
         public AuditLogAction Action { get; set; }
         public int RecordIndex { get; set; }
         public string Property { get; set; }

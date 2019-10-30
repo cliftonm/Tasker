@@ -28,6 +28,11 @@ define(["require", "exports"], function (require, exports) {
             window.localStorage.setItem(storeName, json);
             this.auditLogStore.Clear();
         }
+        // Does nothing at the moment when using local storage.
+        // TODO: This needs to append the entry to the running log, but we can
+        // only do that by loading the entire AuditLog from local storage, appending the entry,
+        // and saving it again, as the AuditLog gets cleared whenever a Save operation takes place.
+        SaveAuditLog(logEntry) { }
     }
     exports.LocalStoragePersistence = LocalStoragePersistence;
 });

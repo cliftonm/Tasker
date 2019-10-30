@@ -143,9 +143,8 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             let storeManager = new StoreManager_1.StoreManager();
             // let persistence = new LocalStoragePersistence();
             let persistence = new CloudPersistence_1.CloudPersistence("http://127.0.0.1/", userId);
-            let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, persistence, "AuditLogStore", undefined);
+            let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, persistence, "AuditLogStore");
             storeManager.RegisterStore(auditLogStore);
-            auditLogStore.Load();
             persistence.SetAuditLogStore(auditLogStore);
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
             storeManager.RegisterStore(seqStore);
