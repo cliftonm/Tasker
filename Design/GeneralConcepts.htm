@@ -8,9 +8,12 @@
 
 <body>
 
-<h2>Introduction</h2>
 <p>A metadata driven, view defines the model, schema generated on the fly, 
-bizarre approach to building an application.</p>
+from concept to application in 15 days.</p>
+<h2><a name="0">Table Of Contents</a></h2>
+<div id="toc"><ul><ul><li><a href="#0">Table Of Contents</a></li><li><a href="#1">Introduction</a></li><li><a href="#2">Day 1 - General Concepts</a></li><li><a href="#3">Day 2 - Some Structure Concepts for the Metadata</a></li><ul><li><a href="#4">Status</a></li></ul><li><a href="#5">Day 3 - Templates</a></li><li><a href="#6">Day 4 - Late Binding</a></li><li><a href="#7">Day 5 - Store Callbacks</a></li><ul><li><a href="#8">Deleting a Task</a></li><li><a href="#9">Event Router</a></li><li><a href="#10">Inserting Tasks</a></li></ul><li><a href="#11">Day 6 - Basic Relationships</a></li><li><a href="#12">
+Day 7 - Sequence Store and the Parent-Child Relationship Store</a></li><ul><li><a href="#13">Making the Association</a></li><li><a href="#14">Contacts</a></li></ul><li><a href="#15">Day 8 - Simplifying the Create View Steps</a></li><li><a href="#16">Day 9: Bugs</a></li><ul><li><a href="#17">Bug: Create a Store Only Once</a></li><li><a href="#18">Bug: Associate the Builder with the correct Parent-Child Context</a></li><li><a href="#19">Bug: Associate the CRUD Operations with the Correct Builder Context</a></li><li><a href="#20">Two Bugs, Same Solution</a></li><li><a href="#21">Bug: The Selected Record is Parent-Child Dependent</a></li><ul><li><a href="#22">Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</a></li><li><a href="#23">Solution</a></li><li><a href="#24">Why This is Not a Bug</a></li><li><a href="#25">But What is a Bug is This</a></li></ul><li><a href="#26">Nicety: Focus on First Field when Adding a Record</a></li></ul><li><a href="#27">Day 10: A Few More Niceties</a></li><ul><li><a href="#28">This is How Life Should Work</a></li></ul><li><a href="#29">Day 11: Colorizing Status</a></li><li><a href="#30">Day 12 - The Parent-Child Template Problem</a></li><li><a href="#31">Day 13 - Audit Log</a></li><ul><li><a href="#32">Store Persistence Inversion of Control</a></li><li><a href="#33">Audit Log</a></li></ul><li><a href="#34">Day 14 - Server-Side Persistence</a></li><ul><li><a href="#35">Async Client-Side Calls</a></li><li><a href="#36">Server-Side Handlers</a></li><li><a href="#37">Model-less SQL</a></li></ul><li><a href="#38">Day 15 - Creating the Schema on the Fly</a></li><ul><li><a href="#39">Send the Audit Log</a></li><li><a href="#40">Save the Audit Log</a></li><li><a href="#41">Load the Current Schema</a></li><li><a href="#42">Create Stores (Tables) and Columns on the Fly</a></li><li><a href="#43">Save the Audit Log</a></li><li><a href="#44">Update the Schema on the Fly</a></li></ul><li><a href="#45">Conclusion</a></li></ul></ul></div>
+<h2><a name="1">Introduction</a></h2>
 <p>I thought it would be fun and hopefully interested to document the creation 
 of a client-side TypeScript application from conception to implementation.&nbsp; 
 So I chose something that I've been wanting to do for a while - a project-task 
@@ -18,30 +21,38 @@ manager that is tailored to my very specific requirements.&nbsp; But I also
 wanted this implementation to be highly abstract, which means metadata for the 
 UI layout and parent-child entity relationships.&nbsp; In other words, at the 
 end of the day the physical index.html page looks like this (a snippet):</p>
-<pre>&lt;div class=&quot;row col1&quot;&gt;
-  &lt;div class=&quot;entitySeparator&quot;&gt;
-    &lt;button type=&quot;button&quot; id=&quot;createProject&quot; class=&quot;createButton&quot;&gt;Create Project&lt;/button&gt;
-    &lt;div id=&quot;projectTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+<pre>&lt;div class="row col1"&gt;
+  &lt;div class="entitySeparator"&gt;
+    &lt;button type="button" id="createProject" class="createButton"&gt;Create Project&lt;/button&gt;
+    &lt;div id="projectTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
   &lt;/div&gt;
 &lt;/div&gt;
-&lt;div class=&quot;row col2&quot;&gt;
-  &lt;div class=&quot;entitySeparator&quot;&gt;
-    &lt;button type=&quot;button&quot; id=&quot;createProjectContact&quot; class=&quot;createButton&quot;&gt;Create Contact&lt;/button&gt;
-    &lt;div id=&quot;projectContactTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;div class="row col2"&gt;
+  &lt;div class="entitySeparator"&gt;
+    &lt;button type="button" id="createProjectContact" class="createButton"&gt;Create Contact&lt;/button&gt;
+    &lt;div id="projectContactTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
   &lt;/div&gt;
-    &lt;div class=&quot;entitySeparator&quot;&gt;
-    &lt;button type=&quot;button&quot; id=&quot;createProjectNote&quot; class=&quot;createButton&quot;&gt;Create Project Note&lt;/button&gt;
-    &lt;div id=&quot;projectNoteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+    &lt;div class="entitySeparator"&gt;
+    &lt;button type="button" id="createProjectNote" class="createButton"&gt;Create Project Note&lt;/button&gt;
+    &lt;div id="projectNoteTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
   &lt;/div&gt;
-    &lt;div class=&quot;entitySeparator&quot;&gt;
-    &lt;button type=&quot;button&quot; id=&quot;createProjectLink&quot; class=&quot;createButton&quot;&gt;Create Link&lt;/button&gt;
-    &lt;div id=&quot;projectLinkTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+    &lt;div class="entitySeparator"&gt;
+    &lt;button type="button" id="createProjectLink" class="createButton"&gt;Create Link&lt;/button&gt;
+    &lt;div id="projectLinkTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
   &lt;/div&gt;
 &lt;/div&gt;</pre>
 <p>Where the real work is done client-side in creating the container content.&nbsp; 
 So what this article covers is one way to go about creating such an 
 implementation as a general purpose parent-child entity editor but in the 
-context of a specific project-task manager.</p>
+context of a specific project-task manager, and you get to see the evolution 
+from concept to working application that took place over 15 "days."</p>
+<p>And as you've probably come to expect, I explore a couple new concepts as 
+well:</p>
+<ol>
+	<li>Except for concrete models, there entire "model" concept is thrown out 
+	the window.&nbsp; The view defines the model!</li>
+<li>Table and column generation as needed on the fly.&nbsp; Yup.</li>
+</ol>
 <p>By the way, days are not contiguous -- while each day documents the work I 
 did, it does not mean that I worked on this each and every day.&nbsp; 
 Particularly Day 12 encompasses a physical timespan of 3 days (and no, not 8 
@@ -51,27 +62,27 @@ functionality is atrocious and I didn't want to bring in other third party
 libraries for these articles.&nbsp; My favorite is jqWidgets, pretty much none 
 other will do (even though it's large) so maybe at some point I'll demonstrate 
 how to tie all this stuff in to their library.</p>
-<h2>Day 1 - General Concepts</h2>
+<h2><a name="2">Day 1 - General Concepts</a></h2>
 <p>Some rough sketches:</p>
 <p><img border="0" src="sketch1.png" width="617" height="411"></p>
 <p><img border="0" src="sketch2.png" width="633" height="141"></p>
 <ul>
 	<li>It becomes clear looking at the layout that it is really more of a template 
-for my own requirements and that the actual &quot;task item bar&quot; on the left as well 
+for my own requirements and that the actual "task item bar" on the left as well 
 as the specific fields for each task item should be completely user definable in 
 terms of label, content, and control.&nbsp; </li>
 	<li>This pretty much means that we're looking at a NoSQL database structure with 
-loose linkages between tasks and task items.&nbsp; The &quot;root&quot; of everything 
+loose linkages between tasks and task items.&nbsp; The "root" of everything 
 still remains the task, but the task items and their fields is really quite 
 arbitrary.</li>
 	<li>So we need to be able to define the structure and its field content as one 
-&quot;database&quot; of how the user wants to organize the information.</li>
+"database" of how the user wants to organize the information.</li>
 	<li>Certain fields end up being arrays (like URL links) that are represented 
 discretely, while other fields (like notes) may be shows discretely as a 
-scrollable collection of distinct textarea entries or more as a &quot;document&quot; where 
+scrollable collection of distinct textarea entries or more as a "document" where 
 the user simply scrolls through a single textarea.</li>
 	<li>Searching - the user should be able to search on any field or a specific 
-area, such as &quot;notes.&quot;&nbsp; </li>
+area, such as "notes."&nbsp; </li>
 	<li>Any field can be either a singleton (like a date/time on a communication) or 
 a collection, like a list of contacts for that communication.</li>
 	<li>So what we end up doing first is defining an arbitrary schema with enough 
@@ -88,11 +99,11 @@ and keeps all the UI code on the client rather than spreading it across both
 JavaScript and C# on the back-end.&nbsp; And no, I'm not interested in using 
 node.js on the back-end.</li>
 </ul>
-<h2>Day 2 - Some Structure Concepts for the Metadata</h2>
+<h2><a name="3">Day 2 - Some Structure Concepts for the Metadata</a></h2>
 <p>We should be able to have a fairly simple structures.&nbsp; Let's define a 
 few, all of which are of course customizable but we'll define some useful 
 defaults.</p>
-<h3>Status</h3>
+<h3><a name="4">Status</a></h3>
 <p>I like to have a fairly specific status and get frustrated when I can't put 
 that information in a simple dropdown that lets me see at a glance what's going 
 on with the task.&nbsp; So, I like things like:</p>
@@ -131,27 +142,27 @@ first!</p>
   {
     Item:
     {
-      Field: &quot;Task&quot;,
+      Field: "Task",
       Line: 0,
-      Width: &quot;80%&quot;
+      Width: "80%"
     }
   },
   {
     Item:
     {
-      Field: &quot;Status&quot;,
-      SelectFrom: &quot;StatusList&quot;,
-      OrderBy: &quot;StatusOrder&quot;,
+      Field: "Status",
+      SelectFrom: "StatusList",
+      OrderBy: "StatusOrder",
       Line: 0,
-      Width: &quot;20%&quot;
+      Width: "20%"
     }
   },
   {
     Item:
     {
-      Field: &quot;Why&quot;,
+      Field: "Why",
       Line: 1,
-      Width: &quot;100%&quot;
+      Width: "100%"
     }
   }
 ]</pre>
@@ -159,20 +170,20 @@ first!</p>
 into a field to view it's sub-records.&nbsp; Not all fields have sub-records 
 (like Status), but this is determined by the metadata structure, so Status could 
 have sub-records.&nbsp; Any time the user focuses on a control with 
-sub-structures, the button bar will update and the &quot;show on select&quot; 
+sub-structures, the button bar will update and the "show on select" 
 sub-structures will display the sub-records. </p>
 <p>So we can define sub-structures, or allowable child records, like this using 
 the Task entity as an example:</p>
 <pre>[
-  {Entity:&quot;Contact&quot;, Label:&quot;Contacts&quot;},
-  {Entity:&quot;Link&quot;, Label:&quot;Links&quot;, &quot;ShowOnParentSelect&quot;: true},
-  {Entity:&quot;KeyPoint&quot;, Label: &quot;Key Points&quot;},
-  {Entity:&quot;Note&quot; Label: &quot;Notes&quot;, &quot;ShowOnParentSelect&quot;: true},
-  {Entity:&quot;Communication&quot;, Label: &quot;Communications&quot;}
+  {Entity:"Contact", Label:"Contacts"},
+  {Entity:"Link", Label:"Links", "ShowOnParentSelect": true},
+  {Entity:"KeyPoint", Label: "Key Points"},
+  {Entity:"Note" Label: "Notes", "ShowOnParentSelect": true},
+  {Entity:"Communication", Label: "Communications"}
 ]</pre>
 <p>Note that all sub-structures are defined in their singular form and we have 
 complete flexibility as to the label used to represent the link.&nbsp; These 
-&quot;show on parent select&quot; will always be visible unless the user collapses that 
+"show on parent select" will always be visible unless the user collapses that 
 section, and they are rendered in the order they appear in the list above.&nbsp; 
 Where they render is determined by other layout information.</p>
 <p>Other things to think about:</p>
@@ -180,7 +191,7 @@ Where they render is determined by other layout information.</p>
 	<li>Sub-tasks (easy to do)</li>
 	<li>Task dependencies</li>
 </ul>
-<h2>Day 3 - Templates</h2>
+<h2><a name="5">Day 3 - Templates</a></h2>
 <p>So, the more I think about this, the more I realize that this is really a 
 very generalized entity creator/editor with not quite dynamic relationships, 
 much as I've written about in my
@@ -197,24 +208,24 @@ TypeScript!</p>
 <p>Defined by the template array:</p>
 <pre>let template = [ // Task Template
   {
-    field: &quot;Task&quot;,
+    field: "Task",
     line: 0,
-    width: &quot;80%&quot;,
-    control: &quot;textbox&quot;,
+    width: "80%",
+    control: "textbox",
   },
   { 
-    field: &quot;Status&quot;,
-    selectFrom: &quot;StatusList&quot;,
-    orderBy: &quot;StatusOrder&quot;,
+    field: "Status",
+    selectFrom: "StatusList",
+    orderBy: "StatusOrder",
     line: 0,
-    width: &quot;20%&quot;,
-    control: &quot;combobox&quot;,
+    width: "20%",
+    control: "combobox",
   },
   {
-    field: &quot;Why&quot;,
+    field: "Why",
     line: 1,
-    width: &quot;100%&quot;,
-    control: &quot;textbox&quot;,
+    width: "100%",
+    control: "textbox",
   }
 ];</pre>
 <p>and the support of interfaces to define the template object model and a 
@@ -234,54 +245,54 @@ class Builder {
   html: string;
 
   constructor() {
-    this.html = &quot;&quot;;
+    this.html = "";
   }
 
   public DivBegin(item: Item): Builder {
-    this.html += &quot;&lt;div style='float:left; width:&quot; + item.width + &quot;'&gt;&quot;;
+    this.html += "&lt;div style='float:left; width:" + item.width + "'&gt;";
 
     return this;
   }
 
   public DivEnd(): Builder {
-    this.html += &quot;&lt;/div&gt;&quot;;
+    this.html += "&lt;/div&gt;";
 
     return this;
   }
 
   public DivClear(): Builder {
-    this.html += &quot;&lt;div style='clear:both'&gt;&lt;/div&gt;&quot;;
+    this.html += "&lt;div style='clear:both'&gt;&lt;/div&gt;";
 
     return this;
   }
 
   public TextInput(item: Item): Builder {
     let placeholder = item.field;
-    this.html += &quot;&lt;input type='text' placeholder='&quot; + placeholder + &quot;' style='width:100%'&gt;&quot;;
+    this.html += "&lt;input type='text' placeholder='" + placeholder + "' style='width:100%'&gt;";
 
     return this;
   }
 
   public Combobox(item: Item): Builder {
-    this.SelectBegin().Option(&quot;A&quot;).Option(&quot;B&quot;).Option(&quot;C&quot;).SelectEnd();
+    this.SelectBegin().Option("A").Option("B").Option("C").SelectEnd();
 
     return this;
   }
 
   public SelectBegin(): Builder {
-    this.html += &quot;&lt;select style='width:100%; height:21px'&gt;&quot;;
+    this.html += "&lt;select style='width:100%; height:21px'&gt;";
 
     return this;
   }
 
   public SelectEnd(): Builder {
-    this.html += &quot;&lt;/select&gt;&quot;;
+    this.html += "&lt;/select&gt;";
 
     return this;
   }
 
   public Option(text: string, value?: string): Builder {
-    this.html += &quot;&lt;option value='&quot; + value + &quot;'&gt;&quot; + text + &quot;&lt;/option&gt;&quot;;
+    this.html += "&lt;option value='" + value + "'&gt;" + text + "&lt;/option&gt;";
 
     return this;
   }
@@ -306,11 +317,11 @@ class Builder {
     builder.DivBegin(item);
 
     switch (item.control) {
-      case &quot;textbox&quot;:
+      case "textbox":
         builder.TextInput(item);
         break;
 
-      case &quot;combobox&quot;:
+      case "combobox":
         builder.Combobox(item);
         break;
       }
@@ -324,9 +335,9 @@ class Builder {
 }</pre>
 <p>So the top-level code just does this:</p>
 <pre>let html = this.CreateHtmlTemplate(template);
-jQuery(&quot;#template&quot;).html(html);</pre>
+jQuery("#template").html(html);</pre>
 <p>If I chain the template:</p>
-<pre>jQuery(&quot;#template&quot;).html(html + html + html);</pre>
+<pre>jQuery("#template").html(html + html + html);</pre>
 <p>I get:</p>
 <p><img border="0" src="prototype2.png" width="307" height="141"></p>
 <p>Cool.&nbsp; May not be the prettiest thing, but the basics are what I'm 
@@ -339,7 +350,7 @@ is refreshed.&nbsp; Talk about killing the ability to do test automation at the
 UI level.&nbsp; It is ironic though, in writing something like this, I begin to 
 actually have a better understanding of the design decisions that ExtJs made.</p>
 <p>Which brings us to how the comboboxes are actually populated.&nbsp; So yeah, 
-there's a concept of a &quot;store&quot; in ExtJs, and manipulating the store 
+there's a concept of a "store" in ExtJs, and manipulating the store 
 automatically (or that's the theory) updates the UI.&nbsp; That's too much for 
 me right now, but I do want the ability to use an existing object or fetch (and 
 potentially cache) the object from a REST call.&nbsp; So let's put something 
@@ -362,12 +373,12 @@ simple together.&nbsp; Here's my states:</p>
   line: number;
   width: string;
   control: string;
-  storeName?: string;  // &lt;== this got changed to &quot;storeName&quot;
+  storeName?: string;  // &lt;== this got changed to "storeName"
   orderBy?: string;
 }</pre>
 <p>and the prototype concept of a store:</p>
 <pre>interface KeyStoreMap {
-  [key: string] : any;  // Eventually &quot;any&quot; will be replaced with a more formal structure.
+  [key: string] : any;  // Eventually "any" will be replaced with a more formal structure.
 }
 
 export class Store {
@@ -385,7 +396,7 @@ export class Store {
 }</pre>
 <p>I now do this:</p>
 <pre>let store = new Store();
-store.AddLocalStore(&quot;StatusList&quot;, taskStates);
+store.AddLocalStore("StatusList", taskStates);
 let html = this.CreateHtmlTemplate(template, store);</pre>
 <p>and the template builder does this:</p>
 <pre>public Combobox(item: Item, store: Store) : TemplateBuilder {
@@ -418,7 +429,7 @@ this:</p>
 }
 </pre>
 <p>And then we want something that manages the configuration of the store:</p>
-<pre>import { StoreType } from &quot;../enums/StoreType&quot;
+<pre>import { StoreType } from "../enums/StoreType"
 
 export class StoreConfiguration {
   storeType: StoreType;
@@ -431,9 +442,9 @@ export class StoreConfiguration {
   }
 }</pre>
 <p>And finally, we'll refactor the Store class so it looks like this:</p>
-<pre>import { StoreConfiguration } from &quot;./StoreConfiguration&quot;
-import { StoreType } from &quot;../enums/StoreType&quot;
-import { KeyStoreMap } from &quot;../interfaces/KeyStoreMap&quot;
+<pre>import { StoreConfiguration } from "./StoreConfiguration"
+import { StoreType } from "../enums/StoreType"
+import { KeyStoreMap } from "../interfaces/KeyStoreMap"
 
 export class Store {
   stores: KeyStoreMap = {};
@@ -457,13 +468,13 @@ export class Store {
 }</pre>
 <p>which is used like this:</p>
 <pre>let store = new Store();
-store.AddInMemoryStore(&quot;StatusList&quot;, taskStates);
-store.CreateStore(&quot;Tasks&quot;, StoreType.LocalStorage);</pre>
+store.AddInMemoryStore("StatusList", taskStates);
+store.CreateStore("Tasks", StoreType.LocalStorage);</pre>
 <p>Next, the template that we created earlier:</p>
 <pre>let html = this.CreateHtmlTemplate(template, store);</pre>
 <p>Needs to know what store to use for the template items, so we do this 
 instead:</p>
-<pre>let html = this.CreateHtmlTemplate(template, store, &quot;Tasks&quot;);</pre>
+<pre>let html = this.CreateHtmlTemplate(template, store, "Tasks");</pre>
 <p>Frankly, I have no idea whether this is a good idea or not, but let's go for 
 it for now and see how it holds up.</p>
 <p>Next we need to refactor this code <code>jQuery("#template").html(html + html + html); </code>so that we're not blindly copying the HTML 
@@ -475,19 +486,19 @@ that particular line of code will probably be tossed completely when we
 implement loading the tasks from <code>localStorage</code>.&nbsp; For the 
 moment, in the template builder, let's add a custom attribute <code>storeIdx</code> 
 to our two controls:</p>
-<pre>this.html += &quot;&lt;input type='text' placeholder='&quot; + placeholder + &quot;' style='width:100%' storeIdx='{idx}'&gt;&quot;;</pre>
+<pre>this.html += "&lt;input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}'&gt;";</pre>
 <p>and:</p>
-<pre>this.html += &quot;&lt;select style='width:100%; height:21px' storeIdx='{idx}'&gt;&quot;;</pre>
+<pre>this.html += "&lt;select style='width:100%; height:21px' storeIdx='{idx}'&gt;";</pre>
 <p>And now we do this:</p>
-<pre>let html = this.CreateHtmlTemplate(template, store, &quot;Tasks&quot;);
+<pre>let html = this.CreateHtmlTemplate(template, store, "Tasks");
 let task1 = this.SetStoreIndex(html, 0);
 let task2 = this.SetStoreIndex(html, 1);
 let task3 = this.SetStoreIndex(html, 2);
-jQuery(&quot;#template&quot;).html(task1 + task2 + task3);</pre>
+jQuery("#template").html(task1 + task2 + task3);</pre>
 <p>with a little help from:</p>
 <pre>private SetStoreIndex(html: string, idx: number) : string {
-  // a &quot;replace all&quot; function.
-  let newHtml = html.split(&quot;{idx}&quot;).join(idx.toString());
+  // a "replace all" function.
+  let newHtml = html.split("{idx}").join(idx.toString());
 
   return newHtml;
 }</pre>
@@ -496,7 +507,7 @@ jQuery(&quot;#template&quot;).html(task1 + task2 + task3);</pre>
 <p>Sigh.&nbsp; Note that the resulting HTML has the <code>storeIdx</code> attribute as all 
 lowercase.&nbsp; This seems to be a jQuery thing that I'll investigate later.&nbsp; 
 Next, we need to create <code>onchange</code> handlers for updating the store 
-when the value changes.&nbsp; This must be done with &quot;late binding&quot; because the 
+when the value changes.&nbsp; This must be done with "late binding" because the 
 HTML is created dynamically from a template.&nbsp; Again I see why ExtJS ends up 
 assigning arbitrary ID's to elements -- how do we identify the element to which 
 to bind the <code>onchange</code> handler?&nbsp; Personally I prefer using a 
@@ -505,7 +516,7 @@ for the attribute value.&nbsp; Who knows what that will do to performance if
 there's hundreds of elements that must be bound, but honestly, I'm not going to 
 worry about that!</p>
 <p>It's 10:30 PM, I'm calling it a night!</p>
-<h2>Day 4 - Late Binding</h2>
+<h2><a name="6">Day 4 - Late Binding</a></h2>
 <p>So here we are with the task of implementing late binding.&nbsp; First, a 
 couple refactorings to the template builder to set up the <code>bindGuid</code> attribute 
 with a unique identifier which we'll use to determine the binding, again using 
@@ -513,7 +524,7 @@ the <code>input</code> and <code>select</code> elements as examples:</p>
 <pre>public TextInput(item: Item, entityStore: StoreConfiguration) : TemplateBuilder {
   let placeholder = item.field;
   let guid = Guid.NewGuid();
-  this.html += &quot;&lt;input type='text' placeholder='&quot; + placeholder + &quot;' style='width:100%' storeIdx='{idx}' bindGuid='&quot; + guid.ToString() + &quot;'&gt;&quot;;
+  this.html += "&lt;input type='text' placeholder='" + placeholder + "' style='width:100%' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'&gt;";
   let el = new TemplateElement(item, guid);
   this.elements.push(el);
 
@@ -522,7 +533,7 @@ the <code>input</code> and <code>select</code> elements as examples:</p>
 
 public SelectBegin(item: Item) : TemplateBuilder {
   let guid = Guid.NewGuid();
-  this.html += &quot;&lt;select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='&quot; + guid.ToString() + &quot;'&gt;&quot;;
+  this.html += "&lt;select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='" + guid.ToString() + "'&gt;";
   let el = new TemplateElement(item, guid);
   this.elements.push(el);
 
@@ -534,20 +545,20 @@ public SelectBegin(item: Item) : TemplateBuilder {
 <pre>jQuery(document).ready(() =&gt; {
   // Bind the onchange events.
   builder.elements.forEach(el =&gt; {
-    let jels = jQuery(&quot;[bindGuid = '&quot; + el.guid.ToString() + &quot;']&quot;);
+    let jels = jQuery("[bindGuid = '" + el.guid.ToString() + "']");
 
     jels.each((_, elx) =&gt; {
       let jel = jQuery(elx);
 
       jel.on('change', () =&gt; {
-        let recIdx = jel.attr(&quot;storeIdx&quot;);
-        console.log(&quot;change for &quot; + el.guid.ToString() + &quot; at index &quot; + recIdx + &quot; value of &quot; + jel.val());
+        let recIdx = jel.attr("storeIdx");
+        console.log("change for " + el.guid.ToString() + " at index " + recIdx + " value of " + jel.val());
         taskStore.SetProperty(Number(recIdx), el.item.field, jel.val());
       });
     });
   });
 });</pre>
-<p>There's a &quot;not good&quot; piece of code in the above snippet: 
+<p>There's a "not good" piece of code in the above snippet: 
 <code>taskStore.SetProperty</code>.&nbsp; The hard-wiring to the <code>taskStore</code> is refactored out 
 later so the binding is not specific to just the Task store!</p>
 <p>Notice here we also use the record index to qualify the record.&nbsp; We do 
@@ -591,11 +602,11 @@ private UpdatePhysicalStorage(record: any, property: string, value: string) : St
 }</pre>
 <p>At the moment this is implemented in the <code>StoreConfiguration</code> class.&nbsp; 
 Seems awkward yet it's the <code>StoreConfiguration</code> class that maintains the data, 
-whereas the <code>Store</code> class is really a &quot;store manager&quot;, so probably <code>Store</code> should be 
+whereas the <code>Store</code> class is really a "store manager", so probably <code>Store</code> should be 
 called <code>StoreManager</code> and <code>StoreConfiguration</code> should be called <code>Store</code>!&nbsp; 
 Gotta love refactoring to make the names of things clearer.&nbsp; So from 
 hereon, that's what they'll be called.&nbsp; Rather a PITA to do without the 
-&quot;rename&quot; feature when working with C# code!</p>
+"rename" feature when working with C# code!</p>
 <p>After entering some values:</p>
 <p><img border="0" src="localstore2.png" width="554" height="138"></p>
 <p>we can see that these have been serialized to the local storage (inspecting 
@@ -607,18 +618,18 @@ problem because we have a disconnect between the number of template instances
 we've created and the store data.&nbsp; So we need a mechanism to deal with that 
 and set defaults.&nbsp; The simplest answer is to brute force that right now.&nbsp; 
 At least it's explicit:</p>
-<pre>taskStore.SetProperty(0, &quot;Status&quot;, taskStates[0].text);
-taskStore.SetProperty(1, &quot;Status&quot;, taskStates[0].text);
-taskStore.SetProperty(2, &quot;Status&quot;, taskStates[0].text);</pre>
+<pre>taskStore.SetProperty(0, "Status", taskStates[0].text);
+taskStore.SetProperty(1, "Status", taskStates[0].text);
+taskStore.SetProperty(2, "Status", taskStates[0].text);</pre>
 <p>So now the task store is initialized with defaults:</p>
 <p><img border="0" src="localstore3.png" width="377" height="72"></p>
-<p>Ultimately this only pushed the problem into the &quot;ignored&quot; bucket, as it's 
+<p>Ultimately this only pushed the problem into the "ignored" bucket, as it's 
 also dependent on the order of the status array.&nbsp; But no matter, let's push 
 on and now that we have something in the store, let's load the UI with the store 
 data!&nbsp; We also have the question of whether the store should be updated per keypress 
 or only when the <code>onchange</code> event fires, which occurs when the element loses 
-focus.&nbsp; Another &quot;ignore for now&quot; issue.&nbsp; Furthermore, we 
-have an excellent demonstration of &quot;don't implement code with side-effects!&quot; in 
+focus.&nbsp; Another "ignore for now" issue.&nbsp; Furthermore, we 
+have an excellent demonstration of "don't implement code with side-effects!" in 
 this function:</p>
 <pre>public SetProperty(idx: number, property: string, value: any): Store {
   // Create additional records as necessary:
@@ -638,23 +649,23 @@ exist, I don't want to set the defaults!&nbsp; So first, let's get rid of the
 side-effect and move the updating of the physical storage to the onchange 
 handler:</p>
 <pre>jel.on('change', () =&gt; {
-  let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+  let recIdx = Number(jel.attr("storeIdx"));
   let field = el.item.field;
   let val = jel.val();
 
-  console.log(&quot;change for &quot; + el.guid.ToString() + &quot; at index &quot; + recIdx + &quot; value of &quot; + jel.val());
+  console.log("change for " + el.guid.ToString() + " at index " + recIdx + " value of " + jel.val());
   taskStore.SetProperty(recIdx, field, val).UpdatePhysicalStorage(recIdx, field, val);
 });</pre>
 <p>Next, this gets removed:</p>
-<pre>taskStore.SetProperty(0, &quot;Status&quot;, taskStates[0].text);
-taskStore.SetProperty(1, &quot;Status&quot;, taskStates[0].text);
-taskStore.SetProperty(2, &quot;Status&quot;, taskStates[0].text);</pre>
+<pre>taskStore.SetProperty(0, "Status", taskStates[0].text);
+taskStore.SetProperty(1, "Status", taskStates[0].text);
+taskStore.SetProperty(2, "Status", taskStates[0].text);</pre>
 <p>and instead is replaced with the ability to set a default value if it doesn't 
 exist, <i>after</i> the store has been loaded:</p>
 <pre>taskStore.Load()
-  .SetDefault(0, &quot;Status&quot;, taskStates[0].text)
-  .SetDefault(1, &quot;Status&quot;, taskStates[0].text)
-  .SetDefault(2, &quot;Status&quot;, taskStates[0].text)
+  .SetDefault(0, "Status", taskStates[0].text)
+  .SetDefault(1, "Status", taskStates[0].text)
+  .SetDefault(2, "Status", taskStates[0].text)
   .Save();</pre>
 <p>which is implemented as:</p>
 <pre>public SetDefault(idx: number, property: string, value: any): Store {
@@ -686,8 +697,8 @@ exist, <i>after</i> the store has been loaded:</p>
   return this;
 }</pre>
 <p>However, this has the annoying effect of potentially making REST calls to 
-save each record, even if nothing changed.&nbsp; Another &quot;ignore this for now&quot; 
-issue, but we'll definitely need to implement a &quot;field dirty&quot; flag!&nbsp; For 
+save each record, even if nothing changed.&nbsp; Another "ignore this for now" 
+issue, but we'll definitely need to implement a "field dirty" flag!&nbsp; For 
 local storage, we have no choice, the entire structure must be saved, so for now 
 we're good to go.&nbsp; When there's no local storage, we get the desired 
 defaults:</p>
@@ -710,15 +721,15 @@ way as well!&nbsp; A brute force implementation looks like this:</p>
 <p><img border="0" src="localstore6.png" width="554" height="136"></p>
 <p>Cool, I can now create and save three tasks!&nbsp; Calling it quits for Day 4, back 
 soon to work on reverse binding and better handling of defaults as well as 
-getting rid of this silly &quot;3 tasks&quot; thing and making tasks more dynamic.</p>
-<h2>Day 5 - Store Callbacks</h2>
+getting rid of this silly "3 tasks" thing and making tasks more dynamic.</p>
+<h2><a name="7">Day 5 - Store Callbacks</a></h2>
 <p>So that brute force approach above needs to be fixed, but I don't want the 
 store to know anything about how the records fields map to UI elements, so I 
 think what I'd like to do is provide callbacks for record and property level 
 updates using the good ol' Inversion of Control principle.&nbsp; Possibly 
 something like this should be done for the different store types as well so the 
 application can override behavior per store.&nbsp; Later.</p>
-<p>To the Store class I'll add a couple callbacks with default &quot;do nothing&quot; 
+<p>To the Store class I'll add a couple callbacks with default "do nothing" 
 handlers:</p>
 <pre>recordChangedCallback: (idx: number, record: any, store: Store) =&gt; void = () =&gt; { }; 
 propertyChangedCallback: (idx: number, field: string, value: any, store: Store) =&gt; void = () =&gt; { };</pre>
@@ -727,7 +738,7 @@ record loaded (probably not what we want to do in the long run!):</p>
 <pre>this.data.forEach((record, idx) =&gt; this.recordChangedCallback(idx, record, this));</pre>
 <p>This gets wired in to the taskStore -- notice it's implemented so that it 
 passes in the template builder, which is sort of like a view, so we can acquire 
-all the field definitions in the &quot;view&quot; template:</p>
+all the field definitions in the "view" template:</p>
 <pre>taskStore.recordChangedCallback = (idx, record, store) =&gt; this.UpdateRecordView(builder, store, idx, record);</pre>
 <p>and the handler looks a lot like the brute force approach above.</p>
 <pre>private UpdateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: any): void {
@@ -760,11 +771,11 @@ via the store:</p>
 }</pre>
 <p>Now we can set a property for a record in a store and it's reflected in the 
 UI:</p>
-<pre>taskStore.SetProperty(1, &quot;Task&quot;, `Random Task #${Math.floor(Math.random() * 100)}`);</pre>
+<pre>taskStore.SetProperty(1, "Task", `Random Task #${Math.floor(Math.random() * 100)}`);</pre>
 <p><img border="0" src="setProperty1.png" width="499" height="137"></p>
 <p>So let's look at adding and deleting tasks.&nbsp; Some of you are either 
 laughing or groaning because I've backed myself into another corner with this 
-&quot;record index&quot; concept, which makes deleting and inserting tasks a total 
+"record index" concept, which makes deleting and inserting tasks a total 
 nightmare because the <code>storeIdx</code> will go out of sync with the record it's 
 managing.&nbsp; So it's time to throw out this whole concept in favor of a 
 smarter way to handle records.&nbsp; At the moment I've declared the store's 
@@ -776,7 +787,7 @@ with the UI elements.&nbsp; The irony here is that a numeric index is a fine way
 to do this, we just need to map the index to the physical record rather than 
 assume a 1:1 correlation.&nbsp; We also no longer need the 
 <code>CreateNecessaryRecords</code> method but instead we create only this 
-single stub key:value object if the &quot;index&quot; is missing in the index-record map.</p>
+single stub key:value object if the "index" is missing in the index-record map.</p>
 <p>So instead, I now have:</p>
 <pre>private data: RowRecordMap = {};</pre>
 <p>It's private because I don't want anyone touching this structure, which is 
@@ -801,7 +812,7 @@ private SaveToLocalStorage() {
   let json = JSON.stringify(this.GetRawData());
   window.localStorage.setItem(this.storeName, json);
 }</pre>
-<h3>Deleting a Task</h3>
+<h3><a name="8">Deleting a Task</a></h3>
 <p>More refactoring!&nbsp; To make this work, each template that we're cloning 
 needs to be wrapped in its own div so we can remove it.&nbsp; Currently the HTML 
 looks like this:</p>
@@ -809,19 +820,19 @@ looks like this:</p>
 <p>Where the red box is one template instance.&nbsp; Instead, we want this (the 
 code change to make this work was trivial so I'm not going to show it):</p>
 <p><img border="0" src="delete2.png" width="403" height="211"></p>
-<p>Now let's reduce the width of the &quot;Why&quot; textbox and add a &quot;Delete&quot; button to 
+<p>Now let's reduce the width of the "Why" textbox and add a "Delete" button to 
 the template definition:</p>
 <pre>{
-  field: &quot;Why&quot;,
+  field: "Why",
   line: 1,
-  width: &quot;80%&quot;,			// &lt;== Changed
-  control: &quot;textbox&quot;,
+  width: "80%",			// &lt;== Changed
+  control: "textbox",
 },
 {
-  text: &quot;Delete&quot;,		// &lt;== Added all this
+  text: "Delete",		// &lt;== Added all this
   line: 1,
-  width: &quot;20%&quot;,
-  control: &quot;button&quot;,
+  width: "20%",
+  control: "button",
 }</pre>
 <p>And adding a Button method to the TemplateBuilder:</p>
 <pre>public Button(item: Item): TemplateBuilder {
@@ -837,17 +848,17 @@ the template definition:</p>
 <p>Snazzy.&nbsp; Now we have to wire up the event!&nbsp; Uh, ok, how will this 
 work?&nbsp; Well first, we need to wire up the click event:</p>
 <pre>switch (el.item.control) {
-  case &quot;button&quot;:
+  case "button":
     jel.on('click', () =&gt; {
-      let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+      let recIdx = Number(jel.attr("storeIdx"));
       console.log(`click for ${el.guid.ToString()} at index ${recIdx}`);
     });
     break;
 
-  case &quot;textbox&quot;:
-  case &quot;combobox&quot;:
+  case "textbox":
+  case "combobox":
     jel.on('change', () =&gt; {
-      let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+      let recIdx = Number(jel.attr("storeIdx"));
       let field = el.item.field;
       let val = jel.val();
 
@@ -858,23 +869,23 @@ work?&nbsp; Well first, we need to wire up the click event:</p>
 }</pre>
 <p>And we can verify that it works by looking at the console log:</p>
 <p><img border="0" src="delete4.png" width="507" height="79"></p>
-<h3>Event Router</h3>
+<h3><a name="9">Event Router</a></h3>
 <p>Given that this is all constructed by metadata, we need an event router which 
 can route events to arbitrary but predefined functions in the code.&nbsp; This 
 should be quite flexible but only if the code supports the behaviors we need.</p>
 <p>So let's add a route property to the template:</p>
 <pre>{
-  text: &quot;Delete&quot;,
+  text: "Delete",
   line: 1,
-  width: &quot;20%&quot;,
-  control: &quot;button&quot;,
-  route: &quot;DeleteRecord&quot;,
+  width: "20%",
+  control: "button",
+  route: "DeleteRecord",
 }</pre>
-<p>Note that I don't call the route &quot;deleteTask&quot;, because deleting a record 
+<p>Note that I don't call the route "deleteTask", because deleting a record 
 should be handled in a very general purpose manner.&nbsp; The event router start 
 of very simple:</p>
-<pre>import { Store } from &quot;../classes/Store&quot;
-import { RouteHandlerMap } from &quot;../interfaces/RouteHandlerMap&quot;
+<pre>import { Store } from "../classes/Store"
+import { RouteHandlerMap } from "../interfaces/RouteHandlerMap"
 
 export class EventRouter {
   routes: RouteHandlerMap = {};
@@ -889,7 +900,7 @@ export class EventRouter {
 }</pre>
 <p>The delete record handler is initialized:</p>
 <pre>let eventRouter = new EventRouter();
-eventRouter.AddRoute(&quot;DeleteRecord&quot;, (store, idx) =&gt; store.DeleteRecord(idx));</pre>
+eventRouter.AddRoute("DeleteRecord", (store, idx) =&gt; store.DeleteRecord(idx));</pre>
 <p>A callback and the DeleteRecord function is added to the store:</p>
 <pre>recordDeletedCallback: (idx: number, store: Store) =&gt; void = () =&gt; { }; 
 ...
@@ -903,9 +914,9 @@ public DeleteRecord(idx: number) : void {
   store.Save();
 }</pre>
 <p>The router is invoked when the button is clicked:</p>
-<pre>case &quot;button&quot;:
+<pre>case "button":
   jel.on('click', () =&gt; {
-    let recIdx = Number(jel.attr(&quot;storeIdx&quot;));
+    let recIdx = Number(jel.attr("storeIdx"));
     console.log(`click for ${el.guid.ToString()} at index ${recIdx}`);
     eventRouter.Route(el.item.route, storeManager.GetStore(el.item.associatedStoreName), recIdx);
   });
@@ -916,7 +927,7 @@ break;</pre>
 }</pre>
 <p>Ignoring:</p>
 <ul>
-	<li>The &quot;templateIdx&quot; attribute name for now, which obviously has to be 
+	<li>The "templateIdx" attribute name for now, which obviously has to be 
 	specified somehow to support more than one template entity type.</li>
 	<li>That this removes the entire div as opposed to, say, clearing the fields 
 	or removing a row from a grid, this works nicely.&nbsp; </li>
@@ -935,13 +946,13 @@ much better name!&nbsp; Then we're going to remove this prototyping code:</p>
 <pre>let task1 = this.SetStoreIndex(html, 0);
 let task2 = this.SetStoreIndex(html, 1);
 let task3 = this.SetStoreIndex(html, 2);
-jQuery(&quot;#template&quot;).html(task1 + task2 + task3);</pre>
-<p>because our template &quot;view&quot; is going to be created dynamically as records are 
+jQuery("#template").html(task1 + task2 + task3);</pre>
+<p>because our template "view" is going to be created dynamically as records are 
 loaded.&nbsp; So now the <code>CreateRecordView</code> function looks like this:</p>
 <pre>private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}): void {
   let html = builder.html;
   let template = this.SetStoreIndex(html, idx);
-  jQuery(&quot;#template&quot;).append(template);
+  jQuery("#template").append(template);
 
   for (let j = 0; j &lt; builder.elements.length; j++) {
     let tel = builder.elements[j];
@@ -951,20 +962,20 @@ loaded.&nbsp; So now the <code>CreateRecordView</code> function looks like this:
     jel.val(val);
   }
 }</pre>
-<h3>Inserting Tasks</h3>
+<h3><a name="10">Inserting Tasks</a></h3>
 <p>And because in testing I obliterated all my tasks, I now have to implement a 
 Create Task button!&nbsp; The events for all elements in the template will also 
 need to be wired up every time we create a task!&nbsp; First, the HTML:</p>
-<pre>&lt;button type=&quot;button&quot; id=&quot;createTask&quot;&gt;Create Task&lt;/button&gt;
-&lt;div id=&quot;template&quot; style=&quot;width:40%&quot;&gt;&lt;/div&gt;</pre>
+<pre>&lt;button type="button" id="createTask"&gt;Create Task&lt;/button&gt;
+&lt;div id="template" style="width:40%"&gt;&lt;/div&gt;</pre>
 <p>Then wiring up the event partly using the event router:</p>
-<pre>jQuery(&quot;#createTask&quot;).on('click', () =&gt; {
-  let idx = eventRouter.Route(&quot;CreateRecord&quot;, taskStore, 0); // insert at position 0
-  taskStore.SetDefault(idx, &quot;Status&quot;, taskStates[0].text);
+<pre>jQuery("#createTask").on('click', () =&gt; {
+  let idx = eventRouter.Route("CreateRecord", taskStore, 0); // insert at position 0
+  taskStore.SetDefault(idx, "Status", taskStates[0].text);
   taskStore.Save();
 });</pre>
 <p>and the route definition:</p>
-<pre>eventRouter.AddRoute(&quot;CreateRecord&quot;, (store, idx) =&gt; store.CreateRecord(true));</pre>
+<pre>eventRouter.AddRoute("CreateRecord", (store, idx) =&gt; store.CreateRecord(true));</pre>
 <p>and the implementation in the store:</p>
 <pre>public CreateRecord(insert = false): number {
   let nextIdx = 0;
@@ -978,9 +989,9 @@ need to be wired up every time we create a task!&nbsp; First, the HTML:</p>
 
   return nextIdx;
 }</pre>
-<p>Notice how we obtain a &quot;unique&quot; record &quot;index&quot;, and how we can specify 
+<p>Notice how we obtain a "unique" record "index", and how we can specify 
 whether to insert at the beginning or append to the end, not of the data records 
-(these are order independent) but the flag gets passed on to the &quot;view&quot; that 
+(these are order independent) but the flag gets passed on to the "view" that 
 handles where the template should be created, so once again we refactor 
 <code>CreateRecordView</code>:</p>
 <pre>private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, record: {}, insert: boolean): void {
@@ -988,9 +999,9 @@ handles where the template should be created, so once again we refactor
   let template = this.SetStoreIndex(html, idx);
 
   if (insert) {
-    jQuery(&quot;#template&quot;).prepend(template);
+    jQuery("#template").prepend(template);
   } else {
-    jQuery(&quot;#template&quot;).append(template);
+    jQuery("#template").append(template);
   }
 
   this.BindSpecificRecord(builder, idx);
@@ -1007,7 +1018,7 @@ handles where the template should be created, so once again we refactor
 identical to the binding that occurs in the document ready event, and so all 
 that common code needs to be refactored before I show it to you!&nbsp; One odd 
 behavior that I'm saving for the next day is that when the template is created 
-this way, the combobox doesn't default to &quot;TODO&quot; - will have to figure out why.&nbsp; 
+this way, the combobox doesn't default to "TODO" - will have to figure out why.&nbsp; 
 Regardless, starting from a blank slate:</p>
 <p><img border="0" src="insert1.png" width="101" height="33"></p>
 <p>I created to tasks, note how they are in reverse order because tasks are <i>
@@ -1023,22 +1034,22 @@ days to accomplish here is probably a 30 minute exercise in Vue.&nbsp; However,
 the point here is that I'm actually building the framework and the application 
 together, and quite frankly, having a lot of fun doing it!&nbsp; So that's all 
 that counts! End of Day 5, and I can finally create, edit, and delete tasks!</p>
-<h2>Day 6 - Basic Relationships</h2>
-<p>So this is one of those &quot;rubber meets the road&quot; moments.&nbsp; I'm going to 
+<h2><a name="11">Day 6 - Basic Relationships</a></h2>
+<p>So this is one of those "rubber meets the road" moments.&nbsp; I'm going to 
 add a couple relationships.&nbsp; Software is not monogamous!&nbsp; I'd like to 
-add contacts and notes that are child entities of the task.&nbsp; My &quot;tasks&quot; are 
+add contacts and notes that are child entities of the task.&nbsp; My "tasks" are 
 usually integration level tasks (they probably should be called projects instead 
-of tasks!), like &quot;add this credit card processor&quot;, which 
+of tasks!), like "add this credit card processor", which 
 means that I have a bunch of people that I'm talking to, and I want to be able 
 to find them as related to the task.&nbsp; Same with notes, I want to make notes 
 of conversations, discoveries and so forth related to the task.&nbsp; Why this 
-will be a &quot;rubber meets the road&quot; moment is because I currently have no 
+will be a "rubber meets the road" moment is because I currently have no 
 mechanism for identifying and relating together two entities, such as a task and 
 a note.&nbsp; It'll also mean dealing with some hardcoded tags, like here:</p>
 <pre>if (insert) {
-  jQuery(&quot;#template&quot;).prepend(template);
+  jQuery("#template").prepend(template);
 } else {
-  jQuery(&quot;#template&quot;).append(template);
+  jQuery("#template").append(template);
 }</pre>
 <p>The function needs to be general purpose and therefore the div associated 
 with the entity has to be figured out, not hard-coded.&nbsp; So this makes more 
@@ -1073,13 +1084,13 @@ unless it's also qualified by the container name:</p>
 <p>But of course this assumes that the UI will have unique container names.&nbsp; 
 This leads us to the HTML that defines the layout -- templates must be in 
 containers:</p>
-<pre>&lt;div class=&quot;entitySeparator&quot;&gt;
-  &lt;button type=&quot;button&quot; id=&quot;createTask&quot; class=&quot;createButton&quot;&gt;Create Task&lt;/button&gt;
-  &lt;div id=&quot;taskTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+<pre>&lt;div class="entitySeparator"&gt;
+  &lt;button type="button" id="createTask" class="createButton"&gt;Create Task&lt;/button&gt;
+  &lt;div id="taskTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
 &lt;/div&gt;
-&lt;div class=&quot;entitySeparator&quot;&gt;
-  &lt;button type=&quot;button&quot; id=&quot;createNote&quot; class=&quot;createButton&quot;&gt;Create Note&lt;/button&gt;
-  &lt;div id=&quot;noteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;div class="entitySeparator"&gt;
+  &lt;button type="button" id="createNote" class="createButton"&gt;Create Note&lt;/button&gt;
+  &lt;div id="noteTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
 &lt;/div&gt;</pre>
 <p>At this point, I can create tasks and notes:</p>
 <p><img border="0" src="rel1.png" width="777" height="183"></p>
@@ -1094,8 +1105,8 @@ containers:</p>
 	should be able to fairly easily support.</li>
 	<li>Clicking on the parent (the task in our case) should bring up the 
 	specific child records.</li>
-	<li>Do we have separate stores (like &quot;Task-Note&quot; and &quot;Task-Contact&quot;) for 
-	each parent-child relationship or do we create a &quot;metastore&quot; with 
+	<li>Do we have separate stores (like "Task-Note" and "Task-Contact") for 
+	each parent-child relationship or do we create a "metastore" with 
 	parent-child entity names and this unique ID?&nbsp; Or do we create a 
 	hierarchical structure where, say, a task has child elements such as notes?</li>
 	<li>How do we indicate to the user the selected parent that will be 
@@ -1107,9 +1118,9 @@ border indicates the record that's been selected.</p>
 <p>The trick here is that we want to remove the selection only for the entity 
 records associated with the selection:</p>
 <pre>private RecordSelected(builder: TemplateBuilder, recIdx: number): void {
-  jQuery(builder.templateContainerID).children().removeClass(&quot;recordSelected&quot;);
+  jQuery(builder.templateContainerID).children().removeClass("recordSelected");
   let path = `${builder.templateContainerID} &gt; [templateIdx='${recIdx}']`;
-  jQuery(path).addClass(&quot;recordSelected&quot;);
+  jQuery(path).addClass("recordSelected");
 }</pre>
 <p>This way we can select a record for each entity type:</p>
 <p><img border="0" src="select2.png" width="379" height="361"></p>
@@ -1125,7 +1136,7 @@ tables) that it requires.&nbsp; Particularly when it comes to database tables,
 the last thing I want to do is create parent-child tables on the fly.&nbsp; So a 
 single meta-store that manages the mappings of all parent-child relationships 
 seems most reasonable at the moment, the major consideration is the performance 
-when the &quot;table&quot; contains potentially thousands (or magnitudes more) of 
+when the "table" contains potentially thousands (or magnitudes more) of 
 relationships.&nbsp; At this point, such a scenario doesn't need to be 
 considered.</p>
 <p>Here we have our first concrete model:</p>
@@ -1143,12 +1154,12 @@ ID rather than, say, a GUID ID, will be faster and that I don't have to worry
 about precision too much at this point.</p>
 <p>And (horrors), similar to ExtJS, we actually have a concrete <code>ParentChildStore</code> 
 which will have a function for acquiring a unique number ID:</p>
-<pre>import { Store } from &quot;../classes/Store&quot;
+<pre>import { Store } from "../classes/Store"
 
 export class ParentChildStore extends Store {
 }</pre>
 <p>The parent-child store is created a little bit differently:</p>
-<pre>let parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, &quot;ParentChildRelationships&quot;);
+<pre>let parentChildRelationshipStore = new ParentChildStore(storeManager, StoreType.LocalStorage, "ParentChildRelationships");
 storeManager.RegisterStore(parentChildRelationshipStore);</pre>
 <p>And we can access a concrete store type using this function, note the 
 comments:</p>
@@ -1182,18 +1193,16 @@ It's the assignment of the empty object that needs to set an ID, but I don't
 want to code that in the store -- I prefer to have that decoupled, so I'll 
 implement it as a call to the StoreManager which will then invoke a callback to 
 the application, so the unique record identifier can be something that the 
-application manages.&nbsp; We could even do a &quot;per store&quot; callback, but that's 
+application manages.&nbsp; We could even do a "per store" callback, but that's 
 unnecessary at this point.&nbsp; So now the store calls:</p>
 <pre>this.data[nextIdx] = this.storeManager.GetPrimaryKey();</pre>
 <p>
 The definition for the callback is crazy 
 looking, in that it defaults to returning {}:</p>
-<pre>
-getPrimaryKeyCallback: () =&gt; any = () =&gt; {};</pre>
+<pre>getPrimaryKeyCallback: () =&gt; any = () =&gt; {};</pre>
 <p>
 and for testing, let's just implement a basic counter:</p>
-<pre>
-storeManager = new StoreManager();
+<pre>storeManager = new StoreManager();
 
 // For testing:
 let n = 0;
@@ -1207,10 +1216,10 @@ task!</p>
 <img border="0" src="pk1.png" width="225" height="47"></p>
 <p>
 So this is the end of Day 6.&nbsp; I still need to persist the sequence, 
-probably a &quot;Sequence&quot; store that allows me to define different sequences, and of 
+probably a "Sequence" store that allows me to define different sequences, and of 
 course create the parent-child records and the UI behavior.&nbsp; Getting there!</p>
-<h2>
-Day 7 - Sequence Store and the Parent-Child Relationship Store</h2>
+<h2><a name="12">
+Day 7 - Sequence Store and the Parent-Child Relationship Store</a></h2>
 <p>
 So a sequence store seems like a good idea.&nbsp; Again, this can be a concrete 
 model and store.&nbsp; The model:</p>
@@ -1224,8 +1233,8 @@ model and store.&nbsp; The model:</p>
   }
 }</pre>
 <p>The <code>Sequence</code> store:</p>
-<pre>import { Store } from &quot;../classes/Store&quot;
-import { SequenceModel } from &quot;../models/SequenceModel&quot;
+<pre>import { Store } from "../classes/Store"
+import { SequenceModel } from "../models/SequenceModel"
 
 export class SequenceStore extends Store {
   GetNext(skey: string): number {
@@ -1234,12 +1243,12 @@ export class SequenceStore extends Store {
     
     if (recIdx == -1) {
       recIdx = this.CreateRecord();
-      this.SetProperty(recIdx, &quot;key&quot;, skey);
-      this.SetProperty(recIdx, &quot;count&quot;, 0);
+      this.SetProperty(recIdx, "key", skey);
+      this.SetProperty(recIdx, "count", 0);
     }
 
-    n = this.GetProperty(recIdx, &quot;count&quot;) + 1;
-    this.SetProperty(recIdx, &quot;count&quot;, n);
+    n = this.GetProperty(recIdx, "count") + 1;
+    this.SetProperty(recIdx, "count", n);
     this.Save();
 
     return n;
@@ -1259,12 +1268,12 @@ export class SequenceStore extends Store {
   return idx;
 }</pre>
 <p>We can write a simple test:</p>
-<pre>let seqStore = new SequenceStore(storeManager, StoreType.LocalStorage, &quot;Sequences&quot;);
+<pre>let seqStore = new SequenceStore(storeManager, StoreType.LocalStorage, "Sequences");
 storeManager.RegisterStore(seqStore);
 seqStore.Load();
-let n1 = seqStore.GetNext(&quot;c1&quot;);
-let n2 = seqStore.GetNext(&quot;c2&quot;);
-let n3 = seqStore.GetNext(&quot;c2&quot;);</pre>
+let n1 = seqStore.GetNext("c1");
+let n2 = seqStore.GetNext("c2");
+let n3 = seqStore.GetNext("c2");</pre>
 <p>and in the local storage, we see:</p>
 <p><img border="0" src="seq1.png" width="330" height="62"></p>
 <p>so we can now assign sequences to each of the stores:</p>
@@ -1297,7 +1306,7 @@ class, first by refactoring the <code>CreateRecord</code> function:</p>
   return {};
 }</pre>
 <p>Problem solved!</p>
-<h3>Making the Association</h3>
+<h3><a name="13">Making the Association</a></h3>
 <p>To make the association between parent and child record, we'll add a field to 
 hold the selected record index in the store:</p>
 <pre>selectedRecordIndex: number = undefined; // multiple selection not allowed.</pre>
@@ -1308,13 +1317,13 @@ add setting this field in the store:</p>
   store.selectedRecordIndex = recIdx;
 }</pre>
 <p>In the event handler for the button responsible for create a task note:</p>
-<pre>jQuery(&quot;#createTaskNote&quot;).on('click', () =&gt; {
-  let idx = eventRouter.Route(&quot;CreateRecord&quot;, noteStore, 0); // insert at position 0
+<pre>jQuery("#createTaskNote").on('click', () =&gt; {
+  let idx = eventRouter.Route("CreateRecord", noteStore, 0); // insert at position 0
   noteStore.Save();
 });</pre>
 <p>We'll add a call to add the parent-child record:</p>
-<pre>jQuery(&quot;#createTaskNote&quot;).on('click', () =&gt; {
-  let idx = eventRouter.Route(&quot;CreateRecord&quot;, noteStore, 0); // insert at position 0
+<pre>jQuery("#createTaskNote").on('click', () =&gt; {
+  let idx = eventRouter.Route("CreateRecord", noteStore, 0); // insert at position 0
   parentChildRelationshipStore.AddRelationship(taskStore, noteStore, idx); // &lt;=== Added this
   noteStore.Save();
 });</pre>
@@ -1324,8 +1333,8 @@ add setting this field in the store:</p>
 
   if (parentRecIdx !== undefined) {
     let recIdx = this.CreateRecord();
-    let parentID = parentStore.GetProperty(parentRecIdx, &quot;__ID&quot;);
-    let childID = childStore.GetProperty(childRecIdx, &quot;__ID&quot;);
+    let parentID = parentStore.GetProperty(parentRecIdx, "__ID");
+    let childID = childStore.GetProperty(childRecIdx, "__ID");
     let rel = new ParentChildRelationshipModel(parentStore.storeName, childStore.storeName, parentID, childID);
     this.SetRecord(recIdx, rel);
     this.Save();
@@ -1340,8 +1349,8 @@ add setting this field in the store:</p>
 Having already defined a global variable (ugh) for declaring relationships:</p>
 <pre>var relationships : Relationship = [
   {
-    parent: &quot;Tasks&quot;,
-    children: [&quot;Notes&quot;]
+    parent: "Tasks",
+    children: ["Notes"]
   }
 ];</pre>
 <p>Where Relationship is defined as:</p>
@@ -1349,7 +1358,7 @@ Having already defined a global variable (ugh) for declaring relationships:</p>
   parent: string;
   children: string[];
 }</pre>
-<p>We can now tie in to the same &quot;selected&quot; event handler to acquire the 
+<p>We can now tie in to the same "selected" event handler to acquire the 
 specific child relationships, remove any previous ones, and show just the 
 specific ones for the selected record.&nbsp; We also don't want to go through 
 this process every time a field in the record is selected.</p>
@@ -1390,7 +1399,7 @@ templates (some refactoring occurred here, for example, mapping a store to its
 builder):</p>
 <pre>private ShowChildRecords(parentStore: Store, parentRecIdx: number, relationships: Relationship[]): void {
   let parentStoreName = parentStore.storeName;
-  let parentId = parentStore.GetProperty(parentRecIdx, &quot;__ID&quot;);
+  let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
   let relArray = relationships.filter(r =&gt; r.parent == parentStoreName);
 
   // Only one record for the parent type should exist.
@@ -1414,45 +1423,45 @@ builder):</p>
 <p><img border="0" src="rel4.png" width="560" height="358"></p>
 <p>Clicking on Task 2, where I created 1 note:</p>
 <p><img border="0" src="rel5.png" width="559" height="258"></p>
-<h3>Contacts</h3>
+<h3><a name="14">Contacts</a></h3>
 <p>Now let's have fun and create another child, Contacts.</p>
 <p>Update the relationship map:</p>
 <pre>var relationships : Relationship[] = [
   {
-    parent: &quot;Tasks&quot;,
-    children: [&quot;Contacts&quot;, &quot;Notes&quot;]
+    parent: "Tasks",
+    children: ["Contacts", "Notes"]
   }
 ];</pre>
 <p>Update the HTML:</p>
-<pre>&lt;div class=&quot;entitySeparator&quot;&gt;
-  &lt;button type=&quot;button&quot; id=&quot;createTask&quot; class=&quot;createButton&quot;&gt;Create Task&lt;/button&gt;
-  &lt;div id=&quot;taskTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+<pre>&lt;div class="entitySeparator"&gt;
+  &lt;button type="button" id="createTask" class="createButton"&gt;Create Task&lt;/button&gt;
+  &lt;div id="taskTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
 &lt;/div&gt;
-&lt;div class=&quot;entitySeparator&quot;&gt;
-  &lt;button type=&quot;button&quot; id=&quot;createTaskContact&quot; class=&quot;createButton&quot;&gt;Create Contact&lt;/button&gt;
-  &lt;div id=&quot;contactTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;div class="entitySeparator"&gt;
+  &lt;button type="button" id="createTaskContact" class="createButton"&gt;Create Contact&lt;/button&gt;
+  &lt;div id="contactTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
 &lt;/div&gt;
-&lt;div class=&quot;entitySeparator&quot;&gt;
-  &lt;button type=&quot;button&quot; id=&quot;createTaskNote&quot; class=&quot;createButton&quot;&gt;Create Note&lt;/button&gt;
-  &lt;div id=&quot;noteTemplateContainer&quot; class=&quot;templateContainer&quot;&gt;&lt;/div&gt;
+&lt;div class="entitySeparator"&gt;
+  &lt;button type="button" id="createTaskNote" class="createButton"&gt;Create Note&lt;/button&gt;
+  &lt;div id="noteTemplateContainer" class="templateContainer"&gt;&lt;/div&gt;
 &lt;/div&gt;</pre>
 <p>Create the contact template:</p>
 <pre>let contactTemplate = [
-  { field: &quot;Name&quot;, line: 0, width: &quot;50%&quot;, control: &quot;textbox&quot; },
-  { field: &quot;Email&quot;, line: 0, width: &quot;50%&quot;, control: &quot;textbox&quot; },
-  { field: &quot;Comment&quot;, line: 1, width: &quot;100%&quot;, control: &quot;textbox&quot; },
-  { text: &quot;Delete&quot;, line: 1, width: &quot;20%&quot;, control: &quot;button&quot;, route: &quot;DeleteRecord&quot; }
+  { field: "Name", line: 0, width: "50%", control: "textbox" },
+  { field: "Email", line: 0, width: "50%", control: "textbox" },
+  { field: "Comment", line: 1, width: "100%", control: "textbox" },
+  { text: "Delete", line: 1, width: "20%", control: "button", route: "DeleteRecord" }
 ];</pre>
 <p>Create the store:</p>
-<pre>let contactStore = storeManager.CreateStore(&quot;Contacts&quot;, StoreType.LocalStorage);</pre>
+<pre>let contactStore = storeManager.CreateStore("Contacts", StoreType.LocalStorage);</pre>
 <p>Create the builder:</p>
-<pre>let contactBuilder = this.CreateHtmlTemplate(&quot;#contactTemplateContainer&quot;, contactTemplate, storeManager, contactStore.storeName);</pre>
+<pre>let contactBuilder = this.CreateHtmlTemplate("#contactTemplateContainer", contactTemplate, storeManager, contactStore.storeName);</pre>
 <p>Assign the callbacks:</p>
 <pre>this.AssignStoreCallbacks(contactStore, contactBuilder);</pre>
 
 <p>Add the relationship:</p>
-<pre>jQuery(&quot;#createTaskContact&quot;).on('click', () =&gt; {
-  let idx = eventRouter.Route(&quot;CreateRecord&quot;, contactStore, 0); // insert at position 0
+<pre>jQuery("#createTaskContact").on('click', () =&gt; {
+  let idx = eventRouter.Route("CreateRecord", contactStore, 0); // insert at position 0
   parentChildRelationshipStore.AddRelationship(taskStore, contactStore, idx);
   contactStore.Save();
 });</pre>
@@ -1468,7 +1477,7 @@ hold the contacts and the contact template itself, all the rest of the stuff we
 manually did can be handled with a function call, which will be Day 8.&nbsp; We 
 also have to deal with deleting the relationship entry when a child is deleted, 
 and deleting all the child relationships when a parent is deleted. Goodnight!</p>
-<h2>Day 8 - Simplifying the Create View Steps</h2>
+<h2><a name="15">Day 8 - Simplifying the Create View Steps</a></h2>
 <p>First, let's create a function that takes all those discrete setup steps and 
 rolls them into one call with a lot of parameters:</p>
 <pre>private CreateStoreViewFromTemplate(
@@ -1492,7 +1501,7 @@ rolls them into one call with a lot of parameters:</p>
     }
 
     jQuery(createButtonId).on('click', () =&gt; {
-      let idx = eventRouter.Route(&quot;CreateRecord&quot;, store, 0); // insert at position 0
+      let idx = eventRouter.Route("CreateRecord", store, 0); // insert at position 0
       createCallback(idx, store);
 
       if (parentStore) {
@@ -1507,7 +1516,7 @@ rolls them into one call with a lot of parameters:</p>
 
   return store;
 }</pre>
-<p>This &quot;simplifies&quot; the creation process to four steps:</p>
+<p>This "simplifies" the creation process to four steps:</p>
 <ol>
 	<li>Define the template.</li>
 <li>Define the container.</li>
@@ -1517,32 +1526,32 @@ rolls them into one call with a lot of parameters:</p>
 <p>Step 4 is now written as:</p>
 <pre>let taskStore = this.CreateStoreViewFromTemplate(
   storeManager, 
-  &quot;Tasks&quot;, 
+  "Tasks", 
   StoreType.LocalStorage, 
-  &quot;#taskTemplateContainer&quot;, 
+  "#taskTemplateContainer", 
   taskTemplate, 
-  &quot;#createTask&quot;, 
+  "#createTask", 
   true, 
   undefined, 
-  (idx, store) =&gt; store.SetDefault(idx, &quot;Status&quot;, taskStates[0].text));
+  (idx, store) =&gt; store.SetDefault(idx, "Status", taskStates[0].text));
 
 this.CreateStoreViewFromTemplate(
   storeManager, 
-  &quot;Notes&quot;, 
+  "Notes", 
   StoreType.LocalStorage, 
-  &quot;#noteTemplateContainer&quot;, 
+  "#noteTemplateContainer", 
   noteTemplate, 
-  &quot;#createTaskNote&quot;, 
+  "#createTaskNote", 
   false, 
   taskStore);
 
 this.CreateStoreViewFromTemplate(
   storeManager, 
-  &quot;Contacts&quot;, 
+  "Contacts", 
   StoreType.LocalStorage, 
-  &quot;#contactTemplateContainer&quot;, 
+  "#contactTemplateContainer", 
   contactTemplate, 
-  &quot;#createTaskContact&quot;, 
+  "#createTaskContact", 
   false, 
   taskStore);</pre>
 <p>OK, a lot of parameters, but it's a highly repeatable pattern.</p>
@@ -1563,14 +1572,14 @@ element when the element is deleted.</p>
 <p>But we also have to save the store now in the route handler because the 
 callback, which was performing the save, is being called <i>before</i> the 
 record is deleted:</p>
-<pre>eventRouter.AddRoute(&quot;DeleteRecord&quot;, (store, idx) =&gt; {
+<pre>eventRouter.AddRoute("DeleteRecord", (store, idx) =&gt; {
   store.DeleteRecord(idx);
   store.Save();
 });</pre>
 <p>and the implementation in the <code>ParentChildStore</code>:</p>
 <pre>public DeleteRelationship(store: Store, recIdx: number) {
   let storeName = store.storeName;
-  let id = store.GetProperty(recIdx, &quot;__ID&quot;);
+  let id = store.GetProperty(recIdx, "__ID");
   let touchedStores : string[] = []; // So we save the store only once after this process.
 
   // safety check.
@@ -1629,21 +1638,21 @@ record is deleted:</p>
 
   this.DeleteRecord(relRecIdx);
 }</pre>
-<h2>Day 9: Bugs</h2>
+<h2><a name="16">Day 9: Bugs</a></h2>
 <p>So in creating a more rich relationship model:</p>
 <pre>var relationships : Relationship[] = [
 {
-  parent: &quot;Projects&quot;,
-  children: [&quot;Tasks&quot;, &quot;Contacts&quot;, &quot;Notes&quot;]
+  parent: "Projects",
+  children: ["Tasks", "Contacts", "Notes"]
 },
 {
-  parent: &quot;Tasks&quot;,
-  children: [&quot;Notes&quot;]
+  parent: "Tasks",
+  children: ["Notes"]
 }
 ];</pre>
 <p>in which Notes are children of both Projects and Tasks, a couple bugs came 
 up.&nbsp; </p>
-<h3>Bug: Create a Store Only Once</h3>
+<h3><a name="17">Bug: Create a Store Only Once</a></h3>
 <p>First is the issue that I was creating the Notes store twice, which is 
 fixed checking if the store exists:</p>
 <pre>private CreateStoreViewFromTemplate(
@@ -1662,12 +1671,12 @@ if (storeManager.HasStore(storeName)) {
   store = storeManager.CreateStore(storeName, storeType);
   this.AssignStoreCallbacks(store, builder);
 }</pre>
-<h3>Bug: Associate the Builder with the correct Parent-Child Context</h3>
-<p>Second, the builder has to be parent-child aware so that &quot;Create Task Note&quot; 
+<h3><a name="18">Bug: Associate the Builder with the correct Parent-Child Context</a></h3>
+<p>Second, the builder has to be parent-child aware so that "Create Task Note" 
 uses the Task-Note builder, not the Project-Note builder.&nbsp; This was easy 
 enough (though sort of kludgy) to fix:</p>
 <pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
-  return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
+  return (parentStoreName || "") + "-" + childStoreName;
 }</pre>
 <p>And...</p>
 <pre>private CreateHtmlTemplate(templateContainerID: string, template: Items, storeManager: StoreManager, storeName: string, parentStoreName: string): TemplateBuilder {
@@ -1675,7 +1684,7 @@ enough (though sort of kludgy) to fix:</p>
   let builderName = this.GetBuilderName(parentStoreName, storeName);
   builders[builderName] = { builder, template: templateContainerID };
   ...</pre>
-<h3>Bug: Associate the CRUD Operations with the Correct Builder Context</h3>
+<h3><a name="19">Bug: Associate the CRUD Operations with the Correct Builder Context</a></h3>
 <p>The third problem is more insidious, in the call to <code>AssignStoreCallbacks</code>:</p>
 <pre>private AssignStoreCallbacks(store: Store, builder: TemplateBuilder): void {
   store.recordCreatedCallback = (idx, record, insert, store) =&gt; this.CreateRecordView(builder, store, idx, insert);
@@ -1691,9 +1700,9 @@ store for the Project-Notes builder, adding a Task-Note adds the note to the
 Project-Notes instead!&nbsp; Two things need to happen:</p>
 <ol>
 	<li>There should only be one callback for the store.</li>
-	<li>But the builder must be specific to the &quot;context&quot; of the CRUD operation.</li>
+	<li>But the builder must be specific to the "context" of the CRUD operation.</li>
 </ol>
-<p>The fix for this is to pass into the store the &quot;context&quot; for the CRUD 
+<p>The fix for this is to pass into the store the "context" for the CRUD 
 operations.&nbsp; At the moment I'm just passing in the <code>TemplateBuilder</code> instance 
 because I'm too lazy to create a <code>Context</code> class and I'm not sure it's needed:</p>
 <p>The upshot of it is that the CRUD callbacks now get the builder context which 
@@ -1706,7 +1715,7 @@ they pass along to the handler:</p>
     this.DeleteRecordView(builder, idx);
   }
 }</pre>
-<h3>Two Bugs, Same Solution</h3>
+<h3><a name="20">Two Bugs, Same Solution</a></h3>
 <ul>
 	<li>Grandchild Views Need to be Removed When Child List Changes</li>
 <li>Deleting a Parent Should Remove Child Template Views</li>
@@ -1737,7 +1746,7 @@ this piece of code:</p>
 <pre>// Recursively remove all child view records.
 private RemoveChildRecordsView(store: Store, recIdx: number): void {
   let storeName = store.storeName;
-  let id = store.GetProperty(recIdx, &quot;__ID&quot;);
+  let id = store.GetProperty(recIdx, "__ID");
   let rels = relationships.filter(r =&gt; r.parent == storeName);
 
   if (rels.length == 1) {
@@ -1756,7 +1765,7 @@ private RemoveChildRecordsView(store: Store, recIdx: number): void {
     });
   }
 }</pre>
-<h3>Bug: The Selected Record is Parent-Child Dependent</h3>
+<h3><a name="21">Bug: The Selected Record is Parent-Child Dependent</a></h3>
 <p><b>Note: the following thought process is WRONG!</b>&nbsp; I'm keeping this 
 in here because it was something I thought was wrong and only on further 
 reflection did I realize it was not wrong.&nbsp; Unit tests would validate my 
@@ -1764,19 +1773,19 @@ belief that the writeup here is incorrect!</p>
 <p>So here goes in the wrong thinking:</p>
 <p>When a store is shared between two different parents, the selected record is 
 specific to the parent-child relationship, not the store!&nbsp; </p>
-<h4>Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</h4>
+<h4><a name="22">Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</a></h4>
 <p>No.&nbsp; For example, if I have a parent-child relationship B-C, and a 
 hierarchy of A-B-C and D-B-C, the specific context of the records in C is 
 associated with its relationship to B's records.&nbsp; And while B's context is 
 in relationship to A's records, the selected record for the store depends on 
-whether the entity path is A-B-C or D-B-C.&nbsp; Please realize that &quot;A&quot; and &quot;D&quot; 
+whether the entity path is A-B-C or D-B-C.&nbsp; Please realize that "A" and "D" 
 different <i>entity types</i>, not different records of the same entity.</p>
 <p>Even the template builder name is not a 2-level parent-child relationship.&nbsp; 
 This works so far because the relationships are all uniquely defined with two 
 levels of hierarchy.&nbsp; But insert another top level to the hierarchy and the 
 template builder name's relationship to the builder (and the specific <code>templateContainerID</code> 
 with which the builder is associated) fails.</p>
-<h4>Solution</h4>
+<h4><a name="23">Solution</a></h4>
 <p>This means that if we don't want to keep fixing up the code, we have to have 
 a general purpose solution to the issue of identifying:</p>
 <ol>
@@ -1788,14 +1797,14 @@ deep.&nbsp; Keep in mind that the parent-child relationship model is still valid
 because it is associating relationships between parent and child entity <i>
 instances</i> whereas the builder and UI management is working often with the <i>
 entity type</i> hierarchy.</p>
-<h4>Why This is Not a Bug</h4>
+<h4><a name="24">Why This is Not a Bug</a></h4>
 <p>First, when we load the records of parent-child relationship, it is qualified 
 by the parent ID, which is unique:</p>
 <pre>let childRecs = parentChildRelationshipStore.GetChildInfo(parentStoreName, parentId, child);</pre>
 <p>and in the <code>GetChildInfo</code> function:</p>
 <pre>let childRecs = this.FindRecordsOfType&lt;ParentChildRelationshipModel&gt;(rel =&gt; rel.parent == parent &amp;&amp; rel.parentId == parentId &amp;&amp; rel.child == child);</pre>
-<h4>But What is a Bug is This</h4>
-<p>In the above two items, &quot;the correct builder&quot; and &quot;the selected record&quot;, the 
+<h4><a name="25">But What is a Bug is This</a></h4>
+<p>In the above two items, "the correct builder" and "the selected record", the 
 correct builder must be determined by the <i>entity type</i> hierarchy which 
 needs the full path to determine the template container, but the selected record 
 is associated with the <i>instance</i> and so is not actually the issue.</p>
@@ -1804,14 +1813,14 @@ container template name, using:</p>
 <pre>let builderName = this.GetBuilderName(parentStoreName, child);</pre>
 <p>which is determined by:</p>
 <pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
-  return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
+  return (parentStoreName || "") + "-" + childStoreName;
 }</pre>
 <p>So here we see that the builder associated with B-C does not have enough 
 information to determine the template container for A-B-C vs. D-B-C.&nbsp; And 
 that's where the real bug is.&nbsp; The upshot of this is that it's very 
 important to distinguish between <i>type</i> and <i>instance</i>.</p>
 <p>This will be addressed in Day 12, The Parent-Child Template Problem.</p>
-<h3>Nicety: Focus on First Field when Adding a Record</h3>
+<h3><a name="26">Nicety: Focus on First Field when Adding a Record</a></h3>
 <p>Trying to avoid unnecessary clicks, this:</p>
 <pre>private FocusOnFirstField(builder: TemplateBuilder, idx: number) {
   let tel = builder.elements[0];
@@ -1824,24 +1833,24 @@ important to distinguish between <i>type</i> and <i>instance</i>.</p>
   this.FocusOnFirstField(builder, idx);
 };</pre>
 <p>Makes life a lot nicer.</p>
-<h2>Day 10: A Few More Niceties</h2>
+<h2><a name="27">Day 10: A Few More Niceties</a></h2>
 <p>So I've also added links at the project and task level so I can reference internal and 
 online links that are related to the project:</p>
 <pre>var relationships : Relationship[] = [
   {
-    parent: &quot;Projects&quot;,
-    children: [&quot;Tasks&quot;, &quot;Contacts&quot;, &quot;Links&quot;, &quot;Notes&quot;]
+    parent: "Projects",
+    children: ["Tasks", "Contacts", "Links", "Notes"]
   },
   {
-    parent: &quot;Tasks&quot;,
-    children: [&quot;Links&quot;, &quot;Notes&quot;]
+    parent: "Tasks",
+    children: ["Links", "Notes"]
   }
 ];</pre>
 <p>And the related HTML and template were created as well.</p>
-<h3>This is How Life Should Work</h3>
-<p>Just now I also decided I wanted to add &quot;Title&quot; to the Contact.&nbsp; So all 
+<h3><a name="28">This is How Life Should Work</a></h3>
+<p>Just now I also decided I wanted to add "Title" to the Contact.&nbsp; So all 
 I did was add this line to the <code>contactTemplate</code>:</p>
-<pre>{ field: &quot;Title&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },</pre>
+<pre>{ field: "Title", line: 0, width: "30%", control: "textbox" },</pre>
 <p>Done.&nbsp; What didn't have to happen was that I didn't have to change some 
 model definition of the client-side.&nbsp; And of course I didn't have to 
 implement a DB-schema migration, and I didn't have change some EntityFramework 
@@ -1850,7 +1859,7 @@ support, I still don't want to do any of that stuff!&nbsp; I should be able to
 touch one place and one place only: the template that describes what fields I 
 want to see and where they are.&nbsp; Everything else should just figure out how 
 to adjust.</p>
-<h2>Day 11: Colorizing Status</h2>
+<h2><a name="29">Day 11: Colorizing Status</a></h2>
 <p>This is a bit of a hack, but I want to visually indicate the status of a 
 project and task by colorizing the dropdown:</p>
 <p><img border="0" src="statuscolor1.png" width="180" height="211"></p>
@@ -1858,7 +1867,7 @@ project and task by colorizing the dropdown:</p>
 <p>Implemented by handling the <code>change</code>, <code>focus</code>, and <code>blur</code> events -- when the 
 dropdown gets focus, it goes back to white so the entire selection list doesn't 
 have the background color of the current status:</p>
-<pre>case &quot;combobox&quot;:
+<pre>case "combobox":
   jel.on('change', () =&gt; {
     // TODO: Move this very custom behavior out into a view handler
     let val = this.SetPropertyValue(builder, jel, el, recIdx);
@@ -1868,7 +1877,7 @@ have the background color of the current status:</p>
   // I can't find an event for when the option list is actually shown, so for now 
   // we reset the background color on focus and restore it on lose focus.
   jel.on('focus', () =&gt; {
-    jel.css(&quot;background-color&quot;, &quot;white&quot;);
+    jel.css("background-color", "white");
   });
 
   jel.on('blur', () =&gt; {
@@ -1880,20 +1889,20 @@ have the background color of the current status:</p>
 <pre>private CreateRecordView(builder: TemplateBuilder, store: Store, idx: number, insert: boolean): void {
   ...
  // Hack!
-  if (tel.item.control == &quot;combobox&quot;) {
+  if (tel.item.control == "combobox") {
     this.SetComboboxColor(jel, val);
   }
 }</pre>
-<h2>Day 12 - The Parent-Child Template Problem</h2>
+<h2><a name="30">Day 12 - The Parent-Child Template Problem</a></h2>
 <p>So this:</p>
 <pre>private GetBuilderName(parentStoreName: string, childStoreName: string): string {
-  return (parentStoreName || &quot;&quot;) + &quot;-&quot; + childStoreName;
+  return (parentStoreName || "") + "-" + childStoreName;
 }</pre>
 <p>is a hack.&nbsp; The global variables are also a hack, as is storing the 
 selected record index in the store -- it should be associated with the view 
 controller <i>for that store</i>, not the store! Hacks should be revisited or not even implemented in the 
 first place!&nbsp; The whole problem here is that the element events are not 
-coupled with an object that retains information about the &quot;event trigger&quot;, if 
+coupled with an object that retains information about the "event trigger", if 
 you will, and therefore determining the builder associated with the event became 
 a hack.&nbsp; What's needed here is a container for the binder, template ID, 
 etc., that is bound to the specific UI events for that builder - in other words, 
@@ -1919,10 +1928,10 @@ a view controller.</p>
 	ensures that in scenarious like A-B-C and D-B-C, the controllers for B and C 
 	are distinct with regards to the roots A and D.</li>
 </ol>
-<p>Now, when a &quot;Create...&quot; button is clicked, the view controller passes in to 
+<p>Now, when a "Create..." button is clicked, the view controller passes in to 
 the store the view controller instance:</p>
 <pre>jQuery(createButtonId).on('click', () =&gt; {
-  let idx = this.eventRouter.Route(&quot;CreateRecord&quot;, this.store, 0, this); // insert at position 0</pre>
+  let idx = this.eventRouter.Route("CreateRecord", this.store, 0, this); // insert at position 0</pre>
 <p>which has the correct builder and therefore template container for entity 
 that is being created, and while the callback is created only once per store:</p>
 <pre>if (this.storeManager.HasStore(storeName)) {
@@ -1931,7 +1940,7 @@ that is being created, and while the callback is created only once per store:</p
   this.store = this.storeManager.CreateStore(storeName, storeType);
   this.AssignStoreCallbacks();
 }</pre>
-<p>passing &quot;through&quot; the view controller ensures that the correct template 
+<p>passing "through" the view controller ensures that the correct template 
 container is used:</p>
 <pre>private AssignStoreCallbacks(): void {
   this.store.recordCreatedCallback = (idx, record, insert, store, onLoad, viewController) =&gt; {
@@ -1959,21 +1968,21 @@ container is used:</p>
 <p>Now to create the page, we do this instead:</p>
 <pre>let vcProjects = new ViewController(storeManager, parentChildRelationshipStore, eventRouter);
 vcProjects.CreateStoreViewFromTemplate(
-  &quot;Projects&quot;, 
+  "Projects", 
   StoreType.LocalStorage, 
-  &quot;#projectTemplateContainer&quot;, 
-  projectTemplate, &quot;#createProject&quot;, 
+  "#projectTemplateContainer", 
+  projectTemplate, "#createProject", 
   true, 
   undefined, 
-  (idx, store) =&gt; store.SetDefault(idx, &quot;Status&quot;, projectStates[0].text));
+  (idx, store) =&gt; store.SetDefault(idx, "Status", projectStates[0].text));
 
 new ViewController(storeManager, parentChildRelationshipStore, eventRouter).
   CreateStoreViewFromTemplate(
-    &quot;Contacts&quot;, 
+    "Contacts", 
     StoreType.LocalStorage, 
-    &quot;#projectContactTemplateContainer&quot;, 
+    "#projectContactTemplateContainer", 
     contactTemplate, 
-    &quot;#createProjectContact&quot;, 
+    "#createProjectContact", 
     false, 
     vcProjects);</pre>
 <p>etc.&nbsp; Notice how when we create the Contacts view controller, which is a 
@@ -1993,7 +2002,7 @@ view controller.&nbsp; If at runtime a new view controller needs to be
 instantiated, this would be done by the parent view controller and it can pass 
 in singletons such as the store manager and event router, and parent-child 
 relationship store.</p>
-<h2>Day 13 - Audit Log</h2>
+<h2><a name="31">Day 13 - Audit Log</a></h2>
 <p>Persisting to local storage is not really a viable long-term solution.&nbsp; 
 While it may be useful for off-line work, we need a centralized server for the 
 obvious - so that more than one person can access the data and so that I can 
@@ -2001,7 +2010,7 @@ access the same data from different machines.&nbsp; This involves a bunch of
 work:</p>
 <p><img border="0" src="persist1.png" width="621" height="351"></p>
 <p>(Oh look, sub-tasks!!!)</p>
-<h3>Store Persistence Inversion of Control</h3>
+<h3><a name="32">Store Persistence Inversion of Control</a></h3>
 <p>So far we have only local storage persistence, so we'll wrap the functions in 
 this class:</p>
 <pre>export class LocalStoragePersistence implements IStorePersistence {
@@ -2011,7 +2020,7 @@ this class:</p>
 
     if (json) {
       try {
-        // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+        // Create indices that map records to a "key", in this case simply the initial row number.
         let records: {}[] = JSON.parse(json);
         records.forEach((record, idx) =&gt; data[idx] = record);
       } catch (ex) {
@@ -2060,7 +2069,7 @@ public UpdatePhysicalStorage(idx: number, property: string, value: string): Stor
 }</pre>
 <p><img border="0" src="persist2.png" width="617" height="163"></p>
 <p>Woohoo.</p>
-<h3>Audit Log</h3>
+<h3><a name="33">Audit Log</a></h3>
 <p>Logging the CRUD operations is actually an audit log, so we might as well 
 call it that.&nbsp; This is a concrete store backed by a concrete model:</p>
 <pre>export class AuditLogModel {
@@ -2103,7 +2112,7 @@ call it that.&nbsp; This is a concrete store backed by a concrete model:</p>
 <p>Here's the log where I modified the project name, created a contact, then 
 deleted the contact:</p>
 <p><img border="0" src="audit1.png" width="720" height="144"></p>
-<p>Here's an example of creating a sequence for an entity (in this case &quot;Links&quot;) 
+<p>Here's an example of creating a sequence for an entity (in this case "Links") 
 that doesn't exist yet:</p>
 <pre><img border="0" src="audit2.png" width="603" height="102"></pre>
 <p>This was the result of this code change in the store regarding the function 
@@ -2118,7 +2127,7 @@ that doesn't exist yet:</p>
 }</pre>
 <p>So this is where we're at now:</p>
 <p><img border="0" src="persist3.png" width="617" height="286"></p>
-<h2>Day 14 - Server-Side Persistence</h2>
+<h2><a name="34">Day 14 - Server-Side Persistence</a></h2>
 <p>I'm implementing the server in .NET Core so I can run it on non-Windows 
 devices as it is really just a proxy for database operations.&nbsp; Plus I'm not 
 going to use EntityFramework or Linq2Sql.&nbsp; And while I considered using a 
@@ -2128,7 +2137,7 @@ engine implements the ability and I don't really want to deal with the <code>$lo
 syntax in MongoDB that I wrote about
 <a href="https://www.codeproject.com/Articles/1077839/Working-with-MongoDBs-lookup-Aggregator">
 here</a>.</p>
-<h3>Async Client-Side Calls</h3>
+<h3><a name="35">Async Client-Side Calls</a></h3>
 <p>But we have a bigger problem -- AJAX calls are by nature asynchronous and 
 I've not accounted for any asynchronous behaviors in the TypeScript application.&nbsp; 
 If you were thinking about that while reading this article, you are probably 
@@ -2155,7 +2164,7 @@ modified to:</p>
 
   if (json) {
     try {
-      // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+      // Create indices that map records to a "key", in this case simply the initial row number.
       let records: {}[] = JSON.parse(json);
       records.forEach((record, idx) =&gt; data[idx] = record);
     } catch (ex) {
@@ -2177,10 +2186,10 @@ modified to:</p>
   }
 
   public async Load(storeName: string): Promise&lt;RowRecordMap&gt; {
-    let records = await jQuery.ajax({ url: this.Url(&quot;Load&quot;) + `?StoreName=${storeName}` });
+    let records = await jQuery.ajax({ url: this.Url("Load") + `?StoreName=${storeName}` });
     let data = {};
 
-    // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+    // Create indices that map records to a "key", in this case simply the initial row number.
     records.forEach((record, idx) =&gt; data[idx] = record);
 
     return data;
@@ -2189,7 +2198,7 @@ modified to:</p>
   public Save(storeName: string, data: RowRecordMap): void {
     let rawData = jQuery.map(data, value =&gt; value);
     let json = JSON.stringify(rawData);
-    jQuery.ajax({ url: this.Url(&quot;Save&quot;) + `?StoreName=${storeName}`, type: &quot;POST&quot;, data: json });
+    jQuery.ajax({ url: this.Url("Save") + `?StoreName=${storeName}`, type: "POST", data: json });
   }
 
   private Url(path: string): string {
@@ -2202,27 +2211,27 @@ This code needs to be refactored to ensure that the <b>Asynchronous</b>
 JavasScript and XML (AJAX!) is actually performed in the correct order by 
 queuing the requests and processing them serially, waiting for the response from 
 the server before sending the next one.&nbsp; Another day!</p>
-<h3>Server-Side Handlers</h3>
+<h3><a name="36">Server-Side Handlers</a></h3>
 <p>On the server side (I'm not going to go into my server implementation at the 
 moment) I register this route:</p>
-<pre>router.AddRoute&lt;LoadStore&gt;(&quot;GET&quot;, &quot;/load&quot;, Load, false);</pre>
+<pre>router.AddRoute&lt;LoadStore&gt;("GET", "/load", Load, false);</pre>
 <p>and implement a route handler that returns a dummy empty array:</p>
 <pre>private static IRouteResponse Load(LoadStore store)
 {
-  Console.WriteLine($&quot;Load store {store.StoreName}&quot;);
+  Console.WriteLine($"Load store {store.StoreName}");
 
   return RouteResponse.OK(new string[] {});
 }</pre>
 <p>Somewhat ironically I also had to add:</p>
-<pre>context.Response.AppendHeader(&quot;Access-Control-Allow-Origin&quot;, &quot;*&quot;);</pre>
+<pre>context.Response.AppendHeader("Access-Control-Allow-Origin", "*");</pre>
 <p>because the TypeScript page is being served by one address (localhost with a 
 port that Visual Studio assigns) and my server is sitting on localhost:80.&nbsp; 
 It's interesting watching what happens without this header -- the server gets 
 the request but the browser blocks (throws an exception) processing the 
 response.&nbsp;&nbsp; Sigh.</p>
-<h3>Model-less SQL</h3>
+<h3><a name="37">Model-less SQL</a></h3>
 <p>Now we get to a decision.&nbsp; Typically the database schema is created as a 
-&quot;known schema&quot;, using some sort of model / schema synchronization, or a migrator 
+"known schema", using some sort of model / schema synchronization, or a migrator 
 like <a href="https://github.com/fluentmigrator/fluentmigrator">FluentMigrator</a>, 
 or just hand-coded.&nbsp; Personally, I have come to loathe this whole approach 
 because it usually means:</p>
@@ -2235,14 +2244,14 @@ because it usually means:</p>
 when it comes to schemas and models?&nbsp; So I'm going to conduct an 
 experiment.&nbsp; As you've noticed, there is no real model of anything on the 
 client-side except for the couple concrete types for the audit and sequence 
-&quot;tables.&quot;&nbsp; My so-called model is actually hidden in the view templates, for 
+"tables."&nbsp; My so-called model is actually hidden in the view templates, for 
 example:</p>
 <pre>let contactTemplate = [
-  { field: &quot;Name&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },
-  { field: &quot;Email&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },
-  { field: &quot;Title&quot;, line: 0, width: &quot;30%&quot;, control: &quot;textbox&quot; },
-  { field: &quot;Comment&quot;, line: 1, width: &quot;80%&quot;, control: &quot;textbox&quot; },
-  { text: &quot;Delete&quot;, line: 1, width: &quot;80px&quot;, control: &quot;button&quot;, route: &quot;DeleteRecord&quot; }
+  { field: "Name", line: 0, width: "30%", control: "textbox" },
+  { field: "Email", line: 0, width: "30%", control: "textbox" },
+  { field: "Title", line: 0, width: "30%", control: "textbox" },
+  { field: "Comment", line: 1, width: "80%", control: "textbox" },
+  { text: "Delete", line: 1, width: "80px", control: "button", route: "DeleteRecord" }
 ];</pre>
 <p>Oh look, the template for the view specifies the fields in which the view is 
 interested.&nbsp; In the local storage implementation, that was quite 
@@ -2255,7 +2264,7 @@ Value</pre>
 <p>Rant on.&nbsp; But I don't want that -- I <i>want</i> concrete tables with 
 concrete columns!&nbsp; So I'm going to do something you are going to kick and 
 scream about - create the tables and necessary columns on the fly, as required, 
-so that the view templates are the &quot;master&quot; for defining the schema.&nbsp; Yes, 
+so that the view templates are the "master" for defining the schema.&nbsp; Yes, 
 you read that correctly.&nbsp; Just because the whole world programs in a way 
 that duplicates the schema, code-behind model, and client-side model, doesn't 
 mean I have to.&nbsp; Sure there's a performance hit, but we're not dealing with 
@@ -2268,55 +2277,58 @@ schema.&nbsp; There was some work in F# ages ago that I encountered where the DB
 schema could be used to tie in Intellisense to F# objects, but sadly that has 
 never happened in C#, and using dynamic objects has a horrid performance and no 
 Intellisense.&nbsp; So, there is still a major disconnect in programming 
-language support that &quot;knows&quot; the DB schema. Rant off.</p>
+language support that "knows" the DB schema. Rant off.</p>
 <p>Tomorrow.</p>
-<h2>Day 15 - Creating the Schema on the Fly</h2>
+<h2><a name="38">Day 15 - Creating the Schema on the Fly</a></h2>
 <p>Before getting into this, one minor detail is needed - a user ID that is 
 associated with the AJAX calls so data can be separated by user.&nbsp; For 
 testing, we'll use:</p>
-<pre>let userID = new Guid(&quot;00000000-0000-0000-0000-000000000000&quot;);
-let persistence = new CloudPersistence(&quot;http://127.0.0.1/&quot;, userId);
+<pre>let userID = new Guid("00000000-0000-0000-0000-000000000000");
+let persistence = new CloudPersistence("http://127.0.0.1/", userId);
 </pre>
 <p>There is no login or authentication right now, but it's useful to put this 
 into the coding now rather than later.</p>
 <p>So now our cloud persistence <code>Load</code> function looks like this:</p>
 <pre>public async Load(storeName: string): Promise&lt;RowRecordMap&gt; {
   let records = await jQuery.ajax({
-    url: this.Url(&quot;Load&quot;) + this.AddParams({ StoreName: storeName, UserId: this.userId.ToString() }) });
+    url: this.Url("Load") + this.AddParams({ StoreName: storeName, UserId: this.userId.ToString() }) });
   let data = {};
 
-  // Create indices that map records to a &quot;key&quot;, in this case simply the initial row number.
+  // Create indices that map records to a "key", in this case simply the initial row number.
   // Note how we get the record index from record.__ID!!!
   records.forEach((record, _) =&gt; data[record.__ID] = record);
 
   return data;
 }</pre>
+<h3><a name="39">Send the Audit Log</a></h3>
 <p>The <code>Save</code> function sends the current state of the audit log:</p>
 <pre>public Save(storeName: string, data: RowRecordMap): void {
   // For cloud persistence, what we actually want to do here is send over the audit log, not the entire store contents.
   let rawData = this.auditLogStore.GetRawData();
   let json = JSON.stringify(rawData);
-  jQuery.post(this.Url(&quot;Save&quot;) + this.AddParams({ UserId: this.userId.ToString() }), JSON.stringify({ auditLog: json }));
+  jQuery.post(this.Url("Save") + this.AddParams({ UserId: this.userId.ToString() }), JSON.stringify({ auditLog: json }));
   this.auditLogStore.Clear();
 }</pre>
 <p>Note how the log is cleared once we have sent it!</p>
+<h3><a name="40">Save the Audit Log</a></h3>
 <p>A special function is required to actually send the audit log itself because 
-it is not in the form &quot;action-property-value&quot;, it is a concrete entity:</p>
+it is not in the form "action-property-value", it is a concrete entity:</p>
 <pre>public SaveAuditLog(logEntry: AuditLogModel): void {
   let json = JSON.stringify(logEntry);
-  jQuery.post(this.Url(&quot;SaveLogEntry&quot;) + this.AddParams({ UserId: this.userId.ToString() }), json);
+  jQuery.post(this.Url("SaveLogEntry") + this.AddParams({ UserId: this.userId.ToString() }), json);
 }</pre>
+<h3><a name="41">Load the Current Schema</a></h3>
 <p>On the server side, we load what we know about the schema:</p>
 <pre>private static void LoadSchema()
 {
-  const string sqlGetTables = &quot;SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'&quot;;
+  const string sqlGetTables = "SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE='BASE TABLE'";
   using (var conn = OpenConnection())
   {
     var dt = Query(conn, sqlGetTables);
 
     foreach (DataRow row in dt.Rows)
     {
-      var tableName = row[&quot;TABLE_NAME&quot;].ToString();
+      var tableName = row["TABLE_NAME"].ToString();
       schema[tableName] = new List&lt;string&gt;();
       var fields = LoadTableSchema(conn, tableName);
       schema[tableName].AddRange(fields);
@@ -2326,12 +2338,13 @@ it is not in the form &quot;action-property-value&quot;, it is a concrete entity
 
 private static IEnumerable&lt;string&gt; LoadTableSchema(SqlConnection conn, string tableName)
 {
-  string sqlGetTableFields = $&quot;SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName&quot;;
-  var dt = Query(conn, sqlGetTableFields, new SqlParameter[] { new SqlParameter(&quot;@tableName&quot;, tableName) });
+  string sqlGetTableFields = $"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName";
+  var dt = Query(conn, sqlGetTableFields, new SqlParameter[] { new SqlParameter("@tableName", tableName) });
   var fields = (dt.AsEnumerable().Select(r =&gt; r[0].ToString()));
 
   return fields;
 }</pre>
+<h3><a name="42">Create Stores (Tables) and Columns on the Fly</a></h3>
 <p>Then we have create the stores on the fly as needed:</p>
 <pre>private static void CheckForTable(SqlConnection conn, string storeName)
 {
@@ -2354,17 +2367,18 @@ private static void CheckForField(SqlConnection conn, string storeName, string f
 private static void CreateTable(SqlConnection conn, string storeName)
 {
   // __ID must be a string because in ParentChildStore.GetChildInfo, this Javascript: childRecIds.indexOf((&lt;any&gt;r).__ID)
-  // Does not match on &quot;1&quot; == 1
-  string sql = $&quot;CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)&quot;;
+  // Does not match on "1" == 1
+  string sql = $"CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)";
   Execute(conn, sql);
 }
 
 private static void CreateField(SqlConnection conn, string storeName, string fieldName)
 {
   // Here we suffer from a loss of fidelity as we don't know the field type nor length/precision.
-  string sql = $&quot;ALTER TABLE [{storeName}] ADD [{fieldName}] NVARCHAR(255) NULL&quot;;
+  string sql = $"ALTER TABLE [{storeName}] ADD [{fieldName}] NVARCHAR(255) NULL";
   Execute(conn, sql);
 }</pre>
+<h3><a name="43">Save the Audit Log</a></h3>
 <p>And finally, we process the audit log on save:</p>
 <pre>private static IRouteResponse Save(SaveStore store)
 {
@@ -2402,6 +2416,7 @@ private static void PersistTransaction(SqlConnection conn, AuditLog log, Guid us
       break;
   }
 }</pre>
+<h3><a name="44">Update the Schema on the Fly</a></h3>
 <p>Notice the call to <code>UpdateSchema</code>!&nbsp; This is where the magic happens, that 
 if a field in the table hasn't been encountered before, we create it on the fly!</p>
 <pre>private static void UpdateSchema(SqlConnection conn, List&lt;AuditLog&gt; logs)
@@ -2428,7 +2443,7 @@ the audit log!</p>
 <p>And we can see the audit log entries logged as well for the changes I just 
 made:</p>
 <p><img border="0" src="audit3.png" width="636" height="99"></p>
-<h2>Conclusion</h2>
+<h2><a name="45">Conclusion</a></h2>
 <p>So this article is huge.&nbsp; You should probably read it one day at a time!&nbsp; 
 And it's also crazy -- this is metadata driven, view defines the model, schema 
 generated on the fly, bizarre approach to building an application.&nbsp; There's 
@@ -2441,12 +2456,12 @@ way that is actually useful to, well, me!</p>
 <p>I hope you had fun reading this, maybe some of the ideas here are interesting 
 if not jarring, and I'll expect to follow up with some more interesting features 
 in the future, such as synchronizing the local store with the cloud store, which 
-really is broken right now because the audit trail is cleared whenever a &quot;store 
-save&quot; is done.&nbsp; Oops!&nbsp; Another thing I want to take a look at is the 
-fact that I'm loading all the user's &quot;store&quot; data on client startup - it would 
+really is broken right now because the audit trail is cleared whenever a "store 
+save" is done.&nbsp; Oops!&nbsp; Another thing I want to take a look at is the 
+fact that I'm loading all the user's "store" data on client startup - it would 
 be more interesting to load only the child data relevant to the selected 
-project.&nbsp; Basically a mechanism to say &quot;if I don't have these records, get 
-them now.&quot;</p>
+project.&nbsp; Basically a mechanism to say "if I don't have these records, get 
+them now."</p>
 <p>Well, anyways, that's all for now folks!</p>
 
 </body>
