@@ -4,7 +4,7 @@ define(["require", "exports", "./Store"], function (require, exports, Store_1) {
     class StoreManager {
         constructor() {
             this.stores = {};
-            this.getPrimaryKeyCallback = () => { };
+            this.getNextPrimaryKeyCallback = () => { };
         }
         HasStore(storeName) {
             return this.stores[storeName] !== undefined;
@@ -40,8 +40,8 @@ define(["require", "exports", "./Store"], function (require, exports, Store_1) {
         GetStoreData(storeName) {
             return this.stores[storeName].GetRawData();
         }
-        GetPrimaryKey(storeName) {
-            return this.getPrimaryKeyCallback(storeName);
+        GetNextPrimaryKey(storeName) {
+            return this.getNextPrimaryKeyCallback(storeName);
         }
     }
     exports.StoreManager = StoreManager;

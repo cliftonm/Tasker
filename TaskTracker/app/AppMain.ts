@@ -188,7 +188,7 @@ export class AppMain {
         let seqStore = new SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
         storeManager.RegisterStore(seqStore);
         seqStore.Load();
-        storeManager.getPrimaryKeyCallback = (storeName: string) => {
+        storeManager.getNextPrimaryKeyCallback = (storeName: string) => {
             return { __ID: seqStore.GetNext(storeName) };
         }
 

@@ -149,7 +149,7 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
             storeManager.RegisterStore(seqStore);
             seqStore.Load();
-            storeManager.getPrimaryKeyCallback = (storeName) => {
+            storeManager.getNextPrimaryKeyCallback = (storeName) => {
                 return { __ID: seqStore.GetNext(storeName) };
             };
             storeManager.AddInMemoryStore("ProjectStatusList", projectStates);

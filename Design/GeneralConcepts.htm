@@ -9,10 +9,15 @@
 <body>
 
 <p>A metadata driven, view defines the model, schema generated on the fly, 
-from concept to application in 15 days.</p>
+from concept to application in 16 days.</p>
+<p><img border="0" src="screenshot.png" width="823" height="412"></p>
+<p>This screenshot is only a subset of what's been implemented here.&nbsp; On 
+the right are additional links associated with projects and tasks:</p>
+<p><img border="0" src="screenshot2.png" width="611" height="292"></p>
+<p>&nbsp;</p>
 <h2><a name="0">Table Of Contents</a></h2>
 <div id="toc"><ul><ul><li><a href="#0">Table Of Contents</a></li><li><a href="#1">Introduction</a></li><li><a href="#2">Day 1 - General Concepts</a></li><li><a href="#3">Day 2 - Some Structure Concepts for the Metadata</a></li><ul><li><a href="#4">Status</a></li></ul><li><a href="#5">Day 3 - Templates</a></li><li><a href="#6">Day 4 - Late Binding</a></li><li><a href="#7">Day 5 - Store Callbacks</a></li><ul><li><a href="#8">Deleting a Task</a></li><li><a href="#9">Event Router</a></li><li><a href="#10">Inserting Tasks</a></li></ul><li><a href="#11">Day 6 - Basic Relationships</a></li><li><a href="#12">
-Day 7 - Sequence Store and the Parent-Child Relationship Store</a></li><ul><li><a href="#13">Making the Association</a></li><li><a href="#14">Contacts</a></li></ul><li><a href="#15">Day 8 - Simplifying the Create View Steps</a></li><li><a href="#16">Day 9: Bugs</a></li><ul><li><a href="#17">Bug: Create a Store Only Once</a></li><li><a href="#18">Bug: Associate the Builder with the correct Parent-Child Context</a></li><li><a href="#19">Bug: Associate the CRUD Operations with the Correct Builder Context</a></li><li><a href="#20">Two Bugs, Same Solution</a></li><li><a href="#21">Bug: The Selected Record is Parent-Child Dependent</a></li><ul><li><a href="#22">Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</a></li><li><a href="#23">Solution</a></li><li><a href="#24">Why This is Not a Bug</a></li><li><a href="#25">But What is a Bug is This</a></li></ul><li><a href="#26">Nicety: Focus on First Field when Adding a Record</a></li></ul><li><a href="#27">Day 10: A Few More Niceties</a></li><ul><li><a href="#28">This is How Life Should Work</a></li></ul><li><a href="#29">Day 11: Colorizing Status</a></li><li><a href="#30">Day 12 - The Parent-Child Template Problem</a></li><li><a href="#31">Day 13 - Audit Log</a></li><ul><li><a href="#32">Store Persistence Inversion of Control</a></li><li><a href="#33">Audit Log</a></li></ul><li><a href="#34">Day 14 - Server-Side Persistence</a></li><ul><li><a href="#35">Async Client-Side Calls</a></li><li><a href="#36">Server-Side Handlers</a></li><li><a href="#37">Model-less SQL</a></li></ul><li><a href="#38">Day 15 - Creating the Schema on the Fly</a></li><ul><li><a href="#39">Send the Audit Log</a></li><li><a href="#40">Save the Audit Log</a></li><li><a href="#41">Load the Current Schema</a></li><li><a href="#42">Create Stores (Tables) and Columns on the Fly</a></li><li><a href="#43">Save the Audit Log</a></li><li><a href="#44">Update the Schema on the Fly</a></li></ul><li><a href="#45">Conclusion</a></li></ul></ul></div>
+Day 7 - Sequence Store and the Parent-Child Relationship Store</a></li><ul><li><a href="#13">Making the Association</a></li><li><a href="#14">Contacts</a></li></ul><li><a href="#15">Day 8 - Simplifying the Create View Steps</a></li><li><a href="#16">Day 9: Bugs</a></li><ul><li><a href="#17">Bug: Create a Store Only Once</a></li><li><a href="#18">Bug: Associate the Builder with the correct Parent-Child Context</a></li><li><a href="#19">Bug: Associate the CRUD Operations with the Correct Builder Context</a></li><li><a href="#20">Two Bugs, Same Solution</a></li><li><a href="#21">Bug: The Selected Record is Parent-Child Dependent</a></li><ul><li><a href="#22">Question: Is Parent-Child Sufficient to Describe the Uniqueness and Entity?</a></li><li><a href="#23">Solution</a></li><li><a href="#24">Why This is Not a Bug</a></li><li><a href="#25">But What is a Bug is This</a></li></ul><li><a href="#26">Nicety: Focus on First Field when Adding a Record</a></li></ul><li><a href="#27">Day 10: A Few More Niceties</a></li><ul><li><a href="#28">This is How Life Should Work</a></li></ul><li><a href="#29">Day 11: Colorizing Status</a></li><li><a href="#30">Day 12 - The Parent-Child Template Problem</a></li><li><a href="#31">Day 13 - Audit Log</a></li><ul><li><a href="#32">Store Persistence Inversion of Control</a></li><li><a href="#33">Audit Log</a></li></ul><li><a href="#34">Day 14 - Server-Side Persistence</a></li><ul><li><a href="#35">Async Client-Side Calls</a></li><li><a href="#36">Server-Side Handlers</a></li><li><a href="#37">Model-less SQL</a></li></ul><li><a href="#38">Day 15 - Creating the Schema on the Fly</a></li><ul><li><a href="#39">Send the Audit Log</a></li><li><a href="#40">Save the Audit Log</a></li><li><a href="#41">Load the Current Schema</a></li><li><a href="#42">Create Stores (Tables) and Columns on the Fly</a></li><li><a href="#43">Save the Audit Log</a></li><li><a href="#44">Update the Schema on the Fly</a></li></ul><li><a href="#45">Day 16 - More Bugs</a></li><ul><li><a href="#46">Bug in How Entity __ID is Working</a></li><li><a href="#47">Forgot to Register the Common Fields Bug</a></li></ul><li><a href="#48">Conclusion</a></li></ul></ul></div>
 <h2><a name="1">Introduction</a></h2>
 <p>I thought it would be fun and hopefully interested to document the creation 
 of a client-side TypeScript application from conception to implementation.&nbsp; 
@@ -56,7 +61,8 @@ well:</p>
 <p>By the way, days are not contiguous -- while each day documents the work I 
 did, it does not mean that I worked on this each and every day.&nbsp; 
 Particularly Day 12 encompasses a physical timespan of 3 days (and no, not 8 
-hours days!)</p>
+hours days!)&nbsp; Also you should realize that each day includes updating the 
+article itself!</p>
 <p>Also, yes, this could be implemented with grids but the default HTML grid 
 functionality is atrocious and I didn't want to bring in other third party 
 libraries for these articles.&nbsp; My favorite is jqWidgets, pretty much none 
@@ -2443,7 +2449,111 @@ the audit log!</p>
 <p>And we can see the audit log entries logged as well for the changes I just 
 made:</p>
 <p><img border="0" src="audit3.png" width="636" height="99"></p>
-<h2><a name="45">Conclusion</a></h2>
+<p>And all the tables that were created on the fly (except for the AuditLogStore 
+table):</p>
+<p><img border="0" src="schema5.png" width="208" height="165"></p>
+<h2><a name="45">Day 16 - More Bugs</a></h2>
+<h3><a name="46">Bug in How Entity __ID is Working</a></h3>
+<p>After a page refresh, I discovered that the sequencer was creating the next 
+number (let's say we're at a count of 2) as "21", then "211", then "2111".&nbsp; 
+This is a problem with the fact that there is no type information, so on a page 
+refresh, the "number" was coming in as a string and this line of code:</p>
+<pre>n = this.GetProperty(recIdx, "count") + 1;</pre>
+<p>ended up appending the character 1, not incrementing the count.&nbsp; As long 
+as I didn't refresh the page in my testing, everything worked fine.&nbsp; 
+Refresh the page and new parent-child relationships stopped working!&nbsp; The 
+workaround, lacking type information to serialize the count as a number in JSON 
+rather than as a string, is:</p>
+<pre>// Number because this field is being created in the DB as an nvarchar since we don't have field types yet!
+n = Number(this.GetProperty(recIdx, "count")) + 1;</pre>
+<p>The next problem was that the audit log wasn't passing the correct 
+client-side "primary key" (the <code>__ID</code> field), which occurred after deleting 
+records.&nbsp; This code:</p>
+<pre>public Log(storeName: string, action: AuditLogAction, recordIndex: number, property?: string, value?: any): void {
+  let recIdx = this.InternalCreateRecord(); // no audit log for the audit log!
+  let log = new AuditLogModel(storeName, action, recIdx, property, value);</pre>
+<p>worked fine as long as the record index (the indexer into the store's data) 
+was in sync with the sequence counter.&nbsp; When they became out of sync, after 
+deleting records and doing a page refresh, again the new entities being created 
+were saved with an <code>__ID</code> starting at 1 again!&nbsp; The sequence count was 
+ignored.&nbsp; The fix was to get the client-side <code>__ID</code>, as this is the primary 
+key to the record on the server, which is <b>not</b> the primary key if the 
+table:</p>
+<pre>public Log(storeName: string, action: AuditLogAction, recordIndex: number, property?: string, value?: any): void {
+  let recIdx = this.InternalCreateRecord(); // no audit log for the audit log!
+  let id = this.storeManager.GetStore(storeName).GetProperty(recordIndex, "__ID");
+  let log = new AuditLogModel(storeName, action, id, property, value);</pre>
+<p>After making that change, persisting changes to the sequencer stopped working 
+because it didn't even have an <code>__ID</code>, so my thinking was wrong there -- it 
+definitely needs and <code>__ID</code> so that the <code>SetRecord</code> function works and after 
+creating a relationship, the appropriate fields in the parent-child store get 
+updated correctly:</p>
+<pre>public SetRecord(idx: number, record: {}): Store {
+  this.CreateRecordIfMissing(idx);
+  this.data[idx] = record;
+  jQuery.each(record, (k, v) =&gt; this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, k, v));
+
+  return this;
+}</pre>
+<p>The fix involved changing this override in the <code>SequenceStore</code>:</p>
+<pre>protected GetPrimaryKey(): {} {
+  return {};
+}</pre>
+<p>to this:</p>
+<pre>// Sequence store has to override this function so that we don't recursively call GetNext
+// when CreateRecord is called above. We need __ID so the server knows what record to operate on.
+protected GetNextPrimaryKey(): {} {
+  let id = Object.keys(this.data).length;
+  return { __ID: id };
+}</pre>
+<p>Good grief.&nbsp; That was not amusing.</p>
+<p>Revisiting this mess:</p>
+<pre>private static void CreateTable(SqlConnection conn, string storeName)
+{
+  // __ID must be a string because in ParentChildStore.GetChildInfo, this Javascript: childRecIds.indexOf((&lt;any&gt;r).__ID)
+  // Does not match on "1" == 1
+  string sql = $"CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)";
+  Execute(conn, sql);
+}</pre>
+<p>It would probably behoove me to create a concrete model for the 
+<code>ParentChildRelationships</code> store as right now it's being created on 
+the fly and lacking type information, the <code>parentId</code> and <code>childId</code> fields are being 
+created in nvarchar:</p>
+<p><img border="0" src="schema6.png" width="269" height="163"></p>
+<p>I can certainly appreciate the need to have an actual model definition for 
+each server-side table and client-side usage, but I really don't want to go down 
+that route!&nbsp; However, it would actually be useful to create an index on the 
+<code>(UserId, __ID)</code> field pair as the update and delete operations 
+always use this pair to identify the record:</p>
+<pre>private static void CreateTable(SqlConnection conn, string storeName)
+{
+  // __ID must be a string because in ParentChildStore.GetChildInfo, this Javascript: childRecIds.indexOf((&lt;any&gt;r).__ID)
+  // Does not match on "1" == 1
+  string sql = $"CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)";
+  Execute(conn, sql);
+  string sqlIndex = $"CREATE UNIQUE INDEX [{storeName}Index] ON [{storeName}] (UserId, __ID)";
+  Execute(conn, sqlIndex);
+}</pre>
+<h3><a name="47">Forgot to Register the Common Fields Bug</a></h3>
+<p>Another bug surfaced which I missed in the console log -- when creating a 
+table, the in-memory schema on the server side wasn't updating the fields <code>UserId</code> 
+and <code>__ID</code> after creating the table.&nbsp; The fix was straight forward, though I 
+don't like the decoupling between the call to <code>CreateTable</code> and adding in the two fields that 
+<code>CreateTable</code> creates:</p>
+<pre>private static void CheckForTable(SqlConnection conn, string storeName)
+{
+  if (!schema.ContainsKey(storeName))
+  {
+    CreateTable(conn, storeName);
+    schema[storeName] = new List&lt;string&gt;();
+    schema[storeName].AddRange(new string[] { "UserId", "__ID" });
+  }
+}</pre>
+<p>I probably didn't notice this for ages because I hadn't dropped all the 
+tables to create a clean slate in quite a while, at least until I modified the 
+code above to create the indexes!</p>
+<p>I really need to create unit tests!</p>
+<h2><a name="48">Conclusion</a></h2>
 <p>So this article is huge.&nbsp; You should probably read it one day at a time!&nbsp; 
 And it's also crazy -- this is metadata driven, view defines the model, schema 
 generated on the fly, bizarre approach to building an application.&nbsp; There's 
@@ -2452,7 +2562,8 @@ template view definitions and HTML in the database specific to the user, giving
 the user the flexibility to customize the entire presentation.&nbsp; The UI is 
 ugly as sin, but it actually does the job quite nicely for what I wanted to 
 accomplish -- organizing projects, tasks, contacts, links, bugs, and notes in a 
-way that is actually useful to, well, me!</p>
+way that is actually useful to, well, me!&nbsp; Other serious warts exist, such 
+as all fields are created as <code>nvarchar</code> since we don't have type information!</p>
 <p>I hope you had fun reading this, maybe some of the ideas here are interesting 
 if not jarring, and I'll expect to follow up with some more interesting features 
 in the future, such as synchronizing the local store with the cloud store, which 
@@ -2463,7 +2574,6 @@ be more interesting to load only the child data relevant to the selected
 project.&nbsp; Basically a mechanism to say "if I don't have these records, get 
 them now."</p>
 <p>Well, anyways, that's all for now folks!</p>
-
 </body>
 
 </html>

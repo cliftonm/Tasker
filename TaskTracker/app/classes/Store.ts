@@ -94,8 +94,7 @@ export class Store {
     public SetRecord(idx: number, record: {}): Store {
         this.CreateRecordIfMissing(idx);
         this.data[idx] = record;
-
-        jQuery.each(record, (k, v) => this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, k, v));        
+        jQuery.each(record, (k, v) => this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, k, v));
 
         return this;
     }
@@ -130,10 +129,11 @@ export class Store {
         let nextIdx = 1;
 
         if (this.Records() > 0) {
+            // OK that the keys are actually strings.
             nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
         }
 
-        this.data[nextIdx] = this.GetPrimaryKey();
+        this.data[nextIdx] = this.GetNextPrimaryKey();
         this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
 
         return nextIdx;
@@ -196,8 +196,8 @@ export class Store {
         return rawData;
     }
 
-    protected GetPrimaryKey(): {} {
-        return this.storeManager.GetPrimaryKey(this.storeName);
+    protected GetNextPrimaryKey(): {} {
+        return this.storeManager.GetNextPrimaryKey(this.storeName);
     }
 
     protected CreateRecordIfMissing(idx: number) : void {

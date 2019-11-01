@@ -7,7 +7,8 @@ define(["require", "exports", "../classes/Store", "../models/AuditLogModel"], fu
         }
         Log(storeName, action, recordIndex, property, value) {
             let recIdx = this.InternalCreateRecord(); // no audit log for the audit log!
-            let log = new AuditLogModel_1.AuditLogModel(storeName, action, recordIndex, property, value);
+            let id = this.storeManager.GetStore(storeName).GetProperty(recordIndex, "__ID");
+            let log = new AuditLogModel_1.AuditLogModel(storeName, action, id, property, value);
             this.SetRecord(recIdx, log);
             this.persistence.SaveAuditLog(log);
         }
@@ -20,7 +21,7 @@ define(["require", "exports", "../classes/Store", "../models/AuditLogModel"], fu
         // If we don't override this, calling CreateRecord here causes an infinite loop if the AuditLogStore doesn't exist yet,
         // because when the audit log store asks for its next sequence number, and the store doesn't exist,
         // SequenceStore.GetNext is called which calls CreateRecord, recursing into the Log function again.
-        GetPrimaryKey() {
+        GetNextPrimaryKey() {
             return {};
         }
     }

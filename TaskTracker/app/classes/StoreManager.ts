@@ -5,7 +5,7 @@ import { AuditLogStore } from "../stores/AuditLogStore";
 
 export class StoreManager {
     stores: KeyStoreMap = {};
-    getPrimaryKeyCallback: (storeName: string) => any = () => { };
+    getNextPrimaryKeyCallback: (storeName: string) => any = () => { };
 
     public HasStore(storeName: string): boolean {
         return this.stores[storeName] !== undefined;
@@ -50,7 +50,7 @@ export class StoreManager {
         return this.stores[storeName].GetRawData();
     }
 
-    public GetPrimaryKey(storeName: string): {} {
-        return this.getPrimaryKeyCallback(storeName);
+    public GetNextPrimaryKey(storeName: string): {} {
+        return this.getNextPrimaryKeyCallback(storeName);
     }
 }

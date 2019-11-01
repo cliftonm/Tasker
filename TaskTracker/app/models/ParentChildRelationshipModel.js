@@ -2,7 +2,8 @@ define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ParentChildRelationshipModel {
-        constructor(parent, child, parentId, childId) {
+        constructor(id, parent, child, parentId, childId) {
+            this.__ID = id;
             this.parent = parent;
             this.child = child;
             this.parentId = parentId;

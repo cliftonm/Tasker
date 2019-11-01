@@ -91,9 +91,10 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
         InternalCreateRecord(insert = false, viewController = undefined) {
             let nextIdx = 1;
             if (this.Records() > 0) {
+                // OK that the keys are actually strings.
                 nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
             }
-            this.data[nextIdx] = this.GetPrimaryKey();
+            this.data[nextIdx] = this.GetNextPrimaryKey();
             this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
             return nextIdx;
         }
@@ -139,8 +140,8 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             let rawData = jQuery.map(this.data, value => value);
             return rawData;
         }
-        GetPrimaryKey() {
-            return this.storeManager.GetPrimaryKey(this.storeName);
+        GetNextPrimaryKey() {
+            return this.storeManager.GetNextPrimaryKey(this.storeName);
         }
         CreateRecordIfMissing(idx) {
             if (!this.data[idx]) {

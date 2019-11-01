@@ -12,14 +12,18 @@ export class SequenceStore extends Store {
             this.SetProperty(recIdx, "count", 0);
         }
 
-        n = this.GetProperty(recIdx, "count") + 1;
+        // Number because this field is being created in the DB as an nvarchar since we don't have field types yet!
+        n = Number(this.GetProperty(recIdx, "count")) + 1;
         this.SetProperty(recIdx, "count", n);
         this.Save();
 
         return n;
     }
 
-    protected GetPrimaryKey(): {} {
-        return {};
+    // Sequence store has to override this function so that we don't recursively call GetNext
+    // when CreateRecord is called above.  We need __ID so the server knows what record to operate on.
+    protected GetNextPrimaryKey(): {} {
+        let id = Object.keys(this.data).length;
+        return { __ID: id };
     }
 }

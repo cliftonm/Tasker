@@ -267,6 +267,7 @@ namespace Server
             {
                 CreateTable(conn, storeName);
                 schema[storeName] = new List<string>();
+                schema[storeName].AddRange(new string[] { "UserId", "__ID" });
             }
         }
 
@@ -331,6 +332,8 @@ namespace Server
             // Does not match on "1" == 1
             string sql = $"CREATE TABLE [{storeName}] (ID int NOT NULL PRIMARY KEY IDENTITY(1,1), UserId UNIQUEIDENTIFIER NOT NULL, __ID nvarchar(16) NOT NULL)";
             Execute(conn, sql);
+            string sqlIndex = $"CREATE UNIQUE INDEX [{storeName}Index] ON [{storeName}] (UserId, __ID)";
+            Execute(conn, sqlIndex);
         }
 
         private static void CreateField(SqlConnection conn, string storeName, string fieldName)

@@ -7,7 +7,8 @@ define(["require", "exports", "../classes/Store", "../models/ParentChildRelation
                 let recIdx = this.CreateRecord();
                 let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
                 let childId = childStore.GetProperty(childRecIdx, "__ID");
-                let rel = new ParentChildRelationshipModel_1.ParentChildRelationshipModel(parentStore.storeName, childStore.storeName, parentId, childId);
+                let id = this.GetProperty(recIdx, "__ID");
+                let rel = new ParentChildRelationshipModel_1.ParentChildRelationshipModel(id, parentStore.storeName, childStore.storeName, parentId, childId);
                 this.SetRecord(recIdx, rel);
                 this.Save();
             }

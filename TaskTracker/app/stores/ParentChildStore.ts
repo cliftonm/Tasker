@@ -9,7 +9,8 @@ export class ParentChildStore extends Store {
             let recIdx = this.CreateRecord();
             let parentId = parentStore.GetProperty(parentRecIdx, "__ID");
             let childId = childStore.GetProperty(childRecIdx, "__ID");
-            let rel = new ParentChildRelationshipModel(parentStore.storeName, childStore.storeName, parentId, childId);
+            let id = this.GetProperty(recIdx, "__ID");
+            let rel = new ParentChildRelationshipModel(id, parentStore.storeName, childStore.storeName, parentId, childId);
             this.SetRecord(recIdx, rel);
             this.Save();
         } else {
