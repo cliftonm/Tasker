@@ -91,15 +91,24 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
             builder.TemplateDivEnd();
             return builder;
         }
+        // After deleting a record, if this is the only selected record, we need to go back to
+        // showing all records, otherwise the user will see an empty list!
+        ShowAllRecords() {
+            jQuery(this.builder.templateContainerID).children().css("display", "");
+        }
         ShowView() {
             jQuery(this.builder.templateContainerID).parent().css("visibility", "visible");
+            jQuery(this.builder.templateContainerID).parent().css("display", "");
         }
         HideView() {
             jQuery(this.builder.templateContainerID).parent().css("visibility", "hidden");
+            jQuery(this.builder.templateContainerID).parent().css("display", "none");
         }
+        // Return true if result is a visible template.
         ToggleVisibility() {
             let state = jQuery(this.builder.templateContainerID).parent().css("visibility");
             state == "visible" ? this.HideView() : this.ShowView();
+            return state != "visible";
         }
         RecordSelected(recIdx) {
             // Remove recordSelected class from all elements in the container.
@@ -107,6 +116,10 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
             // Add recordSelected class to the specific selected element in the container.
             let path = `${this.builder.templateContainerID} > [templateIdx='${recIdx}']`;
             jQuery(path).addClass("recordSelected");
+        }
+        RecordUnselected(recIdx) {
+            // Remove recordSelected class from all elements in the container.
+            jQuery(this.builder.templateContainerID).children().removeClass("recordSelected");
         }
         ShowChildRecords(parentStore, parentRecIdx) {
             let parentStoreName = parentStore.storeName;
@@ -125,6 +138,12 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
                     });
                 });
             }
+        }
+        ShowSiblingsOf(templateContainer) {
+            templateContainer.siblings().css("display", "");
+        }
+        HideSiblingsOf(templateContainer) {
+            templateContainer.siblings().css("display", "none");
         }
         // Recursively remove all child view records.
         RemoveChildRecordsView(store, recIdx) {
@@ -229,12 +248,32 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
                     let recIdx = Number(jel.attr("storeIdx"));
                     if (onCondition(recIdx)) {
                         // console.log(`Binding guid:${guid} with recIdx:${recIdx}`);
-                        jel.on('focus', () => {
+                        jel.on('click', (e) => {
+                            let templateContainer = jQuery(e.currentTarget).parent().parent();
+                            // let templateIdx = templateContainer.attr("templateIdx");
                             if (this.selectedRecordIndex != recIdx) {
                                 this.RemoveChildRecordsView(this.store, this.selectedRecordIndex);
                                 this.RecordSelected(recIdx);
                                 this.selectedRecordIndex = recIdx;
                                 this.ShowChildRecords(this.store, recIdx);
+                                this.HideSiblingsOf(templateContainer);
+                                // If this entity has children...
+                                // show selected child containers as selected by the menubar
+                                this.eventRouter.Route("MenuBarShowSections", undefined, undefined, this);
+                            }
+                            else {
+                                // TODO: If this entity has children...
+                                let firstElement = jQuery(e.currentTarget).parent()[0] == jQuery(e.currentTarget).parent().parent().children()[0];
+                                if (firstElement) {
+                                    // If user clicks on the first element of selected record,
+                                    // the deselect the record, show all siblings, and hide all child records.
+                                    this.ShowSiblingsOf(templateContainer);
+                                    this.RemoveChildRecordsView(this.store, this.selectedRecordIndex);
+                                    this.RecordUnselected(recIdx);
+                                    this.selectedRecordIndex = -1;
+                                    // Hide selected child containers as selected by the menubar
+                                    this.eventRouter.Route("MenuBarHideSections", undefined, undefined, this);
+                                }
                             }
                         });
                         switch (el.item.control) {

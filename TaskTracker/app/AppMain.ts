@@ -212,6 +212,7 @@ export class AppMain {
         eventRouter.AddRoute("DeleteRecord", (store, idx, viewController) => {
             store.DeleteRecord(idx, viewController);
             store.Save();
+            viewController.ShowAllRecords();
         });
 
         eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));

@@ -5,6 +5,9 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
         constructor(menuBar, eventRouter) {
             this.menuBar = menuBar;
             this.eventRouter = eventRouter;
+            let me = this;
+            this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc) => me.ShowSections(vc));
+            this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc) => me.HideSections(vc));
         }
         DisplayMenuBar(containerId) {
             let containerHtml = "";
@@ -25,9 +28,39 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
             jQuery(document).ready(() => {
                 this.menuBar.forEach(item => {
                     jQuery(item.id).on('click', () => {
-                        item.viewController.ToggleVisibility();
+                        let visible = item.viewController.ToggleVisibility();
+                        if (visible) {
+                            jQuery(item.id).addClass("menuBarItemSelected");
+                            item.selected = true;
+                            this.ShowSections(item.viewController);
+                        }
+                        else {
+                            jQuery(item.id).removeClass("menuBarItemSelected");
+                            item.selected = false;
+                            this.HideSections(item.viewController);
+                        }
                     });
                 });
+            });
+        }
+        ShowSections(vc) {
+            vc.childControllers.forEach(vcChild => {
+                this.menuBar.forEach(item => {
+                    if (item.selected && vcChild == item.viewController) {
+                        item.viewController.ShowView();
+                    }
+                });
+                this.ShowSections(vcChild);
+            });
+        }
+        HideSections(vc) {
+            vc.childControllers.forEach(vcChild => {
+                this.menuBar.forEach(item => {
+                    if (item.selected && vcChild == item.viewController) {
+                        item.viewController.HideView();
+                    }
+                });
+                this.HideSections(vcChild);
             });
         }
     }

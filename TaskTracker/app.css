@@ -66,3 +66,14 @@
 .bold {
     font-weight: bold;
 }
+
+.menuBarItem {
+    /*border-width: 2px;*/
+    /* border-color: #FFA0A0;*/
+}
+
+.menuBarItemSelected {
+    /*border-color: #A0FFA0 !important;*/
+    color: white;
+    background-color:#808080;
+}

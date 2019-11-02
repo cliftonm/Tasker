@@ -185,6 +185,7 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             eventRouter.AddRoute("DeleteRecord", (store, idx, viewController) => {
                 store.DeleteRecord(idx, viewController);
                 store.Save();
+                viewController.ShowAllRecords();
             });
             eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
             let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);

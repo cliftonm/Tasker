@@ -2,6 +2,7 @@
 import { EventRouter } from "./EventRouter"
 import { MenuBar } from "../interfaces/MenuBar"
 import { MenuBarItem } from "../interfaces/MenuBarItem"
+import { ViewController } from "./ViewController";
 
 export class MenuBarView {
     private menuBar: MenuBar;
@@ -10,6 +11,10 @@ export class MenuBarView {
     constructor(menuBar: MenuBar, eventRouter: EventRouter) {
         this.menuBar = menuBar;
         this.eventRouter = eventRouter;
+        let me = this;
+
+        this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc:ViewController) => me.ShowSections(vc));
+        this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc: ViewController) => me.HideSections(vc));
     }
 
     public DisplayMenuBar(containerId: string) {
@@ -36,9 +41,43 @@ export class MenuBarView {
         jQuery(document).ready(() => {
             this.menuBar.forEach(item => {
                 jQuery(item.id).on('click', () => {
-                    item.viewController.ToggleVisibility();
+                    let visible = item.viewController.ToggleVisibility();
+
+                    if (visible) {
+                        jQuery(item.id).addClass("menuBarItemSelected");
+                        item.selected = true;
+                        this.ShowSections(item.viewController);
+                    } else {
+                        jQuery(item.id).removeClass("menuBarItemSelected");
+                        item.selected = false;
+                        this.HideSections(item.viewController);
+                    }
                 });
             });
+        });
+    }
+
+    private ShowSections(vc: ViewController): void {
+        vc.childControllers.forEach(vcChild => {
+            this.menuBar.forEach(item => {
+                if (item.selected && vcChild == item.viewController) {
+                    item.viewController.ShowView();
+                }
+            });
+
+            this.ShowSections(vcChild);
+        });
+    }
+
+    private HideSections(vc: ViewController): void {
+        vc.childControllers.forEach(vcChild => {
+            this.menuBar.forEach(item => {
+                if (item.selected && vcChild == item.viewController) {
+                    item.viewController.HideView();
+                }
+            });
+
+            this.HideSections(vcChild);
         });
     }
 }
