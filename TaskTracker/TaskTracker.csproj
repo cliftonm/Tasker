@@ -71,11 +71,15 @@
   </PropertyGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app\classes\CloudPersistence.ts" />
+    <TypeScriptCompile Include="app\classes\Helpers.ts" />
     <TypeScriptCompile Include="app\classes\LocalStoragePersistence.ts" />
+    <TypeScriptCompile Include="app\classes\MenuBarView.ts" />
     <TypeScriptCompile Include="app\classes\ViewController.ts" />
     <TypeScriptCompile Include="app\enums\AuditLogAction.ts" />
     <TypeScriptCompile Include="app\interfaces\ChildRecordInfo.ts" />
     <TypeScriptCompile Include="app\interfaces\IStorePersistence.ts" />
+    <TypeScriptCompile Include="app\interfaces\MenuBar.ts" />
+    <TypeScriptCompile Include="app\interfaces\MenuBarItem.ts" />
     <TypeScriptCompile Include="app\interfaces\Relationship.ts" />
     <TypeScriptCompile Include="app\models\AuditLogModel.ts" />
     <TypeScriptCompile Include="app\models\ParentChildRelationshipModel.ts" />

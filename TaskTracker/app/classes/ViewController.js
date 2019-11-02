@@ -1,8 +1,8 @@
-define(["require", "exports", "./TemplateBuilder"], function (require, exports, TemplateBuilder_1) {
+define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (require, exports, Helpers_1, TemplateBuilder_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class ViewController {
-        constructor(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore) {
+        constructor(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships) {
             this.childControllers = [];
             this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
             // TODO: This should be passed in, not created for every view controller.
@@ -25,7 +25,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             this.eventRouter = eventRouter;
             this.auditLogStore = auditLogStore;
         }
-        CreateStoreViewFromTemplate(storeName, persistence, containerName, template, createButtonId, updateView = true, parentViewController, createCallback = _ => { }) {
+        CreateView(storeName, persistence, containerName, template, createButtonId, updateView = true, parentViewController, createCallback = _ => { }) {
             // ?. operator.  
             // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
             this.builder = this.CreateHtmlTemplate(containerName, template);
@@ -90,6 +90,16 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
             builder.DivClear();
             builder.TemplateDivEnd();
             return builder;
+        }
+        ShowView() {
+            jQuery(this.builder.templateContainerID).parent().css("visibility", "visible");
+        }
+        HideView() {
+            jQuery(this.builder.templateContainerID).parent().css("visibility", "hidden");
+        }
+        ToggleVisibility() {
+            let state = jQuery(this.builder.templateContainerID).parent().css("visibility");
+            state == "visible" ? this.HideView() : this.ShowView();
         }
         RecordSelected(recIdx) {
             // Remove recordSelected class from all elements in the container.
@@ -156,7 +166,7 @@ define(["require", "exports", "./TemplateBuilder"], function (require, exports, 
         }
         SetStoreIndex(html, idx) {
             // a "replace all" function.
-            let newHtml = html.split("{idx}").join(idx.toString());
+            let newHtml = Helpers_1.Helpers.ReplaceAll(html, "{idx}", idx.toString());
             return newHtml;
         }
         // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C

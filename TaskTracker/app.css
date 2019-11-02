@@ -1,6 +1,16 @@
-﻿.createButton {
+﻿:root {
+    --menuBarWidth: 140px;
+}
+
+.createButton {
     margin-left: 3px;
     margin-bottom: 3px;
+}
+
+.menuBarItem {
+    margin-left: 3px;
+    margin-bottom: 3px;
+    width: 120px;
 }
 
 .templateContainer {
@@ -34,6 +44,14 @@
 
 .row {
     float:left;
+}
+
+.menuBar {
+    width: var(--menuBarWidth);
+}
+
+.entityView {
+    width: calc(100% - var(--menuBarWidth)); /* width of menuBar + 10px */
 }
 
 .col1 {

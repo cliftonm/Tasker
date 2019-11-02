@@ -1,4 +1,5 @@
-﻿import { TemplateBuilder } from "./TemplateBuilder"
+﻿import { Helpers } from "./Helpers"
+import { TemplateBuilder } from "./TemplateBuilder"
 import { TemplateElement } from "./TemplateElement"
 import { Store } from "./Store"
 import { StoreManager } from "./StoreManager"
@@ -36,14 +37,14 @@ export class ViewController {
         }
     ];
 
-    constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore) {
+    constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore, relationships: Relationship[]) {
         this.storeManager = storeManager;
         this.parentChildRelationshipStore = parentChildRelationshipStore;
         this.eventRouter = eventRouter;
         this.auditLogStore = auditLogStore;
     }
 
-    public CreateStoreViewFromTemplate(
+    public CreateView(
         storeName: string,
         persistence: IStorePersistence,
         containerName: string,
@@ -139,6 +140,19 @@ export class ViewController {
         return builder;
     }
 
+    public ShowView(): void {
+        jQuery(this.builder.templateContainerID).parent().css("visibility", "visible");
+    }
+
+    public HideView(): void {
+        jQuery(this.builder.templateContainerID).parent().css("visibility", "hidden");
+    }
+
+    public ToggleVisibility(): void {
+        let state = jQuery(this.builder.templateContainerID).parent().css("visibility");
+        state == "visible" ? this.HideView() : this.ShowView();
+    }
+
     private RecordSelected(recIdx: number): void {
         // Remove recordSelected class from all elements in the container.
         jQuery(this.builder.templateContainerID).children().removeClass("recordSelected");
@@ -216,7 +230,7 @@ export class ViewController {
 
     private SetStoreIndex(html: string, idx: number): string {
         // a "replace all" function.
-        let newHtml = html.split("{idx}").join(idx.toString());
+        let newHtml = Helpers.ReplaceAll(html, "{idx}", idx.toString());
 
         return newHtml;
     }
