@@ -9,7 +9,7 @@ delete from Projects
 delete from [Sequences]
 delete from Tasks
 */
-define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarView", "./classes/Guid"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarView_1, Guid_1) {
+define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./classes/Guid"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Guid_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -218,7 +218,7 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 { displayName: "Task Links", viewController: vcProjectTaskLinks },
                 { displayName: "Sub-Tasks", viewController: vcSubtasks }
             ];
-            let menuBarView = new MenuBarView_1.MenuBarView(menuBar, eventRouter);
+            let menuBarView = new MenuBarViewController_1.MenuBarViewController(menuBar, eventRouter);
             menuBarView.DisplayMenuBar("#menuBar");
         }
     }

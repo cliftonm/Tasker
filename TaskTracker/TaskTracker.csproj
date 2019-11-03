@@ -73,7 +73,7 @@
     <TypeScriptCompile Include="app\classes\CloudPersistence.ts" />
     <TypeScriptCompile Include="app\classes\Helpers.ts" />
     <TypeScriptCompile Include="app\classes\LocalStoragePersistence.ts" />
-    <TypeScriptCompile Include="app\classes\MenuBarView.ts" />
+    <TypeScriptCompile Include="app\classes\MenuBarViewController.ts" />
     <TypeScriptCompile Include="app\classes\ViewController.ts" />
     <TypeScriptCompile Include="app\enums\AuditLogAction.ts" />
     <TypeScriptCompile Include="app\interfaces\ChildRecordInfo.ts" />

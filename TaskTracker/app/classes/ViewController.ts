@@ -340,11 +340,9 @@ export class ViewController {
                             this.ShowChildRecords(this.store, recIdx);
 
                             this.HideSiblingsOf(templateContainer);
-                            // If this entity has children...
-                            // show selected child containers as selected by the menubar
+                            // Show selected child containers as selected by the menubar
                             this.eventRouter.Route("MenuBarShowSections", undefined, undefined, this);
                         } else {
-                            // TODO: If this entity has children...
                             let firstElement = jQuery(e.currentTarget).parent()[0] == jQuery(e.currentTarget).parent().parent().children()[0];
 
                             if (firstElement) {

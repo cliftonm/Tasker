@@ -17,7 +17,7 @@ import { AuditLogStore } from "./stores/AuditLogStore"
 import { EventRouter } from "./classes/EventRouter"
 import { SequenceStore } from "./stores/SequenceStore";
 import { CloudPersistence } from "./classes/CloudPersistence";
-import { MenuBarView } from "./classes/MenuBarView";
+import { MenuBarViewController } from "./classes/MenuBarViewController";
 import { Relationship } from "./interfaces/Relationship";
 import { Guid } from "./classes/Guid";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
@@ -258,7 +258,7 @@ export class AppMain {
             { displayName: "Sub-Tasks", viewController: vcSubtasks }
         ];
 
-        let menuBarView = new MenuBarView(menuBar, eventRouter);
+        let menuBarView = new MenuBarViewController(menuBar, eventRouter);
         menuBarView.DisplayMenuBar("#menuBar");
     }
 };

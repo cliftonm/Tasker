@@ -4,17 +4,16 @@ import { MenuBar } from "../interfaces/MenuBar"
 import { MenuBarItem } from "../interfaces/MenuBarItem"
 import { ViewController } from "./ViewController";
 
-export class MenuBarView {
+export class MenuBarViewController {
     private menuBar: MenuBar;
     private eventRouter: EventRouter;
 
     constructor(menuBar: MenuBar, eventRouter: EventRouter) {
         this.menuBar = menuBar;
         this.eventRouter = eventRouter;
-        let me = this;
 
-        this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc:ViewController) => me.ShowSections(vc));
-        this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc: ViewController) => me.HideSections(vc));
+        this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc:ViewController) => this.ShowSections(vc));
+        this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc: ViewController) => this.HideSections(vc));
     }
 
     public DisplayMenuBar(containerId: string) {
