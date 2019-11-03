@@ -9,7 +9,7 @@ delete from Projects
 delete from [Sequences]
 delete from Tasks
 */
-define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./classes/Guid"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Guid_1) {
+define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./classes/Guid", "./enums/Justification"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Guid_1, Justification_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -109,8 +109,12 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 { field: "Name", line: 0, width: "30%", control: "textbox" },
                 { field: "Email", line: 0, width: "30%", control: "textbox" },
                 { field: "Title", line: 0, width: "30%", control: "textbox" },
-                { field: "Comment", line: 1, width: "80%", control: "textbox" },
-                { text: "Delete", line: 1, width: "80px", control: "button", route: "DeleteRecord" }
+                { line: 1, width: "10%", control: "label", label: "Work:", justification: Justification_1.Justification.Right },
+                { field: "Work Phone", line: 1, width: "35%", control: "textbox" },
+                { line: 1, width: "10%", control: "label", label: "Cell:", justification: Justification_1.Justification.Right },
+                { field: "Cell Phone", line: 1, width: "35%", control: "textbox" },
+                { field: "Comment", line: 2, width: "80%", control: "textbox" },
+                { text: "Delete", line: 2, width: "80px", control: "button", route: "DeleteRecord" }
             ];
             let linkTemplate = [
                 { field: "Description", line: 0, width: "20%", control: "textbox" },

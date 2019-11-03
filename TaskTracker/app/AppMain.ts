@@ -18,9 +18,9 @@ import { EventRouter } from "./classes/EventRouter"
 import { SequenceStore } from "./stores/SequenceStore";
 import { CloudPersistence } from "./classes/CloudPersistence";
 import { MenuBarViewController } from "./classes/MenuBarViewController";
-import { Relationship } from "./interfaces/Relationship";
 import { Guid } from "./classes/Guid";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
+import { Justification } from "./enums/Justification"
 
 // Add bugs and meetings
 
@@ -124,8 +124,12 @@ export class AppMain {
             { field: "Name", line: 0, width: "30%", control: "textbox" },
             { field: "Email", line: 0, width: "30%", control: "textbox" },
             { field: "Title", line: 0, width: "30%", control: "textbox" },
-            { field: "Comment", line: 1, width: "80%", control: "textbox" },
-            { text: "Delete", line: 1, width: "80px", control: "button", route: "DeleteRecord" }
+            { line: 1, width: "10%", control: "label", label: "Work:", justification: Justification.Right },
+            { field: "Work Phone", line: 1, width: "35%", control: "textbox" },
+            { line: 1, width: "10%", control: "label", label: "Cell:", justification: Justification.Right  },
+            { field: "Cell Phone", line: 1, width: "35%", control: "textbox" },
+            { field: "Comment", line: 2, width: "80%", control: "textbox" },
+            { text: "Delete", line: 2, width: "80px", control: "button", route: "DeleteRecord" }
         ];
 
         let linkTemplate = [

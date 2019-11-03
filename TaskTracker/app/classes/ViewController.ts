@@ -129,6 +129,9 @@ export class ViewController {
                 case "button":
                     builder.Button(item);
                     break;
+
+                case "label":
+                    builder.Label(item);
             }
 
             builder.DivEnd();

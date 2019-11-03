@@ -77,3 +77,24 @@
     color: white;
     background-color:#808080;
 }
+
+.tblabelleft {
+    float: left;
+    margin-top: 2px;
+    padding-right: 5px;
+}
+
+.tblabelcenter {
+    float: left;
+    margin-top: 2px;
+    padding-right: 5px;
+    text-align: center;
+}
+
+.tblabelright {
+    float: right;
+    margin-top: 2px;
+    text-align: right;
+    padding-right: 5px;
+}
+

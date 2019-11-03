@@ -1,4 +1,6 @@
 ﻿export class Guid {
+    public static get Zero(): Guid { return new Guid("00000000-0000-0000-0000-000000000000"); }
+
     private guid: string;
 
     constructor(guid: string) {

@@ -1,4 +1,4 @@
-define(["require", "exports", "./Guid", "./TemplateElement"], function (require, exports, Guid_1, TemplateElement_1) {
+define(["require", "exports", "./Guid", "./TemplateElement", "../enums/Justification"], function (require, exports, Guid_1, TemplateElement_1, Justification_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class TemplateBuilder {
@@ -31,6 +31,31 @@ define(["require", "exports", "./Guid", "./TemplateElement"], function (require,
             let guid = Guid_1.Guid.NewGuid();
             this.html += `<button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
+            this.elements.push(el);
+            return this;
+        }
+        Label(item) {
+            let classStyle = "tblabelleft";
+            let labelClass = "class='tblabelleft'";
+            switch (item.justification) {
+                case Justification_1.Justification.Left:
+                    labelClass = "tblabelleft";
+                    break;
+                case Justification_1.Justification.Center:
+                    labelClass = "tblabelcenter";
+                    break;
+                case Justification_1.Justification.Right:
+                    labelClass = "tblabelright";
+                    break;
+            }
+            if (item.style) {
+                classStyle = `class="${item.style} ${labelClass}"`;
+            }
+            else {
+                classStyle = `class="${labelClass}"`;
+            }
+            this.html += `<span ${classStyle} style='width:100%;'>${item.label}</span>`;
+            let el = new TemplateElement_1.TemplateElement(item, Guid_1.Guid.Zero);
             this.elements.push(el);
             return this;
         }

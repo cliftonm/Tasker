@@ -1,4 +1,6 @@
-﻿export interface Item {
+﻿import { Justification } from "../enums/Justification"
+
+export interface Item {
     line: number;
     width: string;
     control: string;
@@ -9,6 +11,8 @@
     storeName?: string;                 // for list of things like used for comboboxes
     orderBy?: string;
     route?: string;
+    label?: string;
+    justification?: Justification;
     // associatedStoreName?: string;       // the store to which the item's property:value is associated.
 }
 

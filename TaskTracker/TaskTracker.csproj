@@ -76,6 +76,7 @@
     <TypeScriptCompile Include="app\classes\MenuBarViewController.ts" />
     <TypeScriptCompile Include="app\classes\ViewController.ts" />
     <TypeScriptCompile Include="app\enums\AuditLogAction.ts" />
+    <TypeScriptCompile Include="app\enums\Justification.ts" />
     <TypeScriptCompile Include="app\interfaces\ChildRecordInfo.ts" />
     <TypeScriptCompile Include="app\interfaces\IStorePersistence.ts" />
     <TypeScriptCompile Include="app\interfaces\MenuBar.ts" />

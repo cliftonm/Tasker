@@ -1,8 +1,8 @@
 ﻿import { Guid } from "./Guid"
-import { Store } from "./Store"
 import { StoreManager } from "./StoreManager"
 import { TemplateElement } from "./TemplateElement"
 import { Item } from "../interfaces/Item"
+import { Justification } from "../enums/Justification";
 
 export class TemplateBuilder
 {
@@ -50,6 +50,37 @@ export class TemplateBuilder
         let guid = Guid.NewGuid();
         this.html += `<button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
         let el = new TemplateElement(item, guid);
+        this.elements.push(el);
+
+        return this;
+    }
+
+    public Label(item: Item): TemplateBuilder {
+        let classStyle = "tblabelleft";
+        let labelClass = "class='tblabelleft'";
+
+        switch (item.justification) {
+            case Justification.Left:
+                labelClass = "tblabelleft";
+                break;
+
+            case Justification.Center:
+                labelClass = "tblabelcenter";
+                break;
+
+            case Justification.Right:
+                labelClass = "tblabelright";
+                break;
+        }
+
+        if (item.style) {
+            classStyle = `class="${item.style} ${labelClass}"`;
+        } else {
+            classStyle = `class="${labelClass}"`;
+        }
+
+        this.html += `<span ${classStyle} style='width:100%;'>${item.label}</span>`;
+        let el = new TemplateElement(item, Guid.Zero);
         this.elements.push(el);
 
         return this;

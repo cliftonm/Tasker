@@ -13,3 +13,18 @@ Getting jQuery to work: https://stackoverflow.com/a/41265114/2276361
 Nuget Package Manager Console: Install-Package jquery.TypeScript.DefinitelyTyped
 
 jQuery nightmare solved by reading through this: https://stackoverflow.com/questions/3931529/is-not-a-function-jquery-error
+
+
+Label nightmares (span with float:right) is better!
+
+.tblabel {
+    display: block; /* https://stackoverflow.com/questions/9101507/text-align-right-not-working-for-label */
+    margin-top: 2px;
+    text-align: right;
+}
+
+.tblabel:after {
+    display: inline;
+    content: " ";
+    white-space: pre; /* https://stackoverflow.com/questions/5467605/add-a-space-after-an-element-using-after */
+}
