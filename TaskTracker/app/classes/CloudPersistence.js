@@ -36,6 +36,8 @@ define(["require", "exports"], function (require, exports) {
             jQuery.post(this.Url("Save") + this.AddParams({ UserId: this.userId.ToString() }), JSON.stringify({ auditLog: json }));
             this.auditLogStore.Clear();
         }
+        // Does nothing when using cloud persistence as we don't need to load the audit log.
+        LoadAuditLog() { }
         SaveAuditLog(logEntry) {
             let json = JSON.stringify(logEntry);
             jQuery.post(this.Url("SaveLogEntry") + this.AddParams({ UserId: this.userId.ToString() }), json);

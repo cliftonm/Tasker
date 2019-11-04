@@ -1,22 +1,20 @@
-﻿import { ViewController } from "./ViewController";
+﻿import { EntityViewController } from "./EntityViewController";
 import { RowRecordMap } from "../interfaces/RowRecordMap"
 import { StoreManager } from "./StoreManager";
 import { AuditLogStore } from "../stores/AuditLogStore";
 import { IStorePersistence } from "../interfaces/IStorePersistence";
 import { AuditLogAction } from "../enums/AuditLogAction";
 
-type EmptyRecordResult = [boolean, {}[]];
-
 export class Store {
     persistence: IStorePersistence;
     cached: boolean;
-    protected data: RowRecordMap = {};
+    data: RowRecordMap = {};
     storeName: string;
     storeManager: StoreManager;
     auditLogStore: AuditLogStore;
-    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean, viewController: ViewController) => void = () => { };
+    recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean, viewController: EntityViewController) => void = () => { };
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
-    recordDeletedCallback: (idx: number, store: Store, viewController: ViewController) => void = () => { };         
+    recordDeletedCallback: (idx: number, store: Store, viewController: EntityViewController) => void = () => { };         
 
     constructor(storeManager: StoreManager, persistence: IStorePersistence, storeName: string, auditLogStore: AuditLogStore) {
         this.storeManager = storeManager;
@@ -118,34 +116,20 @@ export class Store {
         return value;
     }
 
-    public CreateRecord(insert = false, viewController: ViewController = undefined): number {
+    public CreateRecord(insert = false, viewController: EntityViewController = undefined): number {
         let nextIdx = this.InternalCreateRecord(insert, viewController);
         this.auditLogStore.Log(this.storeName, AuditLogAction.Create, nextIdx);
 
         return nextIdx;
     }
 
-    protected InternalCreateRecord(insert = false, viewController: ViewController = undefined): number {
-        let nextIdx = 1;
-
-        if (this.Records() > 0) {
-            // OK that the keys are actually strings.
-            nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
-        }
-
-        this.data[nextIdx] = this.GetNextPrimaryKey();
-        this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
-
-        return nextIdx;
-    }
-
-    public DeleteRecord(idx: number, viewController?: ViewController) : void {
+    public DeleteRecord(idx: number, viewController?: EntityViewController) : void {
         this.recordDeletedCallback(idx, this, viewController);
         this.auditLogStore.Log(this.storeName, AuditLogAction.Delete, idx);
         delete this.data[idx];
     }
 
-    public Load(createRecordView: boolean = true, viewController: ViewController = undefined): Store {
+    public Load(createRecordView: boolean = true, viewController: EntityViewController = undefined): Store {
         this.persistence.Load(this.storeName).then(data => {
 
             this.data = data;
@@ -194,6 +178,20 @@ export class Store {
         let rawData = jQuery.map(this.data, value => value);
 
         return rawData;
+    }
+
+    protected InternalCreateRecord(insert = false, viewController: EntityViewController = undefined): number {
+        let nextIdx = 1;
+
+        if (this.Records() > 0) {
+            // OK that the keys are actually strings.
+            nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
+        }
+
+        this.data[nextIdx] = this.GetNextPrimaryKey();
+        this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
+
+        return nextIdx;
     }
 
     protected GetNextPrimaryKey(): {} {

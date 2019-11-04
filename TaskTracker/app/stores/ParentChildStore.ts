@@ -1,7 +1,7 @@
 ﻿import { Store } from "../classes/Store"
 import { ParentChildRelationshipModel } from "../models/ParentChildRelationshipModel"
 import { ChildRecordInfo } from "../interfaces/ChildRecordInfo"
-import { ViewController } from "../classes/ViewController";
+import { EntityViewController } from "../classes/EntityViewController";
 
 export class ParentChildStore extends Store {
     public AddRelationship(parentStore: Store, childStore: Store, parentRecIdx: number, childRecIdx: number): void {
@@ -34,7 +34,7 @@ export class ParentChildStore extends Store {
         return { store: childStore, childrenIndices: recs };
     }
 
-    public DeleteRelationship(store: Store, recIdx: number, viewController: ViewController) {
+    public DeleteRelationship(store: Store, recIdx: number, viewController: EntityViewController) {
         let storeName = store.storeName;
         let id = store.GetProperty(recIdx, "__ID");
         let touchedStores : string[] = [];     // So we save the store only once after this process.
@@ -73,7 +73,7 @@ export class ParentChildStore extends Store {
         this.Save();
     }
 
-    private DeleteChildrenOfParent(p: ParentChildRelationshipModel, touchedStores: string[], viewController: ViewController): void {
+    private DeleteChildrenOfParent(p: ParentChildRelationshipModel, touchedStores: string[], viewController: EntityViewController): void {
         let childStoreName = p.child;
         let childId = p.childId;
         let childStore = this.storeManager.GetStore(childStoreName);

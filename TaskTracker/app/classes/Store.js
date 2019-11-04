@@ -88,16 +88,6 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             this.auditLogStore.Log(this.storeName, AuditLogAction_1.AuditLogAction.Create, nextIdx);
             return nextIdx;
         }
-        InternalCreateRecord(insert = false, viewController = undefined) {
-            let nextIdx = 1;
-            if (this.Records() > 0) {
-                // OK that the keys are actually strings.
-                nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
-            }
-            this.data[nextIdx] = this.GetNextPrimaryKey();
-            this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
-            return nextIdx;
-        }
         DeleteRecord(idx, viewController) {
             this.recordDeletedCallback(idx, this, viewController);
             this.auditLogStore.Log(this.storeName, AuditLogAction_1.AuditLogAction.Delete, idx);
@@ -139,6 +129,16 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
         GetRawData() {
             let rawData = jQuery.map(this.data, value => value);
             return rawData;
+        }
+        InternalCreateRecord(insert = false, viewController = undefined) {
+            let nextIdx = 1;
+            if (this.Records() > 0) {
+                // OK that the keys are actually strings.
+                nextIdx = Math.max.apply(Math, Object.keys(this.data)) + 1;
+            }
+            this.data[nextIdx] = this.GetNextPrimaryKey();
+            this.recordCreatedCallback(nextIdx, {}, insert, this, false, viewController);
+            return nextIdx;
         }
         GetNextPrimaryKey() {
             return this.storeManager.GetNextPrimaryKey(this.storeName);

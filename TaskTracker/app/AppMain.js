@@ -9,7 +9,7 @@ delete from Projects
 delete from [Sequences]
 delete from Tasks
 */
-define(["require", "exports", "./classes/ViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./classes/Guid", "./enums/Justification"], function (require, exports, ViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Guid_1, Justification_1) {
+define(["require", "exports", "./classes/EntityViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/MenuBarViewController", "./classes/Guid", "./classes/LocalStoragePersistence", "./enums/Justification"], function (require, exports, EntityViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, MenuBarViewController_1, Guid_1, LocalStoragePersistence_1, Justification_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -168,11 +168,12 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
             ];
             let userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000001");
             let storeManager = new StoreManager_1.StoreManager();
-            // let persistence = new LocalStoragePersistence();
-            let persistence = new CloudPersistence_1.CloudPersistence("http://127.0.0.1/", userId);
+            let persistence = new LocalStoragePersistence_1.LocalStoragePersistence();
+            // let persistence = new CloudPersistence("http://127.0.0.1/", userId);
             let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, persistence, "AuditLogStore");
             storeManager.RegisterStore(auditLogStore);
             persistence.SetAuditLogStore(auditLogStore);
+            persistence.LoadAuditLog();
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
             storeManager.RegisterStore(seqStore);
             seqStore.Load();
@@ -192,25 +193,25 @@ define(["require", "exports", "./classes/ViewController", "./classes/StoreManage
                 viewController.ShowAllRecords();
             });
             eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
-            let vcProjects = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjects = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjects.CreateView("Projects", persistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
-            let vcProjectBugs = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectBugs = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectBugs.CreateView("Bugs", persistence, "#projectBugTemplateContainer", bugTemplate, "#createProjectBug", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", bugStates[0].text));
-            let vcBugNotes = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcBugNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcBugNotes.CreateView("Notes", persistence, "#bugNoteTemplateContainer", noteTemplate, "#createBugNote", false, vcProjectBugs);
-            let vcProjectTasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectTasks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTasks.CreateView("Tasks", persistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-            let vcSubtasks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcSubtasks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcSubtasks.CreateView("Tasks", persistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcProjectTasks);
-            let vcProjectContacts = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectContacts = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectContacts.CreateView("Contacts", persistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
-            let vcProjectLinks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectLinks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectLinks.CreateView("Links", persistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
-            let vcProjectTaskLinks = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectTaskLinks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTaskLinks.CreateView("Links", persistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcProjectTasks);
-            let vcProjectNotes = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectNotes.CreateView("Notes", persistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
-            let vcProjectTaskNotes = new ViewController_1.ViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectTaskNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTaskNotes.CreateView("Notes", persistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcProjectTasks);
             let menuBar = [
                 { displayName: "Bugs", viewController: vcProjectBugs },

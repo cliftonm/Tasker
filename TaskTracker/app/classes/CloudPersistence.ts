@@ -38,6 +38,9 @@ export class CloudPersistence implements IStorePersistence {
         this.auditLogStore.Clear();
     }
 
+    // Does nothing when using cloud persistence as we don't need to load the audit log.
+    public LoadAuditLog(): void { }
+
     public SaveAuditLog(logEntry: AuditLogModel): void {
         let json = JSON.stringify(logEntry);
         jQuery.post(this.Url("SaveLogEntry") + this.AddParams({ UserId: this.userId.ToString() }), json);

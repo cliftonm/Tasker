@@ -1,8 +1,8 @@
-﻿import { ViewController } from "../classes/ViewController"
+﻿import { EntityViewController } from "../classes/EntityViewController"
 
 export interface MenuBarItem {
     displayName: string;
-    viewController: ViewController;
+    viewController: EntityViewController;
     id?: string;         // used internally, never set
     selected?: boolean;  // used internally, never set
 }

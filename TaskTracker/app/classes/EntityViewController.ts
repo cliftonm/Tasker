@@ -10,38 +10,24 @@ import { EventRouter } from "./EventRouter"
 import { IStorePersistence } from "../interfaces/IStorePersistence";
 import { AuditLogStore } from "../stores/AuditLogStore";
 
-export class ViewController {
+export class EntityViewController {
     storeManager: StoreManager;
     parentChildRelationshipStore: ParentChildStore;
     builder: TemplateBuilder;
     eventRouter: EventRouter;
     store: Store;
     auditLogStore: AuditLogStore;
-    childControllers: ViewController[] = [];
+    childControllers: EntityViewController[] = [];
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
-    parentViewController: ViewController;
-
-    // TODO: This should be passed in, not created for every view controller.
-    relationships: Relationship[] = [
-        {
-            parent: "Projects",
-            children: ["Bugs", "Tasks", "Contacts", "Links", "Notes"]
-        },
-        {
-            parent: "Tasks",
-            children: ["Links", "Notes", "Tasks"]
-        },
-        {
-            parent: "Bugs",
-            children: ["Notes"]
-        }
-    ];
+    parentViewController: EntityViewController;
+    relationships: Relationship[];
 
     constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore, relationships: Relationship[]) {
         this.storeManager = storeManager;
         this.parentChildRelationshipStore = parentChildRelationshipStore;
         this.eventRouter = eventRouter;
         this.auditLogStore = auditLogStore;
+        this.relationships = relationships;
     }
 
     public CreateView(
@@ -51,7 +37,7 @@ export class ViewController {
         template: Items,
         createButtonId: string,
         updateView: boolean = true,
-        parentViewController: ViewController,
+        parentViewController: EntityViewController,
         createCallback: (idx: number, store: Store) => void = _ => { }
     ): Store {
 
@@ -89,7 +75,7 @@ export class ViewController {
         return this.store;
     }
 
-    private RegisterChildController(childViewController: ViewController): void {
+    private RegisterChildController(childViewController: EntityViewController): void {
         this.childControllers.push(childViewController)
     }
 

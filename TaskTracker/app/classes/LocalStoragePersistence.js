@@ -26,13 +26,15 @@ define(["require", "exports"], function (require, exports) {
             let rawData = jQuery.map(data, value => value);
             let json = JSON.stringify(rawData);
             window.localStorage.setItem(storeName, json);
-            this.auditLogStore.Clear();
         }
-        // Does nothing at the moment when using local storage.
-        // TODO: This needs to append the entry to the running log, but we can
-        // only do that by loading the entire AuditLog from local storage, appending the entry,
-        // and saving it again, as the AuditLog gets cleared whenever a Save operation takes place.
-        SaveAuditLog(logEntry) { }
+        LoadAuditLog() {
+            this.Load("AuditLogStore").then(data => this.auditLogStore.data = data);
+        }
+        // logEntry has already been created in the store, all we need to do is save
+        // the store to local storage.
+        SaveAuditLog(logEntry) {
+            this.Save("AuditLogStore", this.auditLogStore.data);
+        }
     }
     exports.LocalStoragePersistence = LocalStoragePersistence;
 });

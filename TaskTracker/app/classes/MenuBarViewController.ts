@@ -2,7 +2,7 @@
 import { EventRouter } from "./EventRouter"
 import { MenuBar } from "../interfaces/MenuBar"
 import { MenuBarItem } from "../interfaces/MenuBarItem"
-import { ViewController } from "./ViewController";
+import { EntityViewController } from "./EntityViewController";
 
 export class MenuBarViewController {
     private menuBar: MenuBar;
@@ -12,8 +12,8 @@ export class MenuBarViewController {
         this.menuBar = menuBar;
         this.eventRouter = eventRouter;
 
-        this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc:ViewController) => this.ShowSections(vc));
-        this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc: ViewController) => this.HideSections(vc));
+        this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc:EntityViewController) => this.ShowSections(vc));
+        this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc: EntityViewController) => this.HideSections(vc));
     }
 
     public DisplayMenuBar(containerId: string) {
@@ -56,7 +56,7 @@ export class MenuBarViewController {
         });
     }
 
-    private ShowSections(vc: ViewController): void {
+    private ShowSections(vc: EntityViewController): void {
         vc.childControllers.forEach(vcChild => {
             this.menuBar.forEach(item => {
                 if (item.selected && vcChild == item.viewController) {
@@ -68,7 +68,7 @@ export class MenuBarViewController {
         });
     }
 
-    private HideSections(vc: ViewController): void {
+    private HideSections(vc: EntityViewController): void {
         vc.childControllers.forEach(vcChild => {
             this.menuBar.forEach(item => {
                 if (item.selected && vcChild == item.viewController) {
