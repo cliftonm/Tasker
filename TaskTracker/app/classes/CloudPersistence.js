@@ -38,6 +38,7 @@ define(["require", "exports"], function (require, exports) {
         }
         // Does nothing when using cloud persistence as we don't need to load the audit log.
         LoadAuditLog() { }
+        // Only the log entry is posted to the server.  The entire log is NOT sent!
         SaveAuditLog(logEntry) {
             let json = JSON.stringify(logEntry);
             jQuery.post(this.Url("SaveLogEntry") + this.AddParams({ UserId: this.userId.ToString() }), json);
