@@ -124,6 +124,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             let bugTemplate = [
                 { field: "Description", line: 0, width: "70%", control: "textbox" },
                 { field: "Status", storeName: "BugStatusList", orderBy: "StatusOrder", line: 0, width: "20%", control: "combobox" },
+                { field: "Resolution", line: 0, width: "70%", control: "textarea" },
                 { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
             let projectStates = [
