@@ -36,12 +36,12 @@ export class StoreManager {
         return this.stores[storeName];
     }
 
-    public GetTypedStore<T>(storeName: string): T {
+    public GetTypedStore<T extends Store>(storeName: string): T {
         // Compiler says: Conversion of type 'Store' to type 'T' may be a mistake because 
         // neither type sufficiently overlaps with the other.If this was intentional, 
         // convert the expression to 'unknown' first.
         // So how do I tell it that T must extended from Store?
-        return (<unknown>this.stores[storeName]) as T;
+        return this.stores[storeName] as T;
     }
 
     // Eventually will support local stores, REST calls, caching, computational stores, and using other 
