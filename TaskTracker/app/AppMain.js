@@ -15,7 +15,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
     // Add bugs and meetings
     class AppMain {
         run() {
-            let relationships = [
+            const relationships = [
                 {
                     parent: "Projects",
                     children: ["Bugs", "Tasks", "Contacts", "Links", "Notes"]
@@ -29,7 +29,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                     children: ["Notes"]
                 }
             ];
-            let projectTemplate = [
+            const projectTemplate = [
                 {
                     field: "Project",
                     line: 0,
@@ -59,7 +59,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                     route: "DeleteRecord",
                 }
             ];
-            let taskTemplate = [
+            const taskTemplate = [
                 {
                     field: "Task",
                     line: 0,
@@ -89,7 +89,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                     route: "DeleteRecord",
                 }
             ];
-            let noteTemplate = [
+            const noteTemplate = [
                 {
                     field: "Note",
                     line: 0,
@@ -105,7 +105,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                     route: "DeleteRecord",
                 }
             ];
-            let contactTemplate = [
+            const contactTemplate = [
                 { field: "Name", line: 0, width: "30%", control: "textbox" },
                 { field: "Email", line: 0, width: "30%", control: "textbox" },
                 { field: "Title", line: 0, width: "30%", control: "textbox" },
@@ -116,18 +116,18 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { field: "Comment", line: 2, width: "80%", control: "textbox" },
                 { text: "Delete", line: 2, width: "80px", control: "button", route: "DeleteRecord" }
             ];
-            let linkTemplate = [
+            const linkTemplate = [
                 { field: "Description", line: 0, width: "20%", control: "textbox" },
                 { field: "URL", line: 0, width: "40%", control: "textbox" },
                 { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
-            let bugTemplate = [
+            const bugTemplate = [
                 { field: "Description", line: 0, width: "70%", control: "textbox" },
                 { field: "Status", storeName: "BugStatusList", orderBy: "StatusOrder", line: 0, width: "20%", control: "combobox" },
                 { field: "Resolution", line: 0, width: "70%", control: "textarea" },
                 { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
-            let projectStates = [
+            const projectStates = [
                 { text: 'Ongoing', bcolor: '#B0B0FF' },
                 { text: 'TODO', bcolor: '#FFB0B0' },
                 { text: 'Working On', bcolor: '#D0D0FF' },
@@ -141,7 +141,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
-            let taskStates = [
+            const taskStates = [
                 { text: 'TODO', bcolor: '#FFB0B0' },
                 { text: 'Working On', bcolor: '#D0D0FF' },
                 { text: 'Testing', bcolor: '#D0D0FF' },
@@ -154,7 +154,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
-            let bugStates = [
+            const bugStates = [
                 { text: 'TODO', bcolor: '#FFB0B0' },
                 { text: 'Working On', bcolor: '#D0D0FF' },
                 { text: 'Testing', bcolor: '#D0D0FF' },
@@ -167,7 +167,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
-            let userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000001");
+            const userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000001");
             let storeManager = new StoreManager_1.StoreManager();
             let persistence = new LocalStoragePersistence_1.LocalStoragePersistence();
             // let persistence = new CloudPersistence("http://127.0.0.1/", userId);
@@ -178,9 +178,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             let seqStore = new SequenceStore_1.SequenceStore(storeManager, persistence, "Sequences", auditLogStore);
             storeManager.RegisterStore(seqStore);
             seqStore.Load();
-            storeManager.getNextPrimaryKeyCallback = (storeName) => {
-                return { __ID: seqStore.GetNext(storeName) };
-            };
+            storeManager.getNextPrimaryKeyCallback = (storeName) => { return { __ID: seqStore.GetNext(storeName) }; };
             storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
             storeManager.AddInMemoryStore("TaskStatusList", taskStates);
             storeManager.AddInMemoryStore("BugStatusList", bugStates);
@@ -214,7 +212,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             vcProjectNotes.CreateView("Notes", persistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
             let vcProjectTaskNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTaskNotes.CreateView("Notes", persistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcProjectTasks);
-            let menuBar = [
+            const menuBar = [
                 { displayName: "Bugs", viewController: vcProjectBugs },
                 { displayName: "Contacts", viewController: vcProjectContacts },
                 { displayName: "Project Notes", viewController: vcProjectNotes },
