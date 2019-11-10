@@ -9,7 +9,7 @@ delete from Projects
 delete from [Sequences]
 delete from Tasks
 */
-define(["require", "exports", "./classes/EntityViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/MenuBarViewController", "./classes/Guid", "./classes/LocalStoragePersistence", "./enums/Justification"], function (require, exports, EntityViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, MenuBarViewController_1, Guid_1, LocalStoragePersistence_1, Justification_1) {
+define(["require", "exports", "./classes/EntityViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./classes/Guid", "./enums/Justification"], function (require, exports, EntityViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Guid_1, Justification_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -167,10 +167,12 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
-            const userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000001");
+            const userId = new Guid_1.Guid("00000000-0000-0000-0000-00000000000C");
             let storeManager = new StoreManager_1.StoreManager();
-            let persistence = new LocalStoragePersistence_1.LocalStoragePersistence();
-            // let persistence = new CloudPersistence("http://127.0.0.1/", userId);
+            //let persistence = new LocalStoragePersistence();
+            //let cloudPersistence = new CloudPersistence("http://127.0.0.1/", userId, storeManager);
+            let persistence = new CloudPersistence_1.CloudPersistence("http://127.0.0.1/", userId, storeManager);
+            let cloudPersistence = undefined;
             let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, persistence, "AuditLogStore");
             storeManager.RegisterStore(auditLogStore);
             persistence.SetAuditLogStore(auditLogStore);
@@ -224,6 +226,21 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             ];
             let menuBarView = new MenuBarViewController_1.MenuBarViewController(menuBar, eventRouter);
             menuBarView.DisplayMenuBar("#menuBar");
+            let entities = this.GetEntities(relationships);
+            jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
+            // TODO: We should disable the export button until all the AJAX calls complete.
+            jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
+        }
+        // Gets the list of entities from the relationships hierarchy.
+        // We assume that the store name == entity name!!!
+        GetEntities(relationships) {
+            let entities = [];
+            relationships.forEach(r => {
+                entities.push(r.parent);
+                r.children.forEach(c => entities.push(c));
+            });
+            let distinctEntities = [...new Set(entities)];
+            return distinctEntities;
         }
     }
     exports.AppMain = AppMain;

@@ -19,6 +19,7 @@ import { SequenceStore } from "./stores/SequenceStore";
 import { CloudPersistence } from "./classes/CloudPersistence";
 import { MenuBarViewController } from "./classes/MenuBarViewController";
 import { Guid } from "./classes/Guid";
+import { Relationship } from "./interfaces/Relationship";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
 import { Justification } from "./enums/Justification"
 
@@ -188,10 +189,14 @@ export class AppMain {
             { text: 'Discuss', bcolor: 'red' },
         ];
 
-        const userId = new Guid("00000000-0000-0000-0000-000000000001");
+        const userId = new Guid("00000000-0000-0000-0000-00000000000C");
         let storeManager = new StoreManager();
-        let persistence = new LocalStoragePersistence();
-        // let persistence = new CloudPersistence("http://127.0.0.1/", userId);
+
+        //let persistence = new LocalStoragePersistence();
+        //let cloudPersistence = new CloudPersistence("http://127.0.0.1/", userId, storeManager);
+
+        let persistence = new CloudPersistence("http://127.0.0.1/", userId, storeManager);
+        let cloudPersistence = undefined;
 
         let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore");
         storeManager.RegisterStore(auditLogStore);
@@ -264,6 +269,28 @@ export class AppMain {
 
         let menuBarView = new MenuBarViewController(menuBar, eventRouter);
         menuBarView.DisplayMenuBar("#menuBar");
+
+        let entities = this.GetEntities(relationships);
+
+        jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
+
+        // TODO: We should disable the export button until all the AJAX calls complete.
+        jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
+    }
+
+    // Gets the list of entities from the relationships hierarchy.
+    // We assume that the store name == entity name!!!
+    private GetEntities(relationships: Relationship[]): string[] {
+        let entities = [];
+
+        relationships.forEach(r => {
+            entities.push(r.parent);
+            r.children.forEach(c => entities.push(c));
+        });
+
+        let distinctEntities = [...new Set(entities)];
+
+        return distinctEntities;
     }
 };
 

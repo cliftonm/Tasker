@@ -7,7 +7,7 @@ export class AuditLogModel {
     property: string;
     value: any;
 
-    constructor(storeName: string, action: AuditLogAction, recordIndex: number, property: string, value: string) {
+    constructor(storeName: string, action: AuditLogAction, recordIndex: number, property: string, value: any) {
         this.storeName = storeName;
         this.action = action;
         this.recordIndex = recordIndex;

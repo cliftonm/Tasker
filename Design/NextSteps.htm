@@ -1,0 +1,77 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>New Page 1</title>
+</head>
+
+<body>
+
+<h2>Introduction</h2>
+<p>After writing
+<a href="https://www.codeproject.com/Articles/5250141/16-Days-A-TypeScript-application-from-concept-to">
+16 Days: A TypeScript Application from Concept to Implementation</a> I was stuck 
+with where to take this interesting but incomplete concept next.&nbsp; Here's an 
+incomplete list:</p>
+<ol>
+	<li>Hide the child create button when the parent is selected so we can't 
+	accidentally create children without an associated parent.</li>
+	<li>Ability to view all child entities regardless of parent, and when 
+	selecting a child, the parent &quot;path&quot; is auto-selected.</li>
+	<li>Filtering on &quot;string like&quot; and selection options, like one or more 
+	status states.</li>
+	<li>Search across parents and children.</li>
+	<li>Export local storage to cloud.</li>
+	<li>Make it more like a real website with user login, etc.</li>
+	<li>Create/Update/Delete UTC timestamps.</li>
+	<li>Sorting, by date, selection option like status, fields, last name in a 
+	contact list.</li>
+	<li>Other simple and fun applications, like an address book, D&amp;D character 
+	sheet, simple journal, so forth.</li>
+	<li>Deal with the loss of fidelity in the schema generation: column type 
+	primarily.</li>
+	<li>Separate out UI behaviors, much like business rules live separately from 
+	the data and UI layers and are triggered on data changes or computational 
+	requests.</li>
+	<li>On demand entity loading rather than &quot;load all.&quot;</li>
+	<li>What if two or more users are sharing an application context?&nbsp; 
+	Synchronization of changes?</li>
+	<li>Unit / Integration Testing.</li>
+	<li>What about Import for offline work?</li>
+</ol>
+<p>And some questions:</p>
+<ol>
+	<li>If a user customizes a section with additional fields, how are these 
+	fields isolated from other users?</li>
+	<li>How does such customization prevent SQL injection attacks?</li>
+	<li>How do I fold in Bootstrap or similar grid layout API?</li>
+	<li>How do I fold in jqWidgets, my favorite library of UI components?</li>
+	<li>How do I select the &quot;application&quot;, in other words, the entity templates?</li>
+	<li>Do I want to provide the user with a designer where they can specify the 
+	entity fields and their parent-child relationships?</li>
+</ol>
+<p>The real question though is, what do I need next to make this more useful for 
+what I'm doing in my work and life?&nbsp; The answer to that is:</p>
+<ol>
+	<li>Get export to cloud working because I have data stuck locally that I 
+	can't access anywhere else.</li>
+	<li>That means setting up server I have at home to run the the server-side 
+	application.&nbsp; No biggie.</li>
+	<li>Task 11, separate out UI behaviors into &quot;UI rules&quot;, is of interest 
+	because it will allow me to define the UI behavior as a component, not 
+	hard-wired into the view controller.</li>
+	<li>Thinking about filtering and sorting, particularly in terms of UI ease 
+	of use.</li>
+	<li>Think about that &quot;loss of fidelity&quot; issue and how to solve it without 
+	creating a completely separate model for every table.</li>
+	<li>Additional applications, primarily an address book and journal.</li>
+</ol>
+<p>In the above list, #2 needs to actually be done first, otherwise I'm really 
+not accomplishing anything, so I'll start with that.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+</body>
+
+</html>

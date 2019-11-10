@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 
-using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 using Helpers;
 using WebServer;
@@ -34,14 +35,16 @@ namespace Server
     // And I don't remember how (or if) I solved this with my rPI work.
     class Program
     {
+        private static StringComparer ignoreCaseComparer = StringComparer.OrdinalIgnoreCase;
         private static WebListener webListenerLocal;
         private static List<WebListener> webListeners = new List<WebListener>();
         private static string webAppPath = "";
         private static Router router;
-        private static Dictionary<string, List<string>> schema = new Dictionary<string, List<string>>();
+        private static Dictionary<string, List<string>> schema = new Dictionary<string, List<string>>(ignoreCaseComparer);
         private static object schemaLocker = new object();
         private static TableFieldComparer tableFieldComparer = new TableFieldComparer();
         private static string auditLogTableName = "AuditLogStore";
+        private static ConcurrentDictionary<Guid, (SqlTransaction t, SqlConnection c)> transactions = new ConcurrentDictionary<Guid, (SqlTransaction, SqlConnection)>();
 
         private static string connectionString = @"Data Source=MARC-DELL2\SQLEXPRESS2017;Initial Catalog=TaskTracker;Integrated Security=True;";
         // private static string connectionString = @"Data Source=MCLIFTON-5P5KZN\MSSQL2017;Initial Catalog=TaskTracker;Integrated Security=True;";
@@ -74,42 +77,61 @@ namespace Server
         private static void InitializeRouter()
         {
             router = new Router();
-            router.AddRoute<LoadStore>("GET", "/load", Load, false);
-            router.AddRoute<SaveStore>("POST", "/Save", Save, false);
+            router.AddRoute<RequestCommon>("GET", "/Load", Load, false);
+            router.AddRoute<RequestCommon>("POST", "/BeginTransaction", BeginTransaction, false);
+            router.AddRoute<RequestCommon>("POST", "/CommitTransaction", CommitTransaction, false);
+            router.AddRoute<RequestCommon>("POST", "/RollbackTransaction", RollbackTransaction, false);
+            router.AddRoute<AuditLogEntries>("POST", "/ImportChanges", ImportAuditLog, false);
+            router.AddRoute<EntityData>("POST", "/ImportEntity", ImportEntity, false);
             router.AddRoute<AuditLog>("POST", "/SaveLogEntry", SaveLogEntry, false);
             router.AddRoute("GET", "/", () => RouteResponse.Page("Hello World", "text/html"), false);
         }
 
-        private static IRouteResponse Load(LoadStore store)
+        private static IRouteResponse BeginTransaction(RequestCommon req)
         {
-            Console.WriteLine($"Load store {store.StoreName} for user {store.UserId}");
+            var conn = OpenConnection();
+            var transaction = conn.BeginTransaction();
+            transactions[req.UserId] = (transaction, conn);
 
-            using (var conn = OpenConnection())
-            {
-                CheckForTable(conn, store.StoreName);
-                var data = LoadStore(conn, store.StoreName, store.UserId);
-
-                return RouteResponse.OK(data);
-            }
+            return RouteResponse.OK();
         }
 
-        private static IRouteResponse Save(SaveStore store)
+        private static IRouteResponse CommitTransaction(RequestCommon req)
         {
-            var logs = JsonConvert.DeserializeObject<List<AuditLog>>(store.AuditLog);
+            transactions[req.UserId].t.Commit();
+            transactions[req.UserId].c.Close();
+            transactions.Remove(req.UserId, out _);
 
-            using (var conn = OpenConnection())
+            return RouteResponse.OK();
+        }
+
+        private static IRouteResponse RollbackTransaction(RequestCommon req)
+        {
+            // Evil!
+            // Lock the whole process in case another async call fails and the client calls abort which gets
+            // processed and then more import calls are received.
+            lock (schemaLocker)
             {
-                // Evil!
-                lock (schemaLocker)
-                {
-                    UpdateSchema(conn, logs);
-
-                    // The CRUD operations have to be in the lock operation so that another request doesn't update the schema while we're updating the record.
-                    logs.ForEach(l => PersistTransaction(conn, l, store.UserId));
-                }
+                Console.WriteLine($"Abort {req.UserId}");
+                transactions[req.UserId].t.Rollback();
+                transactions[req.UserId].c.Close();
+                transactions.Remove(req.UserId, out _);
             }
 
             return RouteResponse.OK();
+        }
+
+        private static IRouteResponse Load(RequestCommon req)
+        {
+            Console.WriteLine($"Load store {req.StoreName} for user {req.UserId}");
+
+            using (var conn = OpenConnection())
+            {
+                CheckForTable(conn, req.StoreName);
+                var data = LoadStore(conn, req.StoreName, req.UserId);
+
+                return RouteResponse.OK(data);
+            }
         }
 
         private static IRouteResponse SaveLogEntry(AuditLog entry)
@@ -120,6 +142,66 @@ namespace Server
             }
 
             return RouteResponse.OK();
+        }
+
+        private static IRouteResponse ImportAuditLog(AuditLogEntries log)
+        {
+            using (var conn = OpenConnection())
+            {
+                // Evil!
+                lock (schemaLocker)
+                {
+                    UpdateSchema(conn, log.Entries);
+
+                    // The CRUD operations have to be in the lock operation so that another request doesn't update the schema while we're updating the record.
+                    log.Entries.ForEach(l => PersistTransaction(conn, l, log.UserId));
+                }
+            }
+
+            return RouteResponse.OK();
+        }
+
+        private static IRouteResponse ImportEntity(EntityData entity)
+        {
+            IRouteResponse resp = RouteResponse.OK();
+
+            // Evil!
+            // Lock the whole process in case another async call fails and the client calls abort which gets
+            // processed and then more import calls are received.
+            lock (schemaLocker)
+            {
+                if (transactions.ContainsKey(entity.UserId))
+                {
+                    // We assume there's data!
+                    using (var conn = OpenConnection())
+                    {
+                        CheckForTable(conn, entity.StoreName);
+
+                        // Somewhat annoyingly we actually have to check all the records for any new field.
+                        entity.StoreData.ForEach(d =>
+                        {
+                            foreach (var prop in d.Properties())
+                            {
+                                CheckForField(conn, entity.StoreName, prop.Name);
+                            }
+                        });
+                    }
+
+                    try
+                    {
+                        var transaction = transactions[entity.UserId].t;
+                        var conn = transactions[entity.UserId].c;
+                        entity.StoreData.ForEach(d => InsertRecord(conn, transaction, entity.UserId, entity.StoreName, d));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                        resp = RouteResponse.ServerError(new { Error = ex.Message });
+                    }
+                }
+            }
+
+            return resp;
         }
 
         private static void UpdateSchema(SqlConnection conn, List<AuditLog> logs)
@@ -261,6 +343,19 @@ namespace Server
             });
         }
 
+        private static void InsertRecord(SqlConnection conn, SqlTransaction t, Guid userId, string storeName, JObject obj)
+        {
+            Dictionary<string, string> fields = new Dictionary<string, string>();
+            obj.Properties().ForEach(p => fields[p.Name] = p.Value.ToString());
+            string columnNames = String.Join(",", fields.Select(kvp => $"[{kvp.Key}]"));
+            string paramNames = String.Join(",", fields.SelectWithIndex((kvp, idx) => $"@{idx}"));
+            var sqlParams = fields.SelectWithIndex((kvp, idx) => new SqlParameter($"@{idx}", kvp.Value)).ToList();
+            sqlParams.Add(new SqlParameter("@userId", userId));
+
+            string sql = $"INSERT INTO [{storeName}] (UserId, {columnNames}) VALUES (@userId, {paramNames})";
+            Execute(conn, sql, sqlParams.ToArray(), t);
+        }
+
         private static void CheckForTable(SqlConnection conn, string storeName)
         {
             if (!schema.ContainsKey(storeName))
@@ -273,7 +368,7 @@ namespace Server
 
         private static void CheckForField(SqlConnection conn, string storeName, string fieldName)
         {
-            if (!schema[storeName].Contains(fieldName))
+            if (!schema[storeName].Contains(fieldName, ignoreCaseComparer))
             {
                 CreateField(conn, storeName, fieldName);
                 schema[storeName].Add(fieldName);
@@ -311,17 +406,19 @@ namespace Server
             return dt;
         }
 
-        private static void Execute(SqlConnection conn, string sql)
+        private static void Execute(SqlConnection conn, string sql, SqlTransaction t = null)
         {
             Console.WriteLine($"SQL: {sql}");
             var cmd = new SqlCommand(sql, conn);
+            cmd.Transaction = t;
             cmd.ExecuteNonQuery();
         }
 
-        private static void Execute(SqlConnection conn, string sql, SqlParameter[] parms)
+        private static void Execute(SqlConnection conn, string sql, SqlParameter[] parms, SqlTransaction t = null)
         {
             Console.WriteLine($"SQL: {sql}");
             var cmd = new SqlCommand(sql, conn);
+            cmd.Transaction = t;
             cmd.Parameters.AddRange(parms);
             cmd.ExecuteNonQuery();
         }

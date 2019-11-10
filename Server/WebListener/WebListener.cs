@@ -175,7 +175,7 @@ namespace WebServer
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
+                // Console.WriteLine(ex.StackTrace);
                 resp = RouteResponse.ServerError(new { ex.Message, ex.StackTrace });
                 JsonResponder(context, resp);
             }

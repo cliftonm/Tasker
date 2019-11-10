@@ -29,7 +29,7 @@ define(["require", "exports", "./Guid", "./TemplateElement", "../enums/Justifica
         }
         Button(item) {
             let guid = Guid_1.Guid.NewGuid();
-            this.html += `<button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
+            this.html += `<button class='entityButton' type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;
@@ -62,9 +62,9 @@ define(["require", "exports", "./Guid", "./TemplateElement", "../enums/Justifica
         TextInput(item) {
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
-            let classStyle = "";
+            let classStyle = "class='textInput'";
             if (item.style) {
-                classStyle = `class="${item.style}"`;
+                classStyle = `class="${item.style} textInput"`;
             }
             this.html += `<input ${classStyle} type='text' placeholder='${placeholder}' style='width:100%;' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
@@ -74,9 +74,9 @@ define(["require", "exports", "./Guid", "./TemplateElement", "../enums/Justifica
         TextArea(item) {
             let placeholder = item.field;
             let guid = Guid_1.Guid.NewGuid();
-            let classStyle = "";
+            let classStyle = "class='textArea'";
             if (item.style) {
-                classStyle = `class="${item.style}"`;
+                classStyle = `class="${item.style} textArea"`;
             }
             this.html += `<textarea ${classStyle} placeholder='${placeholder}' style='width:100%; height:${item.height}' storeIdx='{idx}' bindGuid='${guid.ToString()}'></textarea>`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
@@ -93,7 +93,7 @@ define(["require", "exports", "./Guid", "./TemplateElement", "../enums/Justifica
         }
         SelectBegin(item, listStore) {
             let guid = Guid_1.Guid.NewGuid();
-            this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
+            this.html += `<select class='combobox' style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
             let el = new TemplateElement_1.TemplateElement(item, guid);
             this.elements.push(el);
             return this;

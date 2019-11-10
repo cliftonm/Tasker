@@ -3,74 +3,135 @@
     <meta charset="utf-8" />
     <title>TypeScript HTML App</title>
     <link rel="stylesheet" href="app.css" type="text/css" />
-    <script data-main="app/AppConfig" type="text/javascript" src="lib/require.js"></script>
+    <link rel="stylesheet" href="lib/bootstrap.min.css" type="text/css" />
+    <!--
+        JQuery must come first otherwise you get a "Cannot read property 'fn' of undefined" error.
+        require must come last, otherwise you get a "Mismatched anonymous define() module" error.
+        Why the heck are we even using require?
+    -->
     <script type="text/javascript" src="lib/jquery.js"></script>
+    <script type="text/javascript" src="lib/bootstrap.bundle.min.js"></script>
+    <script data-main="app/AppConfig" type="text/javascript" src="lib/require.js"></script>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Task Tracker</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- TODO: Don't change mouse icon when over menu text: https://stackoverflow.com/questions/31677222/bootstrap-dropdown-make-dropdown-arrow-change-direction -->
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <!--
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Link</a>
+                </li>
+            -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        File
+                    </a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" id="mnuExportChanges">Export Changes</a>
+                        <a class="dropdown-item" id="mnuExportAllStores">Export All</a>
+                        <!--<div class="dropdown-divider"></div>-->
+                    </div>
+                </li>
+                <!--
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                </li>
+            -->
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>
+        </div>
+    </nav>
+
+    <!-- TODO: custom column widths and 16 or 24 columns
+        https://stackoverflow.com/questions/28750907/how-to-customize-bootstrap-column-widths
+        https://stackoverflow.com/questions/11591185/how-to-use-bootstrap-with-16-or-24-columns
+    -->
     <div class="row menuBar">
-        <div id="menuBar">
-        </div>
-    </div>
-    <div class="row entityView">
-        <div class="row col1">
-            <div class="entitySeparator">
-                <button type="button" id="createProject" class="createButton">Create Project</button>
-                <div id="projectTemplateContainer" class="templateContainer"></div>
+        <div class="col-1">
+            <div id="menuBar">
             </div>
         </div>
-        <div class="row col2">
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createProjectContact" class="createButton">Create Contact</button>
-                <div id="projectContactTemplateContainer" class="templateContainer"></div>
+        <div class="col-10">
+            <div class="row">
+                <div class="col-1"></div>
+                <div class="col-5">
+                    <div class="entitySeparator">
+                        <button type="button" id="createProject" class="createButton">Create Project</button>
+                        <div id="projectTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createProjectContact" class="createButton">Create Contact</button>
+                        <div id="projectContactTemplateContainer" class="templateContainer"></div>
+                    </div>
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createProjectNote" class="createButton">Create Project Note</button>
+                        <div id="projectNoteTemplateContainer" class="templateContainer"></div>
+                    </div>
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createProjectLink" class="createButton">Create Link</button>
+                        <div id="projectLinkTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
             </div>
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createProjectNote" class="createButton">Create Project Note</button>
-                <div id="projectNoteTemplateContainer" class="templateContainer"></div>
+            <div class="row">
+                <div class="col-1"></div>
+                <div class="col-5">
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createProjectBug" class="createButton">Create Bug</button>
+                        <div id="projectBugTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createBugNote" class="createButton">Create Bug Note</button>
+                        <div id="bugNoteTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
             </div>
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createProjectLink" class="createButton">Create Link</button>
-                <div id="projectLinkTemplateContainer" class="templateContainer"></div>
+            <div class="row">
+                <div class="col-1"></div>
+                <div class="col-5">
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createTask" class="createButton">Create Task</button>
+                        <div id="projectTaskTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createTaskNote" class="createButton">Create Task Note</button>
+                        <div id="taskNoteTemplateContainer" class="templateContainer"></div>
+                    </div>
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createTaskLink" class="createButton">Create Task Link</button>
+                        <div id="taskLinkTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-1"></div>
+                <div class="col-5">
+                    <div class="entitySeparator" style="visibility:hidden; display:none">
+                        <button type="button" id="createSubtask" class="createButton">Create Sub-Task</button>
+                        <div id="taskTaskTemplateContainer" class="templateContainer"></div>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <div class="reset"></div>
-        <div class="row col1">
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createProjectBug" class="createButton">Create Bug</button>
-                <div id="projectBugTemplateContainer" class="templateContainer"></div>
-            </div>
-        </div>
-        <div class="row col2">
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createBugNote" class="createButton">Create Bug Note</button>
-                <div id="bugNoteTemplateContainer" class="templateContainer"></div>
-            </div>
-        </div>
-
-        <div class="reset"></div>
-        <div class="row col1">
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createTask" class="createButton">Create Task</button>
-                <div id="projectTaskTemplateContainer" class="templateContainer"></div>
-            </div>
-        </div>
-        <div class="row col2">
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createTaskNote" class="createButton">Create Task Note</button>
-                <div id="taskNoteTemplateContainer" class="templateContainer"></div>
-            </div>
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createTaskLink" class="createButton">Create Task Link</button>
-                <div id="taskLinkTemplateContainer" class="templateContainer"></div>
-            </div>
-        </div>
-        <div class="reset"></div>
-        <div class="row col1">
-            <div class="entitySeparator" style="visibility:hidden; display:none">
-                <button type="button" id="createSubtask" class="createButton">Create Sub-Task</button>
-                <div id="taskTaskTemplateContainer" class="templateContainer"></div>
-            </div>
-        </div>
+        <div class="col-1"></div>
     </div>
 </body>
 </html>

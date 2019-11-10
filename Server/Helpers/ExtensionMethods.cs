@@ -215,6 +215,16 @@ namespace Helpers
             return item as object ?? DBNull.Value;
         }
 
+        public static IEnumerable<R> SelectWithIndex<T, R>(this IEnumerable<T> collection, Func<T, int, R> func)
+        {
+            int n = 0;
+
+            foreach (T item in collection)
+            {
+                yield return func(item, n++);
+            }
+        }
+
         // ---------- ForEach iterators --------------
 
         /// <summary>

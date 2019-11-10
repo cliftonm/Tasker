@@ -48,7 +48,7 @@ export class TemplateBuilder
 
     public Button(item: Item): TemplateBuilder {
         let guid = Guid.NewGuid();
-        this.html += `<button type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
+        this.html += `<button class='entityButton' type='button' style='width:100%' storeIdx='{idx}' bindGuid='${guid.ToString()}'>${item.text}</button>`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 
@@ -89,10 +89,10 @@ export class TemplateBuilder
     public TextInput(item: Item) : TemplateBuilder {
         let placeholder = item.field;
         let guid = Guid.NewGuid();
-        let classStyle = "";
+        let classStyle = "class='textInput'";
 
         if (item.style) {
-            classStyle = `class="${item.style}"`;
+            classStyle = `class="${item.style} textInput"`;
         }
 
         this.html += `<input ${classStyle} type='text' placeholder='${placeholder}' style='width:100%;' storeIdx='{idx}' bindGuid='${guid.ToString()}'>`;
@@ -105,10 +105,10 @@ export class TemplateBuilder
     public TextArea(item: Item): TemplateBuilder {
         let placeholder = item.field;
         let guid = Guid.NewGuid();
-        let classStyle = "";
+        let classStyle = "class='textArea'";
 
         if (item.style) {
-            classStyle = `class="${item.style}"`;
+            classStyle = `class="${item.style} textArea"`;
         }
 
         this.html += `<textarea ${classStyle} placeholder='${placeholder}' style='width:100%; height:${item.height}' storeIdx='{idx}' bindGuid='${guid.ToString()}'></textarea>`;
@@ -132,7 +132,7 @@ export class TemplateBuilder
 
     public SelectBegin(item: Item, listStore: string) : TemplateBuilder {
         let guid = Guid.NewGuid();
-        this.html += `<select style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
+        this.html += `<select class='combobox' style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 
