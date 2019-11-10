@@ -1,0 +1,379 @@
+Database Transaction&nbsp; Management Across AJAX Calls<p>Another rabbit hole, 
+this time how to handle AJAX calls in a manner that lets you roll back the 
+entire set of transactions if any particular AJAX call fails.</p>
+<h2><a name="0">Table Of Contents</a></h2>
+
+<div id="toc"><ul><ul><li><a href="#0">Table Of Contents</a></li><li><a href="#1">Introduction</a></li><li><a href="#2">Goal</a></li><ul><li><a href="#3">Client Goals</a></li><li><a href="#4">Server Goals</a></li></ul><li><a href="#5">Client-Side Implementation</a></li><li><a href="#6">Server-Side Implementation</a></li><ul><li><a href="#7">Begin Transaction</a></li><li><a href="#8">Commit Transaction</a></li><li><a href="#9">Rollback Transactions</a></li><li><a href="#10">Importing the Table's Data</a></li><li><a href="#11">Insert Record</a></li></ul><li><a href="#12">Results</a></li><li><a href="#13">Improving the Lock Performance</a></li><li><a href="#14">Conclusion</a></li></ul></ul></div>
+
+<h2><a name="1">Introduction</a></h2>
+<p>In my previous tome, <a href="https://www.codeproject.com/Articles/5250141/16-Days-A-TypeScript-application-from-concept-to">16 Days: A TypeScript Application from Concept to Implementation</a>, one of the features I wanted to add was the ability to export the local storage to the server.  I ended up implementing two ways of doing this -- one by simply sending the audit log transactions, and the second by sending all the data in all the stores to be imported as a complete snapshot of the local storage.  It is this second option that I want to explore here in a much shorter article as it took me down the rabbit hole of working with transactional updates (meaning, the ability to rollback all the table insert operations) within the context of asynchronous AJAX calls.</p>
+<p>There are several approaches to solving the problem of exporting (on the client side) and importing (on the server side) data that spans tables.  The salient point here is that if any one AJAX call fails for whatever reason, the entire transaction should be rolled back.  For example:
+</p><ol>
+<li>Implement a purely server-side mechanism for rolling back the transaction when a particular AJAX call fails and handling subsequent AJAX calls after failure.</li>
+<li>Send all the data for each table in one potentially large AJAX call.</li>
+<li>Send the data in each table as synchronous AJAX calls so they can be called sequentially.</li>
+<li>Using <code>when/then</code> functions in jQuery, or if you prefer not to use jQuery, using <code>Promise</code> to send each table's data synchronously. </li>
+<li>Again using jQuery's <code>when/then</code> functions, send each table's data asynchronously and use a jQuery's "master Deferred" (aka a master <code>Promise</code>) to handle success/failure.</li>
+</ol>
+<p></p>
+<p>I chose option #5 as:
+</p><ol>
+<li>Option 1 actually needs to be implemented in option 5.</li>
+<li>Option 2 is too easy.  Claiming that the JSON may be too large is not a good argument because the data for an individual table may be very large and this point is something to consider regardless of a "send everything" or "send tables one at time" with regards to server-side maximum JSON length.</li>
+<li>Option 3 defeats the purpose of the A in AJAX: Asynchronous.</li>
+<li>Option 4 again defeats the purpose of asynchronous as it turns the requests into synchronous calls.</li>
+</ol>
+<p></p>
+<p>And quite frankly, I chose option 5 because it was the more challenging implementation.</p>
+<p>Note that there is no prerequisite that you have to read the article mentioned above as this is more about an implementation approach with concrete examples rather than about my crazy TypeScript application generator.</p>
+<p>Since my back-end doesn't have any referential integrity (foreign keys) I'm not concerned with the order in which each table's data is sent, nor do I turn off integrity checking as part of the import process.</p>
+<p>There is no source code download mainly because you can copy and paste the code from the article and it's not packaged as a library which would require a certain level of Inversion of Control to implement the actual "what should I do when I get the request" as a callback.  The source code is available <a href="https://github.com/cliftonm/Tasker">here</a> though for the entire application.  Long live Copy &amp; Paste!</p>
+<h2><a name="2">Goal</a></h2>
+<p>The goal therefore is very simple.</p>
+<h3><a name="3">Client Goals</a></h3>
+<ol>
+<li>The client informs the server that it's about to make a bunch of AJAX calls that should be wrapped in a transaction.</li>
+<li>The client is responsible for determining whether all the AJAX calls succeed or one of them fails.</li>
+<li>On success, the client tells the server to commit the transactions.</li>
+<li>On failure, the client tells the server to rollback the transactions.  The client also attempts to cancel any pending AJAX calls.</li>
+</ol>
+<p></p>
+<h3><a name="4">Server Goals</a></h3>
+<p>From the server's perspective:
+</p><ol>
+<li>The server opens a connection to the database and creates a transaction object.  This is "keyed" by the user's ID on the assumption that the user will be initiating only one transactional operation at a time. </li>
+<li>Upon receiving the AJAX call, the server processes the call and returns an error if an exception occurs.  The server <b>does not</b> initiate rolling back the transactions.  It certainly could, and probably should, but I wanted to explore the behavior of the client-server application from the perspective of the client requesting the rollback rather than the server assuming the rollback should occur.  Idealistically, maybe the client wants to try to recover from the failure, but this is pretty much pie-in-the-sky thinking.</li>
+<li>The server commits the transactions when requested by the client.</li>
+<li>The server rolls back the transactions when requested by the client.</li>
+</ol>
+<p></p>
+<p>The idea here is that the server is as dumb as possible.  It:</p>
+<p>
+</p><ol>
+<li>Doesn't know how many AJAX calls it will receive.</li>
+<li>Doesn't make assumptions about how to handle an exception.</li>
+</ol>
+<p></p>
+<p>
+</p><h2><a name="5">Client-Side Implementation</a></h2>
+<p>The export method should be straight forward:
+</p><ol>
+<li>Send a <code>BeginTransaction</code> call and wait for it to complete.  The reason should be obvious -- we need the server to open the DB connection and create a <code>SqlTransaction</code> object.</li>
+<li>Make all the AJAX calls.</li>
+<li>Either request the transactions be committed if all succeeded, or rolled back on any single failure.</li>
+</ol>
+<p></p>
+<p>The code:
+</p><pre lang="jscript">public ExportAll(entities: string[]): void {
+        console.log("Begin transation");    
+        jQuery.when(jQuery.post(this.UrlWithUserId("BeginTransaction"))).then(() =&gt; {
+        let calls: JQueryXHR[] = [];
+
+        entities.forEach(e =&gt; this.ExportStore(calls, e));
+
+        // Also save the sequence store, parent-child relationship store, and audit log store.
+        this.ExportStore(calls, "Sequences");
+        this.ExportStore(calls, "ParentChildRelationships");
+        this.ExportStore(calls, "AuditLogStore");
+
+        jQuery.when.apply(this, calls).then(
+            () =&gt; {
+                console.log("Committing transaction");
+                jQuery.post(this.UrlWithUserId("CommitTransaction"));
+            },
+            (d) =&gt; {
+                console.log("Rollback: ");
+                console.log(d);
+                calls.forEach(c =&gt; c.abort());
+                jQuery.post(this.UrlWithUserId("RollbackTransaction"));
+            }
+        );
+    });
+}
+</pre>
+<p></p>
+<p>So that you don't have to read the previous article:
+</p><ol>
+<li><code>entities</code> is simply a list of "store" names</li>
+<li>Each store contains data associated with a table of that store's name.</li>
+<li><code>userId</code> is something managed by the class that wraps this function.  Just treat it as a unique identifier for the transaction.</li>
+</ol>
+<p></p>
+<p>The actual AJAX calls look like this:
+</p><pre lang="jscript">private ExportStore(calls: JQueryXHR[], storeName: string): void {
+    let storeData = this.storeManager.GetStoreData(storeName);
+    let xhr = undefined;
+
+    if (storeData.length &gt; 0) {
+        console.log(`Export ${storeName}`);
+        xhr = jQuery.post(
+            this.UrlWithUserId("ImportEntity"),
+            JSON.stringify({ storeName: storeName, storeData: storeData }),
+        );
+
+        calls.push(xhr);
+    }
+}
+</pre>
+<p></p>
+<p>Note that the <code>fail</code> option is not implemented here, though it certainly could be.  Also note that the array calls is being populated by this method as we have this <code>if (storeData.length &gt; 0)</code> statement that would otherwise need to be in the caller, and I wanted the caller to be very simple.</p>
+<p>With regards to the use of jQuery's <code>when</code>, <code>then</code>, it's very important to note this from the jQuery <code>when</code> documentation (my bolding):</p>
+<p><i>In the multiple-Deferreds case <b>where one of the Deferreds is rejected</b>, jQuery.when() immediately fires the failCallbacks for its master Deferred. Note that some of the Deferreds may still be unresolved at that point. The arguments passed to the failCallbacks match the signature of the failCallback for the Deferred that was rejected. If you need to perform additional processing for this case, such as canceling any unfinished Ajax requests, you can keep references to the underlying jqXHR objects in a closure and inspect/cancel them in the failCallback.</i>
+</p>
+<p>The <code>apply</code> usage is a common practice to iterate over an array for a given function and is not jQuery specific.  Read more <a href="https://www.w3schools.com/js/js_function_apply.asp">here</a>.</p>
+<h2><a name="6">Server-Side Implementation</a></h2>
+<p>The first thing we need is a way to save the transaction and connection information as the separate AJAX requests come in, and this storage mechanism needs to be thread safe:
+</p><pre lang="cs">private static ConcurrentDictionary&lt;Guid, (SqlTransaction t, SqlConnection c)&gt; transactions = 
+   new ConcurrentDictionary&lt;Guid, (SqlTransaction, SqlConnection)&gt;();
+</pre>
+<p></p>
+<p>The routes are defined as:
+</p><pre lang="cs">router.AddRoute&lt;RequestCommon&gt;("POST", "/BeginTransaction", BeginTransaction, false);
+router.AddRoute&lt;RequestCommon&gt;("POST", "/CommitTransaction", CommitTransaction, false);
+router.AddRoute&lt;RequestCommon&gt;("POST", "/RollbackTransaction", RollbackTransaction, false);
+router.AddRoute&lt;EntityData&gt;("POST", "/ImportEntity", ImportEntity, false);
+</pre>
+<p></p>
+<p>where we have:
+</p><pre lang="cs">public class RequestCommon : IRequestData
+{
+    public Guid UserId { get; set; }
+    public string StoreName { get; set; }
+}
+</pre>
+<p></p>
+<p>and:
+</p><pre lang="cs">public class EntityData : RequestCommon
+{
+    public List&lt;JObject&gt; StoreData = new List&lt;JObject&gt;();
+}
+</pre>
+<p>The begin, commit, and rollback transaction handlers are straight forward.  For this discussion, please be aware that web requests are running in separate threads:
+</p>
+<pre lang="cs">Task.Run(() =&gt; ProcessContext(context));</pre>
+<p></p>
+<h3><a name="7">Begin Transaction</a></h3>
+<p>
+</p><pre lang="cs">private static IRouteResponse BeginTransaction(RequestCommon req)
+{
+    var conn = OpenConnection();
+    var transaction = conn.BeginTransaction();
+    transactions[req.UserId] = (transaction, conn);
+
+    return RouteResponse.OK();
+}
+</pre>
+<p></p>
+<h3><a name="8">Commit Transaction</a></h3>
+<p>
+</p><pre lang="cs">private static IRouteResponse CommitTransaction(RequestCommon req)
+{
+    transactions[req.UserId].t.Commit();
+    transactions[req.UserId].c.Close();
+    transactions.Remove(req.UserId, out _);
+
+    return RouteResponse.OK();
+}
+</pre><p></p>
+<h3><a name="9">Rollback Transactions</a></h3>
+<p>
+</p><pre lang="cs">private static IRouteResponse RollbackTransaction(RequestCommon req)
+{
+    // Evil!
+    // Lock the whole process in case the client calls abort which gets
+    // processed but there are more AJAX calls in-flight.
+    lock (schemaLocker)
+    {
+        Console.WriteLine($"Abort {req.UserId}");
+        transactions[req.UserId].t.Rollback();
+        transactions[req.UserId].c.Close();
+        transactions.Remove(req.UserId, out _);
+    }
+
+    return RouteResponse.OK();
+}
+</pre><p></p>
+<p>That lock is pretty important -- each AJAX request is being handled in its own thread and we can't have one request processing an import while the client requests a rollback because some other request failed. 
+ Either the rollback needs to wait until an import request completes, or an import request is held off until the rollback completes.</p>
+<h3><a name="10">Importing the Table's Data</a></h3>
+<p>So the fun begins here:
+</p><pre lang="cs">private static IRouteResponse ImportEntity(EntityData entity)
+{
+    IRouteResponse resp = RouteResponse.OK();
+
+    // Evil!
+    // Lock the whole process in case another async call fails and the client calls abort which gets
+    // processed and then more import calls are received.
+    lock (schemaLocker)
+    {
+        if (transactions.ContainsKey(entity.UserId))
+        {
+            try
+            {
+                var transaction = transactions[entity.UserId].t;
+                var conn = transactions[entity.UserId].c;
+                entity.StoreData.ForEach(d =&gt; 
+                   InsertRecord(conn, transaction, entity.UserId, entity.StoreName, d));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                resp = RouteResponse.ServerError(new { Error = ex.Message });
+            }
+        }
+    }
+
+    return resp;
+}
+
+</pre>
+<p></p>
+<p>We execute a lock which has two purposes:
+</p><p></p><ol>
+<li>If rollback occurred while an import request was in-flight, the transaction and connection are no longer valid, so we need to check that the transaction identifier still exists with <code>if (transactions.ContainsKey(entity.UserId))</code></li>
+<li>While it apparently is safe to execute multiple inserts in separate threads on a shared transaction object, it's not possible to do this without a more advanced locking mechanism to ensure that a rollback doesn't occur in a separate thread.</li>
+</ol><p></p>
+<p>The effect of this lock statement though is important -- it results in the AJAX calls executing sequentially, not simultaneously.  So that simple locking mechanism needs to be revisted.</p>
+<p>Unfortunately, this is no easy task.  The lock above ensures that <code>SqlConnection</code> object, which appears to be shared between threads, is actually used serially, not concurrently.  From <a href="https://social.msdn.microsoft.com/Forums/en-US/342a48c8-234d-4d3f-833f-9a2c15f027af/sqlconnection-and-thread-safety?forum=adodotnetdataproviders">MSDN</a>sql:</p>
+<p>
+<i>...the actual ado.net public objects (connection, command, reader, etc) are NOT thread safe, so you cannot share a given instance of a connection, command, etc. across threads unless you guarantee (with synchronization or any other means) that you won't touch them concurrently from different threads.</i></p>
+<p>So this makes it even more complicated to handle commit/rollback when the actual transactions are occurring on separate threads!</p>
+
+<h3><a name="11">Insert Record</a></h3>
+<p>If you're curious what that insert statement actually looks like, here it is:
+</p><pre lang="cs">private static void InsertRecord(
+  SqlConnection conn, 
+  SqlTransaction t, 
+  Guid userId, 
+  string storeName, 
+  JObject obj)
+{
+    Assert.That(schema.ContainsKey(storeName), $"{storeName} is not a table in the database.");
+    Assert.ThatAll(
+       obj.Properties(), 
+       f =&gt; schema[storeName].Contains(f.Name, ignoreCaseComparer), 
+       f =&gt; $"{f.Name} is not a valid column name.");
+
+    Dictionary&lt;string, string&gt; fields = new Dictionary&lt;string, string&gt;();
+    obj.Properties().ForEach(p =&gt; fields[p.Name] = p.Value.ToString());
+    string columnNames = String.Join(",", fields.Select(kvp =&gt; $"[{kvp.Key}]"));
+    string paramNames = String.Join(",", fields.SelectWithIndex((kvp, idx) =&gt; $"@{idx}"));
+    var sqlParams = fields.SelectWithIndex((kvp, idx) =&gt; new SqlParameter($"@{idx}", kvp.Value)).ToList();
+    sqlParams.Add(new SqlParameter("@userId", userId));
+
+    string sql = $"INSERT INTO [{storeName}] (UserId, {columnNames}) VALUES (@userId, {paramNames})";
+    Execute(conn, sql, sqlParams.ToArray(), t);
+}
+</pre>
+<p></p>
+<p>This is a specialized piece of code based on my "schema generated on the fly" approach (for that you will have to read the article I referenced in the introduction).  The <code>Assert</code> calls verify that actual table and column names are being used to prevent SQL injection, as <code>storeName</code> and <code>columnNames</code> are not parameters but injected as part of the actual SQL statement.</p>
+<h2><a name="12">Results</a></h2>
+<p>When all is happy with the world, we see this:</p>
+<p><img src="rollback2.png">
+</p>
+<p>And when there is an exception, we see this:</p>
+<p>
+<img src="rollback1.png">
+</p>
+<p>Notice how four of the AJAX calls could be cancelled.  Because this is all asynchronous, the results will vary.  For example, here three AJAX calls were processed and returned exceptions and two were able to be cancelled:</p>
+<p>
+<img src="rollback3.png">
+</p>
+<h2><a name="13">Improving the Lock Performance</a></h2>
+<p>I really don't want to deal with the complexity of the lack of thread safety (which makes sense) in a <code>SqlConnection</code> instance and the only solution that I can sort of see would be to create a separate SqlConnection for each thread, probably with its own <code>SqlTransaction</code> instance, and then collect those transactions and commit or roll them back.  Even if the <code>SqlTransaction</code> instance can be shared, this would mean keeping open <code>SqlConnection</code>'s until all the AJAX calls had been processed and were ready to commit.  And <i>that</i> is very dubious given the limit of the connection pool.</p>
+<p>So instead, moving the lock to a better location and keeping track of whether we're in a rollback state or in the middle of processing an AJAX call is definitely a performance improvement.  Keep in mind that the rollback might be received in the middle of processing another import, and any imports currently in process should be terminated as quickly as possible.</p>
+<p>So let's start with a wrapper class (sadly, we can't use tuples since they are "value" types) to keep track of the connection, transaction, and who is using what counts:
+</p><pre lang="cs">public class Transaction
+{
+    public SqlTransaction t;
+    public SqlConnection c;
+    public long rollbackCount;
+    public long transactionCount;
+
+    public Transaction(SqlTransaction t, SqlConnection c)
+    {
+        this.t = t;
+        this.c = c;
+    }
+}
+</pre>
+<p></p>
+<p>Next, the insert process does a couple things:
+</p><ol>
+<li>It increments in a thread safe manner the "transactions are occurring for an entity" counter.</li>
+<li>It checks if the rollback counter is non-zero (it'll only be 0 or 1.)</li>
+<li>The lock is only around the actual Insert call which technically frees up some other thread to do something.  Given that tasks are CPU bound, this shouldn't involve thread context switching.</li>
+</ol>
+<p></p>
+<p>Here's the code:
+</p><pre lang="cs">private static IRouteResponse ImportEntity(EntityData entity)
+{
+    IRouteResponse resp = RouteResponse.OK();
+
+    var tinfo = transactions[entity.UserId];
+    var transaction = tinfo.t;
+    var conn = tinfo.c;
+
+    try
+    {
+        Interlocked.Increment(ref tinfo.transactionCount);
+        Console.WriteLine($"{tinfo.transactionCount} {tinfo.rollbackCount} {tinfo.c.State}");
+
+        for (int n = 0; n &lt; entity.StoreData.Count &amp;&amp; Interlocked.Read(ref tinfo.rollbackCount) == 0; ++n)
+        {
+            lock (schemaLocker)
+            {
+                InsertRecord(conn, transaction, entity.UserId, entity.StoreName, entity.StoreData[n]);
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+        resp = RouteResponse.ServerError(new { Error = ex.Message });
+    }
+    finally
+    {
+        Interlocked.Decrement(ref tinfo.transactionCount);
+    }
+
+
+    return resp;
+}
+
+</pre>
+<p></p>
+<p>And now the rollback doesn't require even performing a lock -- in fact, doing so would be unproductive because we want the rollback function to "signal" that a rollback is in process.  Here, the rollback waits for the <code>ImportEntity</code> insert loop to terminal before performing the rollback:</p>
+<pre lang="cs">private static IRouteResponse RollbackTransaction(RequestCommon req)
+{
+    var tinfo = transactions[req.UserId];
+    Interlocked.Increment(ref tinfo.rollbackCount);
+
+    while (Interlocked.Read(ref tinfo.transactionCount) &gt; 0)
+    {
+        // Thread.Sleep(0) is evil, see some article I wrote somewhere regarding that.
+        Thread.Sleep(1);
+    }
+
+    Console.WriteLine($"Abort {req.UserId}");
+    transactions[req.UserId].t.Rollback();
+    transactions[req.UserId].c.Close();
+    transactions.Remove(req.UserId, out _);
+    // No need to decrement the rollback counter as we're all done.
+
+    return RouteResponse.OK();
+}
+</pre>
+<p>This works quite well to immediately terminal a long-running insert operation due to a lot of records whenever another AJAX import call causes an exception.</p>
+<h2><a name="14">Conclusion</a></h2>
+<p>At the end of the day, there really is no easy solution using .NET's <code>SqlConnection</code> and <code>SqlTransaction</code> objects to manage transactions for SQL operations across threads.  What's presented here is a workaround that is optimized as best as possible but relies on synchronization with regards to the use of the <code>SqlConnection</code> instance.  Probably the simplest way to work around the issues is to not use these class at all and manage connection pooling outside of the context of a <code>using new SqlConnection</code> statement, as this closes the connection when the <code>using</code> exits and invalidates the transaction.  Using the <a href="https://docs.microsoft.com/en-us/dotnet/api/system.data.odbc.odbcconnection?view=netframework-4.8">OdbcConnection</a> class doesn't really help because what basically is needed is a single connection to which SQL statements can simply be streamed "thread safely", which serializes the statements, yes, but avoid all the silliness of having to implement a <code>lock</code>.  Well heck, such an class could be written even for <code>SqlConnection</code>.  Maybe I'll look at that at some point, as it would demystify the behavior of the current implementation.</p>
+
+
+
+
+<p>zx</p>
+
+
+
+
+

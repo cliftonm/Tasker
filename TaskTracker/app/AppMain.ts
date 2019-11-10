@@ -189,7 +189,7 @@ export class AppMain {
             { text: 'Discuss', bcolor: 'red' },
         ];
 
-        const userId = new Guid("00000000-0000-0000-0000-000000000011");
+        const userId = new Guid("00000000-0000-0000-0000-000000000014");
         let storeManager = new StoreManager();
 
         let persistence = new LocalStoragePersistence();

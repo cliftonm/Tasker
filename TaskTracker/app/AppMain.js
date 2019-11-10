@@ -167,7 +167,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { text: 'Stuck', bcolor: 'red' },
                 { text: 'Discuss', bcolor: 'red' },
             ];
-            const userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000011");
+            const userId = new Guid_1.Guid("00000000-0000-0000-0000-000000000014");
             let storeManager = new StoreManager_1.StoreManager();
             let persistence = new LocalStoragePersistence_1.LocalStoragePersistence();
             let cloudPersistence = new CloudPersistence_1.CloudPersistence("http://127.0.0.1/", userId, storeManager);

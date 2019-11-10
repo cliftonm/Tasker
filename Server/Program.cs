@@ -105,8 +105,7 @@ namespace Server
         private static IRouteResponse BeginTransaction(RequestCommon req)
         {
             var conn = OpenConnection();
-            // var transaction = conn.BeginTransaction();
-            SqlTransaction transaction = null;
+            var transaction = conn.BeginTransaction();
             transactions[req.UserId] = new Transaction(transaction, conn);
 
             return RouteResponse.OK();
@@ -117,7 +116,7 @@ namespace Server
             Console.WriteLine("Committing transactions...");
             var tinfo = transactions[req.UserId];
             Console.WriteLine($"{tinfo.transactionCount} {tinfo.rollbackCount} {tinfo.c.State}");
-            // tinfo.t.Commit();
+            tinfo.t.Commit();
             tinfo.c.Close();
             transactions.Remove(req.UserId, out _);
 
@@ -136,7 +135,7 @@ namespace Server
             }
 
             Console.WriteLine($"Abort {req.UserId}");
-            // transactions[req.UserId].t.Rollback();
+            transactions[req.UserId].t.Rollback();
             transactions[req.UserId].c.Close();
             transactions.Remove(req.UserId, out _);
             // No need to decrement the rollback counter as we're all done.
@@ -208,30 +207,35 @@ namespace Server
                     });
                 }
 
-                var tinfo = transactions[entity.UserId];
-                var transaction = tinfo.t;
-                var conn = tinfo.c;
+            }
 
-                try
+            var tinfo = transactions[entity.UserId];
+            var transaction = tinfo.t;
+            var conn = tinfo.c;
+
+            try
+            {
+                Interlocked.Increment(ref tinfo.transactionCount);
+                Console.WriteLine($"{tinfo.transactionCount} {tinfo.rollbackCount} {tinfo.c.State}");
+
+                for (int n = 0; n < entity.StoreData.Count && Interlocked.Read(ref tinfo.rollbackCount) == 0; ++n)
                 {
-                    Interlocked.Increment(ref tinfo.transactionCount);
-                    Console.WriteLine($"{tinfo.transactionCount} {tinfo.rollbackCount} {tinfo.c.State}");
-
-                    for (int n = 0; n < entity.StoreData.Count && Interlocked.Read(ref tinfo.rollbackCount) == 0; ++n)
+                    lock (schemaLocker)
                     {
                         InsertRecord(conn, transaction, entity.UserId, entity.StoreName, entity.StoreData[n]);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                    resp = RouteResponse.ServerError(new { Error = ex.Message });
-                }
-                finally
-                {
-                    Interlocked.Decrement(ref tinfo.transactionCount);
-                }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                resp = RouteResponse.ServerError(new { Error = ex.Message });
+            }
+            finally
+            {
+                Interlocked.Decrement(ref tinfo.transactionCount);
+            }
+
 
             return resp;
         }
