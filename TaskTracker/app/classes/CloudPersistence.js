@@ -54,6 +54,7 @@ define(["require", "exports"], function (require, exports) {
             jQuery.post(this.UrlWithUserId("ImportChanges"), JSON.stringify({ entries: rawData }));
         }
         ExportAll(entities) {
+            console.log("Begin transation");
             jQuery.when(jQuery.post(this.UrlWithUserId("BeginTransaction"))).then(() => {
                 let calls = [];
                 entities.forEach(e => this.ExportStore(calls, e));
@@ -69,6 +70,7 @@ define(["require", "exports"], function (require, exports) {
                     keep references to the underlying jqXHR objects in a closure and inspect/cancel them in the failCallback.
                 */
                 jQuery.when.apply(this, calls).then(() => {
+                    console.log("Committing transation");
                     jQuery.post(this.UrlWithUserId("CommitTransaction"));
                 }, (d) => {
                     console.log("Rollback: ");

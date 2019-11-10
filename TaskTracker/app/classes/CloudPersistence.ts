@@ -62,6 +62,7 @@ export class CloudPersistence implements IStorePersistence {
     }
 
     public ExportAll(entities: string[]): void {
+        console.log("Begin transation");
         jQuery.when(jQuery.post(this.UrlWithUserId("BeginTransaction"))).then(() => {
             let calls: JQueryXHR[] = [];
 
@@ -81,6 +82,7 @@ export class CloudPersistence implements IStorePersistence {
             */
             jQuery.when.apply(this, calls).then(
                 () => {
+                    console.log("Committing transation");
                     jQuery.post(this.UrlWithUserId("CommitTransaction"));
                 },
                 (d) => {

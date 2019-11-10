@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading;
 
 using Newtonsoft.Json.Linq;
 
@@ -28,6 +29,20 @@ namespace Server
         }
     }
 
+    public class Transaction
+    {
+        public SqlTransaction t;
+        public SqlConnection c;
+        public long rollbackCount;
+        public long transactionCount;
+
+        public Transaction(SqlTransaction t, SqlConnection c)
+        {
+            this.t = t;
+            this.c = c;
+        }
+    }
+
     // Create EXE with dotnet publish -c Debug -r win10-x64 --no-build
     // Putting this in the post-build step without "--no-build" will result in infinite recursion of the build process.  Sigh.
     // https://stackoverflow.com/a/55169309/2276361
@@ -44,7 +59,7 @@ namespace Server
         private static object schemaLocker = new object();
         private static TableFieldComparer tableFieldComparer = new TableFieldComparer();
         private static string auditLogTableName = "AuditLogStore";
-        private static ConcurrentDictionary<Guid, (SqlTransaction t, SqlConnection c)> transactions = new ConcurrentDictionary<Guid, (SqlTransaction, SqlConnection)>();
+        private static ConcurrentDictionary<Guid, Transaction> transactions = new ConcurrentDictionary<Guid, Transaction>();
 
         private static string connectionString = @"Data Source=MARC-DELL2\SQLEXPRESS2017;Initial Catalog=TaskTracker;Integrated Security=True;";
         // private static string connectionString = @"Data Source=MCLIFTON-5P5KZN\MSSQL2017;Initial Catalog=TaskTracker;Integrated Security=True;";
@@ -90,16 +105,20 @@ namespace Server
         private static IRouteResponse BeginTransaction(RequestCommon req)
         {
             var conn = OpenConnection();
-            var transaction = conn.BeginTransaction();
-            transactions[req.UserId] = (transaction, conn);
+            // var transaction = conn.BeginTransaction();
+            SqlTransaction transaction = null;
+            transactions[req.UserId] = new Transaction(transaction, conn);
 
             return RouteResponse.OK();
         }
 
         private static IRouteResponse CommitTransaction(RequestCommon req)
         {
-            transactions[req.UserId].t.Commit();
-            transactions[req.UserId].c.Close();
+            Console.WriteLine("Committing transactions...");
+            var tinfo = transactions[req.UserId];
+            Console.WriteLine($"{tinfo.transactionCount} {tinfo.rollbackCount} {tinfo.c.State}");
+            // tinfo.t.Commit();
+            tinfo.c.Close();
             transactions.Remove(req.UserId, out _);
 
             return RouteResponse.OK();
@@ -107,16 +126,20 @@ namespace Server
 
         private static IRouteResponse RollbackTransaction(RequestCommon req)
         {
-            // Evil!
-            // Lock the whole process in case another async call fails and the client calls abort which gets
-            // processed and then more import calls are received.
-            lock (schemaLocker)
+            var tinfo = transactions[req.UserId];
+            Interlocked.Increment(ref tinfo.rollbackCount);
+
+            while (Interlocked.Read(ref tinfo.transactionCount) > 0)
             {
-                Console.WriteLine($"Abort {req.UserId}");
-                transactions[req.UserId].t.Rollback();
-                transactions[req.UserId].c.Close();
-                transactions.Remove(req.UserId, out _);
+                // Thread.Sleep(0) is evil, see some article I wrote somewhere regarding that.
+                Thread.Sleep(1);
             }
+
+            Console.WriteLine($"Abort {req.UserId}");
+            // transactions[req.UserId].t.Rollback();
+            transactions[req.UserId].c.Close();
+            transactions.Remove(req.UserId, out _);
+            // No need to decrement the rollback counter as we're all done.
 
             return RouteResponse.OK();
         }
@@ -170,34 +193,43 @@ namespace Server
             // processed and then more import calls are received.
             lock (schemaLocker)
             {
-                if (transactions.ContainsKey(entity.UserId))
+                // We assume there's data!
+                using (var tconn = OpenConnection())
                 {
-                    // We assume there's data!
-                    using (var conn = OpenConnection())
-                    {
-                        CheckForTable(conn, entity.StoreName);
+                    CheckForTable(tconn, entity.StoreName);
 
-                        // Somewhat annoyingly we actually have to check all the records for any new field.
-                        entity.StoreData.ForEach(d =>
+                    // Somewhat annoyingly we actually have to check all the records for any new field.
+                    entity.StoreData.ForEach(d =>
+                    {
+                        foreach (var prop in d.Properties())
                         {
-                            foreach (var prop in d.Properties())
-                            {
-                                CheckForField(conn, entity.StoreName, prop.Name);
-                            }
-                        });
-                    }
+                            CheckForField(tconn, entity.StoreName, prop.Name);
+                        }
+                    });
+                }
 
-                    try
+                var tinfo = transactions[entity.UserId];
+                var transaction = tinfo.t;
+                var conn = tinfo.c;
+
+                try
+                {
+                    Interlocked.Increment(ref tinfo.transactionCount);
+                    Console.WriteLine($"{tinfo.transactionCount} {tinfo.rollbackCount} {tinfo.c.State}");
+
+                    for (int n = 0; n < entity.StoreData.Count && Interlocked.Read(ref tinfo.rollbackCount) == 0; ++n)
                     {
-                        var transaction = transactions[entity.UserId].t;
-                        var conn = transactions[entity.UserId].c;
-                        entity.StoreData.ForEach(d => InsertRecord(conn, transaction, entity.UserId, entity.StoreName, d));
+                        InsertRecord(conn, transaction, entity.UserId, entity.StoreName, entity.StoreData[n]);
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                        resp = RouteResponse.ServerError(new { Error = ex.Message });
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    resp = RouteResponse.ServerError(new { Error = ex.Message });
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref tinfo.transactionCount);
                 }
             }
 
@@ -345,6 +377,9 @@ namespace Server
 
         private static void InsertRecord(SqlConnection conn, SqlTransaction t, Guid userId, string storeName, JObject obj)
         {
+            Assert.That(schema.ContainsKey(storeName), $"{storeName} is not a table in the database.");
+            Assert.ThatAll(obj.Properties(), f => schema[storeName].Contains(f.Name, ignoreCaseComparer), f => $"{f.Name} is not a valid column name.");
+
             Dictionary<string, string> fields = new Dictionary<string, string>();
             obj.Properties().ForEach(p => fields[p.Name] = p.Value.ToString());
             string columnNames = String.Join(",", fields.Select(kvp => $"[{kvp.Key}]"));
