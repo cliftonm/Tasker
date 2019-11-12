@@ -302,7 +302,7 @@ namespace Server
                     [Action] INT NOT NULL,
                     [RecordIndex] INT NOT NULL,
                     [Property] NVARCHAR(255) NULL,
-                    [Value] NVARCHAR(255) NULL
+                    [Value] NVARCHAR(MAX) NULL
                     )";
 
                     Execute(conn, sql);
@@ -475,7 +475,7 @@ namespace Server
         private static void CreateField(SqlConnection conn, string storeName, string fieldName)
         {
             // Here we suffer from a loss of fidelity as we don't know the field type nor length/precision.
-            string sql = $"ALTER TABLE [{storeName}] ADD [{fieldName}] NVARCHAR(255) NULL";
+            string sql = $"ALTER TABLE [{storeName}] ADD [{fieldName}] NVARCHAR(MAX) NULL";
             Execute(conn, sql);
         }
 
