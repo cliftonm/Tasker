@@ -96,14 +96,23 @@ export class CloudPersistence implements IStorePersistence {
     }
 
     private ExportStore(calls: JQueryXHR[], storeName: string): void {
-        let storeData = this.storeManager.GetStoreData(storeName);
         let xhr = undefined;
+        let storeData = this.storeManager.GetStoreData(storeName);
+        let notEmptyData: any = jQuery.grep(storeData, r => Object.keys(r).length != 0);
 
-        if (storeData.length > 0) {
+        let n = 0;
+        // Fixup missing __ID
+        notEmptyData.forEach(r => {
+            if (r.__ID == undefined) {
+                r.__ID = n++;
+            }
+        });
+
+        if (notEmptyData.length > 0) {
             console.log(`Export ${storeName}`);
             xhr = jQuery.post(
                 this.UrlWithUserId("ImportEntity"),
-                JSON.stringify({ storeName: storeName, storeData: storeData }),
+                JSON.stringify({ storeName: storeName, storeData: notEmptyData }),
             ).fail(err => {
                 // console.log(err.responseJSON.Error);
                 });
