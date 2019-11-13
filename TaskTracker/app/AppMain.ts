@@ -22,6 +22,7 @@ import { Guid } from "./classes/Guid";
 import { Relationship } from "./interfaces/Relationship";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
 import { Justification } from "./enums/Justification"
+import { Config } from "./Config"
 
 // Add bugs and meetings
 
@@ -189,14 +190,11 @@ export class AppMain {
             { text: 'Discuss', bcolor: 'red' },
         ];
 
-        const userId = new Guid("00000000-0000-0000-0000-000000000014");
+        const userId = Config.UserId;
         let storeManager = new StoreManager();
 
-        let persistence = new LocalStoragePersistence();
-        let cloudPersistence = new CloudPersistence("http://127.0.0.1/", userId, storeManager);
-
-        //let persistence = new CloudPersistence("http://127.0.0.1/", userId, storeManager);
-        //let cloudPersistence = undefined;
+        let persistence = new CloudPersistence(Config.ServerIP, userId, storeManager);
+        let cloudPersistence = undefined;
 
         let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore");
         storeManager.RegisterStore(auditLogStore);

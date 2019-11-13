@@ -1,8 +1,9 @@
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -81,11 +82,19 @@ define(["require", "exports"], function (require, exports) {
             });
         }
         ExportStore(calls, storeName) {
-            let storeData = this.storeManager.GetStoreData(storeName);
             let xhr = undefined;
-            if (storeData.length > 0) {
+            let storeData = this.storeManager.GetStoreData(storeName);
+            let notEmptyData = jQuery.grep(storeData, r => Object.keys(r).length != 0);
+            let n = 0;
+            // Fixup missing __ID
+            notEmptyData.forEach(r => {
+                if (r.__ID == undefined) {
+                    r.__ID = n++;
+                }
+            });
+            if (notEmptyData.length > 0) {
                 console.log(`Export ${storeName}`);
-                xhr = jQuery.post(this.UrlWithUserId("ImportEntity"), JSON.stringify({ storeName: storeName, storeData: storeData })).fail(err => {
+                xhr = jQuery.post(this.UrlWithUserId("ImportEntity"), JSON.stringify({ storeName: storeName, storeData: notEmptyData })).fail(err => {
                     // console.log(err.responseJSON.Error);
                 });
                 calls.push(xhr);
