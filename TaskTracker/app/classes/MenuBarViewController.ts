@@ -31,7 +31,13 @@ export class MenuBarViewController {
     private CreateMenuBarItem(item: MenuBarItem): string {
         let id = Helpers.ReplaceAll(item.displayName, " ", "") + "ID";
         item.id = "#" + id;
-        let html = `<div><button type="button" id="${id}" class="menuBarItem">${item.displayName}</button></div>`;
+        let classes = "menuBarItem";
+
+        if (item.initiallyVisible) {
+            classes = classes + " menuBarItemSelected";
+        }
+
+        let html = `<div><button type="button" id="${id}" class="${classes}">${item.displayName}</button></div>`;
 
         return html;
     }

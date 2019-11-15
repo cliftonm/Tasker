@@ -43,6 +43,37 @@ export class AppMain {
             }
         ];
 
+        const todoTemplate = [
+            {
+                field: "TODO",
+                line: 0,
+                width: "80%",
+                control: "textbox",
+                style: "bold"
+            },
+            {
+                field: "Status",
+                storeName: "TodoStatusList",
+                orderBy: "StatusOrder",
+                line: 0,
+                width: "20%",
+                control: "combobox",
+            },
+            {
+                field: "Description",
+                line: 1,
+                width: "80%",
+                control: "textbox",
+            },
+            {
+                text: "Delete",
+                line: 1,
+                width: "80px",
+                control: "button",
+                route: "DeleteRecord",
+            }
+        ];
+
         const projectTemplate = [
             {
                 field: "Project",
@@ -147,6 +178,15 @@ export class AppMain {
             { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
         ];
 
+        const todoStates = [
+            { text: 'TODO', bcolor: '#FFB0B0' },
+            { text: 'Working On', bcolor: '#D0D0FF' },
+            { text: 'In Progress', bcolor: '#A0A0FF' },
+            { text: 'Done', bcolor: '#D0FFD0' },
+            { text: 'Stuck', bcolor: 'red' },
+            { text: 'Waiting for Response', bcolor: 'red' },
+        ];
+
         const projectStates = [
             { text: 'Ongoing', bcolor: '#B0B0FF' },
             { text: 'TODO', bcolor: '#FFB0B0' },
@@ -210,6 +250,7 @@ export class AppMain {
         storeManager.AddInMemoryStore("ProjectStatusList", projectStates);
         storeManager.AddInMemoryStore("TaskStatusList", taskStates);
         storeManager.AddInMemoryStore("BugStatusList", bugStates);
+        storeManager.AddInMemoryStore("TodoStatusList", todoStates);
 
         let parentChildRelationshipStore = new ParentChildStore(storeManager, persistence, "ParentChildRelationships", auditLogStore);
         storeManager.RegisterStore(parentChildRelationshipStore);
@@ -223,6 +264,9 @@ export class AppMain {
         });
 
         eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
+
+        let vcTodos = new EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+        vcTodos.CreateView("Todos", persistence, "#todoTemplateContainer", todoTemplate, "#createTodo", true, undefined, (idx, store) => store.SetDefault(idx, "Status", todoStates[0].text));
 
         let vcProjects = new EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
         vcProjects.CreateView("Projects", persistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
@@ -255,6 +299,8 @@ export class AppMain {
         vcProjectTaskNotes.CreateView("Notes", persistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcProjectTasks);
 
         const menuBar = [
+            { displayName: "TODO", viewController: vcTodos, initiallyVisible: true },
+            { displayName: "Projects", viewController: vcProjects, initiallyVisible: true },
             { displayName: "Bugs", viewController: vcProjectBugs },
             { displayName: "Contacts", viewController: vcProjectContacts },
             { displayName: "Project Notes", viewController: vcProjectNotes },
