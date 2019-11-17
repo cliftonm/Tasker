@@ -159,7 +159,7 @@ export class AppMain {
             { field: "Title", line: 0, width: "30%", control: "textbox" },
             { line: 1, width: "10%", control: "label", label: "Work:", justification: Justification.Right },
             { field: "Work Phone", line: 1, width: "35%", control: "textbox" },
-            { line: 1, width: "10%", control: "label", label: "Cell:", justification: Justification.Right  },
+            { line: 1, width: "10%", control: "label", label: "Cell:", justification: Justification.Right },
             { field: "Cell Phone", line: 1, width: "35%", control: "textbox" },
             { field: "Comment", line: 2, width: "80%", control: "textbox" },
             { text: "Delete", line: 2, width: "80px", control: "button", route: "DeleteRecord" }
@@ -173,7 +173,7 @@ export class AppMain {
 
         const bugTemplate = [
             { field: "Description", line: 0, width: "70%", control: "textbox" },
-            { field: "Status", storeName: "BugStatusList", orderBy: "StatusOrder", line: 0, width: "20%", control: "combobox"},
+            { field: "Status", storeName: "BugStatusList", orderBy: "StatusOrder", line: 0, width: "20%", control: "combobox" },
             { field: "Resolution", line: 0, width: "70%", control: "textarea" },
             { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
         ];
@@ -234,6 +234,7 @@ export class AppMain {
         let storeManager = new StoreManager();
 
         let persistence = new CloudPersistence(Config.ServerIP, userId, storeManager);
+        // let persistence = new LocalStoragePersistence();
         let cloudPersistence = undefined;
 
         let auditLogStore = new AuditLogStore(storeManager, persistence, "AuditLogStore");
@@ -257,13 +258,23 @@ export class AppMain {
         parentChildRelationshipStore.Load();
 
         let eventRouter = new EventRouter();
+
         eventRouter.AddRoute("DeleteRecord", (store, idx, viewController) => {
             store.DeleteRecord(idx, viewController);
             store.Save();
-            viewController.ShowAllRecords();
+            viewController.ShowAllChildRecords();
         });
 
-        eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
+        eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => {
+            let recIdx = store.CreateRecord(true, viewController);
+            viewController.SelectRecord(recIdx);
+
+            return recIdx;
+        });
+
+        eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
+            viewController.ShowAllRecords();
+        });
 
         let vcTodos = new EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
         vcTodos.CreateView("Todos", persistence, "#todoTemplateContainer", todoTemplate, "#createTodo", true, undefined, (idx, store) => store.SetDefault(idx, "Status", todoStates[0].text));
@@ -300,25 +311,27 @@ export class AppMain {
 
         const menuBar = [
             { displayName: "TODO", viewController: vcTodos, initiallyVisible: true },
-            { displayName: "Projects", viewController: vcProjects, initiallyVisible: true },
-            { displayName: "Bugs", viewController: vcProjectBugs },
-            { displayName: "Contacts", viewController: vcProjectContacts },
-            { displayName: "Project Notes", viewController: vcProjectNotes },
-            { displayName: "Project Links", viewController: vcProjectLinks },
-            { displayName: "Tasks", viewController: vcProjectTasks },
+            { displayName: "Projects", viewController: vcProjects, initiallyVisible: true},
+            { displayName: "Bugs", viewController: vcProjectBugs, showAll: true },
+            { displayName: "Contacts", viewController: vcProjectContacts, showAll: true, storeName: "Contacts"  },
+            { displayName: "Project Notes", viewController: vcProjectNotes, showAll: true, storeName: "Notes"  },
+            { displayName: "Project Links", viewController: vcProjectLinks, showAll: true, storeName: "Links"  },
+            { displayName: "Tasks", viewController: vcProjectTasks, showAll: true, storeName: "Tasks"  },
             { displayName: "Task Notes", viewController: vcProjectTaskNotes },
             { displayName: "Task Links", viewController: vcProjectTaskLinks },
             { displayName: "Sub-Tasks", viewController: vcSubtasks }
         ];
 
-        let menuBarView = new MenuBarViewController(menuBar, eventRouter);
+        let menuBarView = new MenuBarViewController(menuBar, eventRouter, storeManager);
         menuBarView.DisplayMenuBar("#menuBar");
 
         let entities = this.GetEntities(relationships);
 
+        // TODO: This should go through the router!
         jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
 
         // TODO: We should disable the export button until all the AJAX calls complete.
+        // TODO: This should go through the router!
         jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
     }
 

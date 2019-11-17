@@ -369,11 +369,3 @@ router.AddRoute&lt;EntityData&gt;("POST", "/ImportEntity", ImportEntity, false);
 <p>At the end of the day, there really is no easy solution using .NET's <code>SqlConnection</code> and <code>SqlTransaction</code> objects to manage transactions for SQL operations across threads.  What's presented here is a workaround that is optimized as best as possible but relies on synchronization with regards to the use of the <code>SqlConnection</code> instance.  Probably the simplest way to work around the issues is to not use these class at all and manage connection pooling outside of the context of a <code>using new SqlConnection</code> statement, as this closes the connection when the <code>using</code> exits and invalidates the transaction.  Using the <a href="https://docs.microsoft.com/en-us/dotnet/api/system.data.odbc.odbcconnection?view=netframework-4.8">OdbcConnection</a> class doesn't really help because what basically is needed is a single connection to which SQL statements can simply be streamed "thread safely", which serializes the statements, yes, but avoid all the silliness of having to implement a <code>lock</code>.  Well heck, such an class could be written even for <code>SqlConnection</code>.  Maybe I'll look at that at some point, as it would demystify the behavior of the current implementation.</p>
 
 
-
-
-<p>zx</p>
-
-
-
-
-

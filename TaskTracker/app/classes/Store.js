@@ -123,6 +123,8 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             this.CreateRecordIfMissing(idx);
             if (!this.data[idx][property]) {
                 this.data[idx][property] = value;
+                this.propertyChangedCallback(idx, property, value, this);
+                this.auditLogStore.Log(this.storeName, AuditLogAction_1.AuditLogAction.Update, idx, property, value);
             }
             return this;
         }

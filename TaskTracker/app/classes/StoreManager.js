@@ -3,8 +3,8 @@ define(["require", "exports", "./Store"], function (require, exports, Store_1) {
     Object.defineProperty(exports, "__esModule", { value: true });
     class StoreManager {
         constructor() {
-            this.stores = {};
             this.getNextPrimaryKeyCallback = () => { };
+            this.stores = {};
         }
         HasStore(storeName) {
             return this.stores[storeName] !== undefined;

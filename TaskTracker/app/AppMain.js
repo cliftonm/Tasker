@@ -208,6 +208,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             const userId = Config_1.Config.UserId;
             let storeManager = new StoreManager_1.StoreManager();
             let persistence = new CloudPersistence_1.CloudPersistence(Config_1.Config.ServerIP, userId, storeManager);
+            // let persistence = new LocalStoragePersistence();
             let cloudPersistence = undefined;
             let auditLogStore = new AuditLogStore_1.AuditLogStore(storeManager, persistence, "AuditLogStore");
             storeManager.RegisterStore(auditLogStore);
@@ -228,9 +229,16 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             eventRouter.AddRoute("DeleteRecord", (store, idx, viewController) => {
                 store.DeleteRecord(idx, viewController);
                 store.Save();
+                viewController.ShowAllChildRecords();
+            });
+            eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => {
+                let recIdx = store.CreateRecord(true, viewController);
+                viewController.SelectRecord(recIdx);
+                return recIdx;
+            });
+            eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
                 viewController.ShowAllRecords();
             });
-            eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => store.CreateRecord(true, viewController));
             let vcTodos = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcTodos.CreateView("Todos", persistence, "#todoTemplateContainer", todoTemplate, "#createTodo", true, undefined, (idx, store) => store.SetDefault(idx, "Status", todoStates[0].text));
             let vcProjects = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
@@ -256,20 +264,22 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             const menuBar = [
                 { displayName: "TODO", viewController: vcTodos, initiallyVisible: true },
                 { displayName: "Projects", viewController: vcProjects, initiallyVisible: true },
-                { displayName: "Bugs", viewController: vcProjectBugs },
-                { displayName: "Contacts", viewController: vcProjectContacts },
-                { displayName: "Project Notes", viewController: vcProjectNotes },
-                { displayName: "Project Links", viewController: vcProjectLinks },
-                { displayName: "Tasks", viewController: vcProjectTasks },
+                { displayName: "Bugs", viewController: vcProjectBugs, showAll: true },
+                { displayName: "Contacts", viewController: vcProjectContacts, showAll: true, storeName: "Contacts" },
+                { displayName: "Project Notes", viewController: vcProjectNotes, showAll: true, storeName: "Notes" },
+                { displayName: "Project Links", viewController: vcProjectLinks, showAll: true, storeName: "Links" },
+                { displayName: "Tasks", viewController: vcProjectTasks, showAll: true, storeName: "Tasks" },
                 { displayName: "Task Notes", viewController: vcProjectTaskNotes },
                 { displayName: "Task Links", viewController: vcProjectTaskLinks },
                 { displayName: "Sub-Tasks", viewController: vcSubtasks }
             ];
-            let menuBarView = new MenuBarViewController_1.MenuBarViewController(menuBar, eventRouter);
+            let menuBarView = new MenuBarViewController_1.MenuBarViewController(menuBar, eventRouter, storeManager);
             menuBarView.DisplayMenuBar("#menuBar");
             let entities = this.GetEntities(relationships);
+            // TODO: This should go through the router!
             jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
             // TODO: We should disable the export button until all the AJAX calls complete.
+            // TODO: This should go through the router!
             jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
         }
         // Gets the list of entities from the relationships hierarchy.

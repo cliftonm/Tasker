@@ -2,9 +2,10 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class MenuBarViewController {
-        constructor(menuBar, eventRouter) {
+        constructor(menuBar, eventRouter, storeManager) {
             this.menuBar = menuBar;
             this.eventRouter = eventRouter;
+            this.storeManager = storeManager;
             this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc) => this.ShowSections(vc));
             this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc) => this.HideSections(vc));
         }
@@ -20,11 +21,17 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
         CreateMenuBarItem(item) {
             let id = Helpers_1.Helpers.ReplaceAll(item.displayName, " ", "") + "ID";
             item.id = "#" + id;
+            let showAllId = id + "ShowAll";
+            item.showAllId = "#" + showAllId;
             let classes = "menuBarItem";
+            let showAllButton = "";
             if (item.initiallyVisible) {
                 classes = classes + " menuBarItemSelected";
             }
-            let html = `<div><button type="button" id="${id}" class="${classes}">${item.displayName}</button></div>`;
+            if (item.showAll) {
+                showAllButton = `<button id='${showAllId}' class='menuBarItemShowAll'>*</button>`;
+            }
+            let html = `<div><button type="button" id="${id}" class="${classes}">${item.displayName}</button>${showAllButton}</div>`;
             return html;
         }
         WireUpEventHandlers() {
@@ -42,6 +49,10 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
                             item.selected = false;
                             this.HideSections(item.viewController);
                         }
+                    });
+                    jQuery(item.showAllId).on('click', () => {
+                        let store = this.storeManager.GetStore(item.storeName);
+                        this.eventRouter.Route("ShowAllEntities", store, 0, item.viewController);
                     });
                 });
             });

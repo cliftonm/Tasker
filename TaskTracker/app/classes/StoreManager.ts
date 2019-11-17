@@ -4,8 +4,9 @@ import { KeyStoreMap } from "../interfaces/KeyStoreMap"
 import { AuditLogStore } from "../stores/AuditLogStore";
 
 export class StoreManager {
-    stores: KeyStoreMap = {};
-    getNextPrimaryKeyCallback: (storeName: string) => any = () => { };
+    public getNextPrimaryKeyCallback: (storeName: string) => any = () => { };
+
+    private stores: KeyStoreMap = {};
 
     public HasStore(storeName: string): boolean {
         return this.stores[storeName] !== undefined;

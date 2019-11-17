@@ -2,10 +2,10 @@ define(["require", "exports"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class Guid {
+        static get Zero() { return new Guid("00000000-0000-0000-0000-000000000000"); }
         constructor(guid) {
             this.guid = guid;
         }
-        static get Zero() { return new Guid("00000000-0000-0000-0000-000000000000"); }
         ToString() {
             return this.guid;
         }

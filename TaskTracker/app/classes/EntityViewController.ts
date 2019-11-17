@@ -21,6 +21,7 @@ export class EntityViewController {
     selectedRecordIndex: number = -1;        // multiple selection not allowed at the moment.
     parentViewController: EntityViewController;
     relationships: Relationship[];
+    containerName: string;
 
     constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore, relationships: Relationship[]) {
         this.storeManager = storeManager;
@@ -45,6 +46,7 @@ export class EntityViewController {
         // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
         this.builder = this.CreateHtmlTemplate(containerName, template);
         this.parentViewController = parentViewController;
+        this.containerName = containerName;
 
         if (parentViewController) {
             parentViewController.RegisterChildController(this);
@@ -129,9 +131,15 @@ export class EntityViewController {
         return builder;
     }
 
+    // Show all records for the store, regardless of parent selection.
+    public ShowAllRecords() {
+        this.ShowView();
+        Object.keys(this.store.data).forEach(recIdx => this.CreateRecordView(this.store, Number(recIdx), true, false));
+    }
+
     // After deleting a record, if this is the only selected record, we need to go back to
     // showing all records, otherwise the user will see an empty list!
-    public ShowAllRecords() {
+    public ShowAllChildRecords() {
         jQuery(this.builder.templateContainerID).children().css("display", "");
     }
 
@@ -151,6 +159,11 @@ export class EntityViewController {
         state == "visible" ? this.HideView() : this.ShowView();
 
         return state != "visible";
+    }
+
+    public SelectRecord(recIdx: number): void {
+        this.selectedRecordIndex = recIdx;
+        this.RecordSelected(recIdx);
     }
 
     private RecordSelected(recIdx: number): void {
@@ -233,6 +246,7 @@ export class EntityViewController {
         };
 
         this.store.propertyChangedCallback = (idx, field, value) => this.UpdatePropertyView(idx, field, value);
+
         this.store.recordDeletedCallback = (idx, store, viewController) => {
             // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C
             viewController.RemoveChildRecordsView(store, idx);
@@ -291,6 +305,11 @@ export class EntityViewController {
         let guid = tel.guid.ToString();
         let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
         jel.val(value);
+
+        // Hack!
+        if (tel.item.control == "combobox") {
+            this.SetComboboxColor(jel, value);
+        }
     }
 
     private DeleteRecordView(idx: number): void {

@@ -16,6 +16,7 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
             // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
             this.builder = this.CreateHtmlTemplate(containerName, template);
             this.parentViewController = parentViewController;
+            this.containerName = containerName;
             if (parentViewController) {
                 parentViewController.RegisterChildController(this);
             }
@@ -79,9 +80,14 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
             builder.TemplateDivEnd();
             return builder;
         }
+        // Show all records for the store, regardless of parent selection.
+        ShowAllRecords() {
+            this.ShowView();
+            Object.keys(this.store.data).forEach(recIdx => this.CreateRecordView(this.store, Number(recIdx), true, false));
+        }
         // After deleting a record, if this is the only selected record, we need to go back to
         // showing all records, otherwise the user will see an empty list!
-        ShowAllRecords() {
+        ShowAllChildRecords() {
             jQuery(this.builder.templateContainerID).children().css("display", "");
         }
         ShowView() {
@@ -97,6 +103,10 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
             let state = jQuery(this.builder.templateContainerID).parent().css("visibility");
             state == "visible" ? this.HideView() : this.ShowView();
             return state != "visible";
+        }
+        SelectRecord(recIdx) {
+            this.selectedRecordIndex = recIdx;
+            this.RecordSelected(recIdx);
         }
         RecordSelected(recIdx) {
             // Remove recordSelected class from all elements in the container.
@@ -214,6 +224,10 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
             let guid = tel.guid.ToString();
             let jel = jQuery(`[bindGuid = '${guid}'][storeIdx = '${idx}']`);
             jel.val(value);
+            // Hack!
+            if (tel.item.control == "combobox") {
+                this.SetComboboxColor(jel, value);
+            }
         }
         DeleteRecordView(idx) {
             console.log(`Removing template view: ${this.builder.templateContainerID} > [templateIdx='${idx}']`);

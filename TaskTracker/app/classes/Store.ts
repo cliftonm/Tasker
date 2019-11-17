@@ -169,6 +169,8 @@ export class Store {
 
         if (!this.data[idx][property]) {
             this.data[idx][property] = value;
+            this.propertyChangedCallback(idx, property, value, this);
+            this.auditLogStore.Log(this.storeName, AuditLogAction.Update, idx, property, value);
         }
 
         return this;
