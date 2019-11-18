@@ -272,9 +272,9 @@ export class AppMain {
             return recIdx;
         });
 
-        eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
-            viewController.ShowAllRecords();
-        });
+        //eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
+        //    viewController.ShowAllRecords();
+        //});
 
         let vcTodos = new EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
         vcTodos.CreateView("Todos", persistence, "#todoTemplateContainer", todoTemplate, "#createTodo", true, undefined, (idx, store) => store.SetDefault(idx, "Status", todoStates[0].text));
@@ -327,6 +327,8 @@ export class AppMain {
 
         let entities = this.GetEntities(relationships);
 
+        // TODO: Create a MenuViewController and put menu into metadata so MenuViewController creates the Bootstrap menu.
+        // Maybe also rename MenuBarViewController to BarViewController
         // TODO: This should go through the router!
         jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
 

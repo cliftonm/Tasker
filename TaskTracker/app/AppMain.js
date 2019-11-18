@@ -236,9 +236,9 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 viewController.SelectRecord(recIdx);
                 return recIdx;
             });
-            eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
-                viewController.ShowAllRecords();
-            });
+            //eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
+            //    viewController.ShowAllRecords();
+            //});
             let vcTodos = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcTodos.CreateView("Todos", persistence, "#todoTemplateContainer", todoTemplate, "#createTodo", true, undefined, (idx, store) => store.SetDefault(idx, "Status", todoStates[0].text));
             let vcProjects = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
@@ -276,6 +276,8 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             let menuBarView = new MenuBarViewController_1.MenuBarViewController(menuBar, eventRouter, storeManager);
             menuBarView.DisplayMenuBar("#menuBar");
             let entities = this.GetEntities(relationships);
+            // TODO: Create a MenuViewController and put menu into metadata so MenuViewController creates the Bootstrap menu.
+            // Maybe also rename MenuBarViewController to BarViewController
             // TODO: This should go through the router!
             jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
             // TODO: We should disable the export button until all the AJAX calls complete.

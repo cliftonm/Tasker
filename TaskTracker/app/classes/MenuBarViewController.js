@@ -6,8 +6,10 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
             this.menuBar = menuBar;
             this.eventRouter = eventRouter;
             this.storeManager = storeManager;
+            // TODO: Rename Show/Hide Sections to Show/Hide Child Entities.
             this.eventRouter.AddRoute("MenuBarShowSections", (_, __, vc) => this.ShowSections(vc));
             this.eventRouter.AddRoute("MenuBarHideSections", (_, __, vc) => this.HideSections(vc));
+            this.eventRouter.AddRoute("DeselectAll", (_, __, ___) => this.DeselectAll());
         }
         DisplayMenuBar(containerId) {
             let containerHtml = "";
@@ -27,6 +29,7 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
             let showAllButton = "";
             if (item.initiallyVisible) {
                 classes = classes + " menuBarItemSelected";
+                item.selected = true;
             }
             if (item.showAll) {
                 showAllButton = `<button id='${showAllId}' class='menuBarItemShowAll'>*</button>`;
@@ -39,20 +42,15 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
                 this.menuBar.forEach(item => {
                     jQuery(item.id).on('click', () => {
                         let visible = item.viewController.ToggleVisibility();
-                        if (visible) {
-                            jQuery(item.id).addClass("menuBarItemSelected");
-                            item.selected = true;
-                            this.ShowSections(item.viewController);
-                        }
-                        else {
-                            jQuery(item.id).removeClass("menuBarItemSelected");
-                            item.selected = false;
-                            this.HideSections(item.viewController);
-                        }
+                        visible ? this.SelectItem(item) : this.DeselectItem(item);
                     });
                     jQuery(item.showAllId).on('click', () => {
-                        let store = this.storeManager.GetStore(item.storeName);
-                        this.eventRouter.Route("ShowAllEntities", store, 0, item.viewController);
+                        this.DeselectAll();
+                        item.viewController.ShowAllRecords();
+                        jQuery(item.id).addClass("menuBarItemSelected");
+                        item.selected = true;
+                        //let store = this.storeManager.GetStore(item.storeName);
+                        // this.eventRouter.Route("ShowAllEntities", store, 0, item.viewController);
                     });
                 });
             });
@@ -76,6 +74,24 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
                 });
                 this.HideSections(vcChild);
             });
+        }
+        DeselectAll() {
+            this.menuBar.forEach(item => {
+                if (item.selected) {
+                    this.DeselectItem(item);
+                    item.viewController.ToggleVisibility();
+                }
+            });
+        }
+        SelectItem(item) {
+            jQuery(item.id).addClass("menuBarItemSelected");
+            item.selected = true;
+            this.ShowSections(item.viewController);
+        }
+        DeselectItem(item) {
+            jQuery(item.id).removeClass("menuBarItemSelected");
+            item.selected = false;
+            this.HideSections(item.viewController);
         }
     }
     exports.MenuBarViewController = MenuBarViewController;

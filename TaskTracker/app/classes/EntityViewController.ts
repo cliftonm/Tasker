@@ -63,6 +63,7 @@ export class EntityViewController {
         // TODO: Wiring up the click even here precludes the ability to create view controllers from the UI after the document is ready.
         jQuery(document).ready(() => {
             jQuery(createButtonId).on('click', () => {
+                // TODO: Implement this as a workflow.
                 let idx = this.eventRouter.Route("CreateRecord", this.store, 0, this);   // insert at position 0
                 createCallback(idx, this.store);
 
