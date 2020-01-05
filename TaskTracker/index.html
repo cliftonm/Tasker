@@ -14,7 +14,9 @@
     <script data-main="app/AppConfig" type="text/javascript" src="lib/require.js"></script>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <!-- padding removes the huge border around the navbar -->
+    <!-- navbar-expand-lg vs, say, navbar-expand-sm, affects when the menu is collaped -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light" style="padding:0 5px 0 8px; height:32px !important">
         <a class="navbar-brand" href="#">Task Tracker</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -24,17 +26,15 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
                 <!--
-                <li class="nav-item active">
-                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">Link</a>
-                </li>
-            -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        File
-                    </a>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Link</a>
+                    </li>
+                -->
+                <li class="nav-item dropdown" style="height:32px !important; margin: 0 0 6px 0">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">File</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                         <a class="dropdown-item" id="mnuExportChanges">Export Changes</a>
                         <a class="dropdown-item" id="mnuExportAllStores">Export All</a>
@@ -42,14 +42,14 @@
                     </div>
                 </li>
                 <!--
-                <li class="nav-item">
-                    <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-                </li>
-            -->
+                    <li class="nav-item">
+                        <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                    </li>
+                -->
             </ul>
             <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" style="padding:1px 6px 1px 6px; font-size:12px; height:26px">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit" style="padding:3px 6px 3px 6px; font-size:12px">Search</button>
             </form>
         </div>
     </nav>
@@ -58,7 +58,8 @@
         https://stackoverflow.com/questions/28750907/how-to-customize-bootstrap-column-widths
         https://stackoverflow.com/questions/11591185/how-to-use-bootstrap-with-16-or-24-columns
     -->
-    <div class="row menuBar">
+    <!-- TODO: Why can't the margin-top style go into the menuBar css?  It doesn't work when put there! -->
+    <div class="row menuBar" style="margin-top:5px">
         <div class="col-2">
             <div id="menuBar">
             </div>
