@@ -283,6 +283,9 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             // TODO: We should disable the export button until all the AJAX calls complete.
             // TODO: This should go through the router!
             jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
+            // Filter and search events:
+            jQuery("#onFilter").on('click', () => alert("Filter"));
+            jQuery("#onSearch").on('click', () => alert("Search"));
         }
         // Gets the list of entities from the relationships hierarchy.
         // We assume that the store name == entity name!!!

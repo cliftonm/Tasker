@@ -132,7 +132,7 @@ export class TemplateBuilder
 
     public SelectBegin(item: Item, listStore: string) : TemplateBuilder {
         let guid = Guid.NewGuid();
-        this.html += `<select class='combobox' style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}' >`;
+        this.html += `<select class='combobox' style='width:100%; height:21px' storeIdx='{idx}' bindGuid='${guid.ToString()}' listStore='${listStore}'>`;
         let el = new TemplateElement(item, guid);
         this.elements.push(el);
 

@@ -57,7 +57,7 @@
 }
 
 .menuBar {
-    padding-left:5px;      /* Sigh.  Bootstrap */
+    margin-left:10px;      /* Sigh.  Bootstrap */
     /*width: var(--menuBarWidth);*/
 }
 

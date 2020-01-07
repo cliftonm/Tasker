@@ -15,24 +15,26 @@
 </head>
 <body>
     <!-- padding removes the huge border around the navbar -->
-    <!-- navbar-expand-lg vs, say, navbar-expand-sm, affects when the menu is collaped -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light" style="padding:0 5px 0 8px; height:32px !important">
+    <!-- navbar-expand-lg vs, say, navbar-expand-sm, affects where the menu is collaped -->
+    <nav class="navbar navbar-expand-sm navbar-light bg-light" style="padding:0 5px 0 8px; height:32px !important">
         <a class="navbar-brand" href="#">Task Tracker</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <!--
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        -->
 
         <!-- TODO: Don't change mouse icon when over menu text: https://stackoverflow.com/questions/31677222/bootstrap-dropdown-make-dropdown-arrow-change-direction -->
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav mr-auto">
                 <!--
-                    <li class="nav-item active">
-                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Link</a>
-                    </li>
-                -->
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Link</a>
+                </li>
+            -->
                 <li class="nav-item dropdown" style="height:32px !important; margin: 0 0 6px 0">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">File</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -42,15 +44,26 @@
                     </div>
                 </li>
                 <!--
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
-                    </li>
-                -->
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>
+                </li>
+            -->
             </ul>
-            <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" style="padding:1px 6px 1px 6px; font-size:12px; height:26px">
-                <button class="btn btn-outline-success my-2 my-sm-0" type="submit" style="padding:3px 6px 3px 6px; font-size:12px">Search</button>
-            </form>
+            <div class="form-inline">
+                <div class="dropdown">
+                    <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="padding:3px 6px 3px 6px; margin-right:10px; font-size:12px">
+                        All
+                    </button>
+                    <div id="filters" class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                        <a class="dropdown-item">Action</a>
+                        <a class="dropdown-item">Another action</a>
+                        <a class="dropdown-item">Something else here</a>
+                    </div>
+                </div>
+                <button id="onFilter" class="btn btn-outline-success" style="padding:3px 6px 3px 6px; margin-right:10px; font-size:12px">Filter</button>
+                <input id="searchText" class="form-control mr-sm-1" placeholder="Search" aria-label="Search" style="padding:1px 6px 1px 6px; font-size:12px; height:26px">
+                <button id="onSearch" class="btn btn-outline-success" style="padding:3px 6px 3px 6px; font-size:12px">Search</button>
+            </div>
         </div>
     </nav>
 
@@ -59,14 +72,14 @@
         https://stackoverflow.com/questions/11591185/how-to-use-bootstrap-with-16-or-24-columns
     -->
     <!-- TODO: Why can't the margin-top style go into the menuBar css?  It doesn't work when put there! -->
-    <div class="row menuBar" style="margin-top:5px">
-        <div class="col-2">
+    <!-- Wow, why does margin-left:0px actually indent to the edge of where "Task Tracker" starts? -->
+    <div class="row menuBar" style="margin-left: 0px; margin-top:5px">
+        <div> <!--class="col-2"-->
             <div id="menuBar">
             </div>
         </div>
         <div class="col-10">
             <div class="row">
-                <div class="col-1"></div>
                 <div class="col-8">
                     <div class="entitySeparator">
                         <button type="button" id="createTodo" class="createButton">Create TODO</button>
@@ -75,14 +88,13 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-1"></div>
-                <div class="col-5">
+                <div class="col-6">
                     <div class="entitySeparator">
                         <button type="button" id="createProject" class="createButton">Create Project</button>
                         <div id="projectTemplateContainer" class="templateContainer"></div>
                     </div>
                 </div>
-                <div class="col-5">
+                <div class="col-6">
                     <div class="entitySeparator" style="visibility:hidden; display:none">
                         <button type="button" id="createProjectContact" class="createButton">Create Contact</button>
                         <div id="projectContactTemplateContainer" class="templateContainer"></div>
@@ -98,7 +110,6 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-1"></div>
                 <div class="col-5">
                     <div class="entitySeparator" style="visibility:hidden; display:none">
                         <button type="button" id="createProjectBug" class="createButton">Create Bug</button>
@@ -113,7 +124,6 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-1"></div>
                 <div class="col-5">
                     <div class="entitySeparator" style="visibility:hidden; display:none">
                         <button type="button" id="createTask" class="createButton">Create Task</button>
@@ -132,7 +142,6 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-1"></div>
                 <div class="col-5">
                     <div class="entitySeparator" style="visibility:hidden; display:none">
                         <button type="button" id="createSubtask" class="createButton">Create Sub-Task</button>
