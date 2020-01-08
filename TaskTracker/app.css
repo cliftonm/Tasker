@@ -1,5 +1,5 @@
 ﻿:root {
-    --menuBarWidth: 100px;      /* Sigh.  With bootstrap this suddenly has to be a lot wider.  Widths being calculated differently? */
+    --menuBarWidth: 150px;
     --fontSize: 12px;
 }
 
@@ -29,7 +29,7 @@
 
 .entitySeparator {
     margin-bottom: 10px;
-    clear:both;
+    clear: both;
 }
 
 .reset {
@@ -53,17 +53,19 @@
 }
 
 .floatLeft {
-    float:left;
+    float: left;
+}
+
+.row {
+    float: left;
 }
 
 .menuBar {
-    margin-left:10px;      /* Sigh.  Bootstrap */
-    /*width: var(--menuBarWidth);*/
+    width: var(--menuBarWidth);
 }
 
 .entityView {
-    /* width: calc(100% - var(--menuBarWidth)); */ /* width of menuBar + 10px */
-    /*width: 80%;*/
+    width: calc(100% - var(--menuBarWidth)); /* width of menuBar + 10px */
 }
 
 .col1 {
@@ -82,7 +84,7 @@
 .menuBarItemSelected {
     /*border-color: #A0FFA0 !important;*/
     color: white;
-    background-color:#808080;
+    background-color: #808080;
 }
 
 .tblabelleft {
@@ -103,7 +105,7 @@
 .tblabelright {
     font-size: var(--fontSize);
     float: right;
-    margin-top: 2px;
+    margin-top: 3px;
     text-align: right;
     padding-right: 5px;
 }
