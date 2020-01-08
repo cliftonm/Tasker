@@ -10,7 +10,6 @@
 }
 
 .menuBarItem {
-    margin-left: 3px;
     margin-bottom: 3px;
     width: 120px;
     font-size: var(--fontSize);
@@ -58,6 +57,21 @@
 
 .row {
     float: left;
+}
+
+.appBar {
+    width:100%;
+    height: 25px;
+    background-color: lightgray;
+    margin-bottom: 3px;
+}
+
+.appBarButton {
+    margin: 2px 2px 0px 2px;
+}
+
+.appBarCombobox {
+    margin-left: 2px;
 }
 
 .menuBar {
