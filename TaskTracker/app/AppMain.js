@@ -295,7 +295,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Filte
             ];
             let menuBarView = new MenuBarViewController_1.MenuBarViewController(menuBar, eventRouter, storeManager);
             menuBarView.DisplayMenuBar("#menuBar");
-            let entities = this.GetEntities(relationships);
+            // let entities = this.GetEntities(relationships);
             // TODO: Create a MenuViewController and put menu into metadata so MenuViewController creates the Bootstrap menu.
             // Maybe also rename MenuBarViewController to BarViewController
             // TODO: This should go through the router!

@@ -19,13 +19,10 @@ import { EventRouter } from "./classes/EventRouter"
 import { SequenceStore } from "./stores/SequenceStore";
 import { CloudPersistence } from "./classes/CloudPersistence";
 import { MenuBarViewController } from "./classes/MenuBarViewController";
-import { Guid } from "./classes/Guid";
 import { Relationship } from "./interfaces/Relationship";
 import { LocalStoragePersistence } from "./classes/LocalStoragePersistence";
 import { Justification } from "./enums/Justification"
 import { Config } from "./Config"
-import { PickList } from "./interfaces/PickList"
-import { PickItem } from "./interfaces/PickItem"
 
 // Add bugs and meetings
 
@@ -350,7 +347,7 @@ export class AppMain {
         let menuBarView = new MenuBarViewController(menuBar, eventRouter, storeManager);
         menuBarView.DisplayMenuBar("#menuBar");
 
-        let entities = this.GetEntities(relationships);
+        // let entities = this.GetEntities(relationships);
 
         // TODO: Create a MenuViewController and put menu into metadata so MenuViewController creates the Bootstrap menu.
         // Maybe also rename MenuBarViewController to BarViewController
