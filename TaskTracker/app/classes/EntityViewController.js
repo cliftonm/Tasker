@@ -127,6 +127,7 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
         ShowView() {
             jQuery(this.builder.templateContainerID).parent().css("visibility", "visible");
             jQuery(this.builder.templateContainerID).parent().css("display", "");
+            this.FilterRecords();
         }
         HideView() {
             jQuery(this.builder.templateContainerID).parent().css("visibility", "hidden");
@@ -152,6 +153,7 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
         RecordUnselected(recIdx) {
             // Remove recordSelected class from all elements in the container.
             jQuery(this.builder.templateContainerID).children().removeClass("recordSelected");
+            this.FilterRecords();
         }
         ShowChildRecords(parentStore, parentRecIdx) {
             let parentStoreName = parentStore.storeName;

@@ -247,6 +247,7 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Filte
                 store.DeleteRecord(idx, viewController);
                 store.Save();
                 viewController.ShowAllChildRecords();
+                viewController.FilterRecords();
             });
             eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => {
                 let recIdx = store.CreateRecord(true, viewController);

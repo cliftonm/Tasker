@@ -195,6 +195,7 @@ export class EntityViewController {
     public ShowView(): void {
         jQuery(this.builder.templateContainerID).parent().css("visibility", "visible");
         jQuery(this.builder.templateContainerID).parent().css("display", "");
+        this.FilterRecords();
     }
 
     public HideView(): void {
@@ -226,6 +227,7 @@ export class EntityViewController {
     private RecordUnselected(recIdx: number): void {
         // Remove recordSelected class from all elements in the container.
         jQuery(this.builder.templateContainerID).children().removeClass("recordSelected");
+        this.FilterRecords();
     }
 
     private ShowChildRecords(parentStore: Store, parentRecIdx: number): void {

@@ -284,6 +284,7 @@ export class AppMain {
             store.DeleteRecord(idx, viewController);
             store.Save();
             viewController.ShowAllChildRecords();
+            viewController.FilterRecords();
         });
 
         eventRouter.AddRoute("CreateRecord", (store, idx, viewController) => {
