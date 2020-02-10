@@ -7,6 +7,7 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
             this.recordCreatedCallback = () => { };
             this.propertyChangedCallback = () => { };
             this.recordDeletedCallback = () => { };
+            this.allRecordsCreated = () => { };
             this.storeManager = storeManager;
             this.persistence = persistence;
             this.storeName = storeName;
@@ -98,6 +99,7 @@ define(["require", "exports", "../enums/AuditLogAction"], function (require, exp
                 this.data = data;
                 if (createRecordView) {
                     jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
+                    this.allRecordsCreated(viewController);
                 }
             });
             return this;

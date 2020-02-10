@@ -71,6 +71,7 @@
   </PropertyGroup>
   <ItemGroup>
     <TypeScriptCompile Include="app\classes\CloudPersistence.ts" />
+    <TypeScriptCompile Include="app\classes\FilterController.ts" />
     <TypeScriptCompile Include="app\classes\Helpers.ts" />
     <TypeScriptCompile Include="app\classes\LocalStoragePersistence.ts" />
     <TypeScriptCompile Include="app\classes\MenuBarViewController.ts" />
@@ -79,9 +80,13 @@
     <TypeScriptCompile Include="app\enums\AuditLogAction.ts" />
     <TypeScriptCompile Include="app\enums\Justification.ts" />
     <TypeScriptCompile Include="app\interfaces\ChildRecordInfo.ts" />
+    <TypeScriptCompile Include="app\interfaces\Filterable.ts" />
+    <TypeScriptCompile Include="app\interfaces\IFilterables.ts" />
     <TypeScriptCompile Include="app\interfaces\IStorePersistence.ts" />
     <TypeScriptCompile Include="app\interfaces\MenuBar.ts" />
     <TypeScriptCompile Include="app\interfaces\MenuBarItem.ts" />
+    <TypeScriptCompile Include="app\interfaces\PickItem.ts" />
+    <TypeScriptCompile Include="app\interfaces\PickList.ts" />
     <TypeScriptCompile Include="app\interfaces\Relationship.ts" />
     <TypeScriptCompile Include="app\models\AuditLogModel.ts" />
     <TypeScriptCompile Include="app\models\ParentChildRelationshipModel.ts" />

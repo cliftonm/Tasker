@@ -1,7 +1,7 @@
 ﻿<html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Task Tracker</title>
+    <title>Friday</title>
     <link rel="stylesheet" href="app.css" type="text/css" />
     <!--
         JQuery must come first otherwise you get a "Cannot read property 'fn' of undefined" error.
@@ -16,16 +16,22 @@
         <a class="dropdown-item" id="mnuExportChanges">Export Changes</a>
         <a class="dropdown-item" id="mnuExportAllStores">Export All</a>
     -->
+    <div class="popup">
+        <div id="createFilterPopup" class="createFilterPopup">
+        </div>
+    </div>
+
     <div class="appBar">
         <div class="row">
+            <label class="appName">Friday</label>
             <select class="appBarCombobox">
                 <option>A</option>
                 <option>B</option>
                 <option>C</option>
             </select>
-            <button class="appBarButton" type="button" id="btnFilter">Create Filter</button>
+            <button id="btnFilter" class="appBarButton" type="button">Create Filter</button>
             <input />
-            <button class="appBarButton" type="button" id="btnFilter">Search</button>
+            <button id="btnSearch" class="appBarButton" type="button">Search</button>
         </div>
     </div>
 

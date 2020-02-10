@@ -47,6 +47,7 @@ define(["require", "exports", "./Helpers"], function (require, exports, Helpers_
                     jQuery(item.showAllId).on('click', () => {
                         this.DeselectAll();
                         item.viewController.ShowAllRecords();
+                        item.viewController.FilterRecords();
                         jQuery(item.id).addClass("menuBarItemSelected");
                         item.selected = true;
                         //let store = this.storeManager.GetStore(item.storeName);

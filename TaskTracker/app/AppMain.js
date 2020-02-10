@@ -9,7 +9,7 @@ delete from Projects
 delete from [Sequences]
 delete from Tasks
 */
-define(["require", "exports", "./classes/EntityViewController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./enums/Justification", "./Config"], function (require, exports, EntityViewController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Justification_1, Config_1) {
+define(["require", "exports", "./classes/EntityViewController", "./classes/FilterController", "./classes/StoreManager", "./stores/ParentChildStore", "./stores/AuditLogStore", "./classes/EventRouter", "./stores/SequenceStore", "./classes/CloudPersistence", "./classes/MenuBarViewController", "./enums/Justification", "./Config"], function (require, exports, EntityViewController_1, FilterController_1, StoreManager_1, ParentChildStore_1, AuditLogStore_1, EventRouter_1, SequenceStore_1, CloudPersistence_1, MenuBarViewController_1, Justification_1, Config_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     // Add bugs and meetings
@@ -135,6 +135,23 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                     route: "DeleteRecord",
                 }
             ];
+            const filterables = [
+                {
+                    name: "TODO Status",
+                    template: todoTemplate,
+                    field: "Status"
+                },
+                {
+                    name: "Project Status",
+                    template: projectTemplate,
+                    field: "Status"
+                },
+                {
+                    name: "Task Status",
+                    template: taskTemplate,
+                    field: "Status"
+                }
+            ];
             const contactTemplate = [
                 { field: "Name", line: 0, width: "30%", control: "textbox" },
                 { field: "Email", line: 0, width: "30%", control: "textbox" },
@@ -158,52 +175,52 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
                 { text: "Delete", line: 0, width: "80px", control: "button", route: "DeleteRecord" }
             ];
             const todoStates = [
-                { text: 'TODO', bcolor: '#FFB0B0' },
-                { text: 'Working On', bcolor: '#D0D0FF' },
-                { text: 'In Progress', bcolor: '#A0A0FF' },
-                { text: 'Done', bcolor: '#D0FFD0' },
-                { text: 'Stuck', bcolor: 'red' },
-                { text: 'Waiting for Response', bcolor: 'red' },
+                { text: 'TODO', bcolor: '#FFB0B0', filtering: true },
+                { text: 'Working On', bcolor: '#D0D0FF', filtering: true },
+                { text: 'In Progress', bcolor: '#A0A0FF', filtering: true },
+                { text: 'Done', bcolor: '#D0FFD0', filtering: false },
+                { text: 'Stuck', bcolor: 'red', filtering: true },
+                { text: 'Waiting for Response', bcolor: 'red', filtering: true },
             ];
             const projectStates = [
-                { text: 'Ongoing', bcolor: '#B0B0FF' },
-                { text: 'TODO', bcolor: '#FFB0B0' },
-                { text: 'Working On', bcolor: '#D0D0FF' },
-                { text: 'Testing', bcolor: '#D0D0FF' },
-                { text: 'QA', bcolor: '#D0D0FF' },
-                { text: 'Done', bcolor: '#D0FFD0' },
-                { text: 'On Production', bcolor: '#60FF60' },
-                { text: 'Waiting on 3rd Party', bcolor: '#FFA540' },
-                { text: 'Waiting on Coworker', bcolor: '#FFA540' },
-                { text: 'Waiting on Management', bcolor: '#FFA540' },
-                { text: 'Stuck', bcolor: 'red' },
-                { text: 'Discuss', bcolor: 'red' },
+                { text: 'Ongoing', bcolor: '#B0B0FF', filtering: true },
+                { text: 'TODO', bcolor: '#FFB0B0', filtering: true },
+                { text: 'Working On', bcolor: '#D0D0FF', filtering: true },
+                { text: 'Testing', bcolor: '#D0D0FF', filtering: true },
+                { text: 'QA', bcolor: '#D0D0FF', filtering: true },
+                { text: 'Done', bcolor: '#D0FFD0', filtering: false },
+                { text: 'On Production', bcolor: '#60FF60', filtering: false },
+                { text: 'Waiting on 3rd Party', bcolor: '#FFA540', filtering: true },
+                { text: 'Waiting on Coworker', bcolor: '#FFA540', filtering: true },
+                { text: 'Waiting on Management', bcolor: '#FFA540', filtering: true },
+                { text: 'Stuck', bcolor: 'red', filtering: true },
+                { text: 'Discuss', bcolor: 'red', filtering: true },
             ];
             const taskStates = [
-                { text: 'TODO', bcolor: '#FFB0B0' },
-                { text: 'Working On', bcolor: '#D0D0FF' },
-                { text: 'Testing', bcolor: '#D0D0FF' },
-                { text: 'QA', bcolor: '#D0D0FF' },
-                { text: 'Done', bcolor: '#D0FFD0' },
-                { text: 'On Production', bcolor: '#60FF60' },
-                { text: 'Waiting on 3rd Party', bcolor: '#FFA540' },
-                { text: 'Waiting on Coworker', bcolor: '#FFA540' },
-                { text: 'Waiting on Management', bcolor: '#FFA540' },
-                { text: 'Stuck', bcolor: 'red' },
-                { text: 'Discuss', bcolor: 'red' },
+                { text: 'TODO', bcolor: '#FFB0B0', filtering: true },
+                { text: 'Working On', bcolor: '#D0D0FF', filtering: true },
+                { text: 'Testing', bcolor: '#D0D0FF', filtering: true },
+                { text: 'QA', bcolor: '#D0D0FF', filtering: true },
+                { text: 'Done', bcolor: '#D0FFD0', filtering: false },
+                { text: 'On Production', bcolor: '#60FF60', filtering: false },
+                { text: 'Waiting on 3rd Party', bcolor: '#FFA540', filtering: true },
+                { text: 'Waiting on Coworker', bcolor: '#FFA540', filtering: true },
+                { text: 'Waiting on Management', bcolor: '#FFA540', filtering: true },
+                { text: 'Stuck', bcolor: 'red', filtering: true },
+                { text: 'Discuss', bcolor: 'red', filtering: true },
             ];
             const bugStates = [
-                { text: 'TODO', bcolor: '#FFB0B0' },
-                { text: 'Working On', bcolor: '#D0D0FF' },
-                { text: 'Testing', bcolor: '#D0D0FF' },
-                { text: 'QA', bcolor: '#D0D0FF' },
-                { text: 'Done', bcolor: '#D0FFD0' },
-                { text: 'On Production', bcolor: '#60FF60' },
-                { text: 'Waiting on 3rd Party', bcolor: '#FFA540' },
-                { text: 'Waiting on Coworker', bcolor: '#FFA540' },
-                { text: 'Waiting on Management', bcolor: '#FFA540' },
-                { text: 'Stuck', bcolor: 'red' },
-                { text: 'Discuss', bcolor: 'red' },
+                { text: 'TODO', bcolor: '#FFB0B0', filtering: true },
+                { text: 'Working On', bcolor: '#D0D0FF', filtering: true },
+                { text: 'Testing', bcolor: '#D0D0FF', filtering: true },
+                { text: 'QA', bcolor: '#D0D0FF', filtering: true },
+                { text: 'Done', bcolor: '#D0FFD0', filtering: false },
+                { text: 'On Production', bcolor: '#60FF60', filtering: false },
+                { text: 'Waiting on 3rd Party', bcolor: '#FFA540', filtering: true },
+                { text: 'Waiting on Coworker', bcolor: '#FFA540', filtering: true },
+                { text: 'Waiting on Management', bcolor: '#FFA540', filtering: true },
+                { text: 'Stuck', bcolor: 'red', filtering: true },
+                { text: 'Discuss', bcolor: 'red', filtering: true },
             ];
             const userId = Config_1.Config.UserId;
             let storeManager = new StoreManager_1.StoreManager();
@@ -239,27 +256,29 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             //eventRouter.AddRoute("ShowAllEntities", (store, idx, viewController) => {
             //    viewController.ShowAllRecords();
             //});
-            let vcTodos = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let filterController = new FilterController_1.FilterController();
+            filterController.CreateView(storeManager, "#createFilterPopup", filterables);
+            let vcTodos = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcTodos.CreateView("Todos", persistence, "#todoTemplateContainer", todoTemplate, "#createTodo", true, undefined, (idx, store) => store.SetDefault(idx, "Status", todoStates[0].text));
-            let vcProjects = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjects = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjects.CreateView("Projects", persistence, "#projectTemplateContainer", projectTemplate, "#createProject", true, undefined, (idx, store) => store.SetDefault(idx, "Status", projectStates[0].text));
-            let vcProjectBugs = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectBugs = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectBugs.CreateView("Bugs", persistence, "#projectBugTemplateContainer", bugTemplate, "#createProjectBug", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", bugStates[0].text));
-            let vcBugNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcBugNotes = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcBugNotes.CreateView("Notes", persistence, "#bugNoteTemplateContainer", noteTemplate, "#createBugNote", false, vcProjectBugs);
-            let vcProjectTasks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectTasks = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTasks.CreateView("Tasks", persistence, "#projectTaskTemplateContainer", taskTemplate, "#createTask", false, vcProjects, (idx, store) => store.SetDefault(idx, "Status", taskStates[0].text));
-            let vcSubtasks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcSubtasks = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcSubtasks.CreateView("Tasks", persistence, "#taskTaskTemplateContainer", taskTemplate, "#createSubtask", false, vcProjectTasks);
-            let vcProjectContacts = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectContacts = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectContacts.CreateView("Contacts", persistence, "#projectContactTemplateContainer", contactTemplate, "#createProjectContact", false, vcProjects);
-            let vcProjectLinks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectLinks = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectLinks.CreateView("Links", persistence, "#projectLinkTemplateContainer", linkTemplate, "#createProjectLink", false, vcProjects);
-            let vcProjectTaskLinks = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectTaskLinks = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTaskLinks.CreateView("Links", persistence, "#taskLinkTemplateContainer", linkTemplate, "#createTaskLink", false, vcProjectTasks);
-            let vcProjectNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectNotes = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectNotes.CreateView("Notes", persistence, "#projectNoteTemplateContainer", noteTemplate, "#createProjectNote", false, vcProjects);
-            let vcProjectTaskNotes = new EntityViewController_1.EntityViewController(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
+            let vcProjectTaskNotes = new EntityViewController_1.EntityViewController(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships);
             vcProjectTaskNotes.CreateView("Notes", persistence, "#taskNoteTemplateContainer", noteTemplate, "#createTaskNote", false, vcProjectTasks);
             const menuBar = [
                 { displayName: "TODO", viewController: vcTodos, initiallyVisible: true },
@@ -279,13 +298,21 @@ define(["require", "exports", "./classes/EntityViewController", "./classes/Store
             // TODO: Create a MenuViewController and put menu into metadata so MenuViewController creates the Bootstrap menu.
             // Maybe also rename MenuBarViewController to BarViewController
             // TODO: This should go through the router!
-            jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
+            // jQuery("#mnuExportChanges").on('click', () => cloudPersistence.Export(auditLogStore));
             // TODO: We should disable the export button until all the AJAX calls complete.
             // TODO: This should go through the router!
-            jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
+            // jQuery("#mnuExportAllStores").on('click', () => cloudPersistence.ExportAll(entities));
             // Filter and search events:
-            jQuery("#onFilter").on('click', () => alert("Filter"));
-            jQuery("#onSearch").on('click', () => alert("Search"));
+            // jQuery("#onFilter").on('click', () => alert("Filter"));
+            // jQuery("#onSearch").on('click', () => alert("Search"));
+            jQuery("#btnFilter").on('click', () => jQuery("#createFilterPopup").toggleClass("show"));
+            /*
+            jQuery("#btnFilter").on('click', () => {
+                let elFilter = jQuery("#createFilter");
+                elFilter.css("visibility", "visible");
+                elFilter.css("display", "inline-block");
+            });
+            */
         }
         // Gets the list of entities from the relationships hierarchy.
         // We assume that the store name == entity name!!!

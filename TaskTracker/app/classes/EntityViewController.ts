@@ -5,10 +5,14 @@ import { Store } from "./Store"
 import { StoreManager } from "./StoreManager"
 import { ParentChildStore } from "../stores/ParentChildStore"
 import { Items } from "../interfaces/Items"
+import { PickItem } from "../interfaces/PickItem"
+import { PickList } from "../interfaces/PickList"
 import { Relationship } from "../interfaces/Relationship"
 import { EventRouter } from "./EventRouter"
 import { IStorePersistence } from "../interfaces/IStorePersistence";
 import { AuditLogStore } from "../stores/AuditLogStore";
+import { Filterable } from "../interfaces/Filterable"
+import { IFilterables } from "../interfaces/IFilterables"
 
 export class EntityViewController {
     storeManager: StoreManager;
@@ -22,8 +26,11 @@ export class EntityViewController {
     parentViewController: EntityViewController;
     relationships: Relationship[];
     containerName: string;
+    template: Items;
+    filterables: IFilterables;
 
-    constructor(storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore, relationships: Relationship[]) {
+    constructor(filterables: IFilterables, storeManager: StoreManager, parentChildRelationshipStore: ParentChildStore, eventRouter: EventRouter, auditLogStore: AuditLogStore, relationships: Relationship[]) {
+        this.filterables = filterables;
         this.storeManager = storeManager;
         this.parentChildRelationshipStore = parentChildRelationshipStore;
         this.eventRouter = eventRouter;
@@ -44,6 +51,7 @@ export class EntityViewController {
 
         // ?. operator.  
         // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
+        this.template = template;
         this.builder = this.CreateHtmlTemplate(containerName, template);
         this.parentViewController = parentViewController;
         this.containerName = containerName;
@@ -136,6 +144,46 @@ export class EntityViewController {
     public ShowAllRecords() {
         this.ShowView();
         Object.keys(this.store.data).forEach(recIdx => this.CreateRecordView(this.store, Number(recIdx), true, false));
+    }
+
+    public FilterRecords() {
+        // If the template has combobox controls, these are assumed at the moment to be filterable lookups.
+        // The filter is identified from the collection of filterables, where the filterable template is the template in the CreateView call for this controller.
+        // Example - in the filterables:
+        // template: todoTemplate,
+        // This is the CreateView's template parameter object.
+        // The store of states is obtained from the template:
+        // storeName: "TodoStatusList",
+        // and the list of items in the comobobox has a "filtering" property, for example:
+        // { text: 'Working On', bcolor: '#D0D0FF', filtering: false },
+
+        // Get all the filterable fields (the comboboxes) in the template.
+        let filterableFields = this.template.filter(t => t.control == "combobox");
+
+        // Get the filter definitions for this template.
+        let filterDefinitions = this.filterables.filter(fi => fi.template == this.template);
+
+        // For each filterable field in the template...
+
+        filterableFields.forEach(ff => {
+            // Do we have a definition for this field, as in, is it filterable?
+            let fdidx = filterDefinitions.findIndex(fd => fd.field == ff.field);
+
+            if (fdidx != -1) {
+                // Yes. Get the items in the pick list in which we're currently filtering.
+                let filterEntries = (this.storeManager.GetStoreData(ff.storeName) as PickList).filter(fe => fe.filtering);
+
+                Object.keys(this.store.data).forEach(recIdx => {
+                    let num = Number(recIdx);
+
+                    if (filterEntries.findIndex(fe => fe.text == this.store.GetRecord(num)[ff.field]) == -1) {
+                        // Nope, we are not filtering on this item.
+                        this.HideRecord(num);
+                    }
+                });
+            }
+        });
+
     }
 
     // After deleting a record, if this is the only selected record, we need to go back to
@@ -246,6 +294,8 @@ export class EntityViewController {
             }
         };
 
+        this.store.allRecordsCreated = (viewController) => { viewController.FilterRecords(); };
+
         this.store.propertyChangedCallback = (idx, field, value) => this.UpdatePropertyView(idx, field, value);
 
         this.store.recordDeletedCallback = (idx, store, viewController) => {
@@ -293,6 +343,12 @@ export class EntityViewController {
                 this.SetComboboxColor(jel, val);
             }
         }
+    }
+
+    private HideRecord(idx: number): void {
+        let path = `${this.builder.templateContainerID} > [templateIdx='${idx}']`;
+        jQuery(path).hide();
+
     }
 
     private FocusOnFirstField(idx: number) {

@@ -14,7 +14,8 @@ export class Store {
     auditLogStore: AuditLogStore;
     recordCreatedCallback: (idx: number, record: {}, insert: boolean, store: Store, onLoad: boolean, viewController: EntityViewController) => void = () => { };
     propertyChangedCallback: (idx: number, field: string, value: any, store: Store) => void = () => { };
-    recordDeletedCallback: (idx: number, store: Store, viewController: EntityViewController) => void = () => { };         
+    recordDeletedCallback: (idx: number, store: Store, viewController: EntityViewController) => void = () => { };
+    allRecordsCreated: (viewController: EntityViewController) => void = () => { };
 
     constructor(storeManager: StoreManager, persistence: IStorePersistence, storeName: string, auditLogStore: AuditLogStore) {
         this.storeManager = storeManager;
@@ -136,6 +137,7 @@ export class Store {
 
             if (createRecordView) {
                 jQuery.each(this.data, (k, v) => this.recordCreatedCallback(k, v, false, this, true, viewController));
+                this.allRecordsCreated(viewController);
             }
         });
 

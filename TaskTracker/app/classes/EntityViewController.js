@@ -2,9 +2,10 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class EntityViewController {
-        constructor(storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships) {
+        constructor(filterables, storeManager, parentChildRelationshipStore, eventRouter, auditLogStore, relationships) {
             this.childControllers = [];
             this.selectedRecordIndex = -1; // multiple selection not allowed at the moment.
+            this.filterables = filterables;
             this.storeManager = storeManager;
             this.parentChildRelationshipStore = parentChildRelationshipStore;
             this.eventRouter = eventRouter;
@@ -14,6 +15,7 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
         CreateView(storeName, persistence, containerName, template, createButtonId, updateView = true, parentViewController, createCallback = _ => { }) {
             // ?. operator.  
             // Supposedly TypeScript 3.7 has it, but I can't select that version in VS2017.  VS2019?
+            this.template = template;
             this.builder = this.CreateHtmlTemplate(containerName, template);
             this.parentViewController = parentViewController;
             this.containerName = containerName;
@@ -85,6 +87,37 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
         ShowAllRecords() {
             this.ShowView();
             Object.keys(this.store.data).forEach(recIdx => this.CreateRecordView(this.store, Number(recIdx), true, false));
+        }
+        FilterRecords() {
+            // If the template has combobox controls, these are assumed at the moment to be filterable lookups.
+            // The filter is identified from the collection of filterables, where the filterable template is the template in the CreateView call for this controller.
+            // Example - in the filterables:
+            // template: todoTemplate,
+            // This is the CreateView's template parameter object.
+            // The store of states is obtained from the template:
+            // storeName: "TodoStatusList",
+            // and the list of items in the comobobox has a "filtering" property, for example:
+            // { text: 'Working On', bcolor: '#D0D0FF', filtering: false },
+            // Get all the filterable fields (the comboboxes) in the template.
+            let filterableFields = this.template.filter(t => t.control == "combobox");
+            // Get the filter definitions for this template.
+            let filterDefinitions = this.filterables.filter(fi => fi.template == this.template);
+            // For each filterable field in the template...
+            filterableFields.forEach(ff => {
+                // Do we have a definition for this field, as in, is it filterable?
+                let fdidx = filterDefinitions.findIndex(fd => fd.field == ff.field);
+                if (fdidx != -1) {
+                    // Yes. Get the items in the pick list in which we're currently filtering.
+                    let filterEntries = this.storeManager.GetStoreData(ff.storeName).filter(fe => fe.filtering);
+                    Object.keys(this.store.data).forEach(recIdx => {
+                        let num = Number(recIdx);
+                        if (filterEntries.findIndex(fe => fe.text == this.store.GetRecord(num)[ff.field]) == -1) {
+                            // Nope, we are not filtering on this item.
+                            this.HideRecord(num);
+                        }
+                    });
+                }
+            });
         }
         // After deleting a record, if this is the only selected record, we need to go back to
         // showing all records, otherwise the user will see an empty list!
@@ -174,6 +207,7 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
                     viewController.FocusOnFirstField(idx);
                 }
             };
+            this.store.allRecordsCreated = (viewController) => { viewController.FilterRecords(); };
             this.store.propertyChangedCallback = (idx, field, value) => this.UpdatePropertyView(idx, field, value);
             this.store.recordDeletedCallback = (idx, store, viewController) => {
                 // A store can be associated with multiple builders: A-B-C and A-D-C, where the store is C
@@ -214,6 +248,10 @@ define(["require", "exports", "./Helpers", "./TemplateBuilder"], function (requi
                     this.SetComboboxColor(jel, val);
                 }
             }
+        }
+        HideRecord(idx) {
+            let path = `${this.builder.templateContainerID} > [templateIdx='${idx}']`;
+            jQuery(path).hide();
         }
         FocusOnFirstField(idx) {
             let tel = this.builder.elements[0];
